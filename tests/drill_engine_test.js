@@ -11,8 +11,7 @@
      ほかに、選択肢が4つ・表示が壊れていない・正解の位置が均等に散っている・5問セットの構成（通常3＋復習1＋挑戦1）も確認する
    - C〜E（24種）は、選択肢の表示（根号・分数・組・集合・不等式・複素数・角度・π・円・漸近線）をこのファイルで数値に読み取り、
      問題文や params からこのファイルの別の計算で答えを出して比べる（数値は小数第6位で丸めて比較）
-   - 特殊ドリル（S1〜S3）は、式の選択肢を独立に構文解析して有理数で計算し、全て計算でき・4つの数をちょうど1回ずつ使い・
-     正解だけが10になることを確かめる
+   - 選択式の特殊ドリル（S1〜S3）は段階5.7b・5.7c で移植版に置き換えて削除した。移植版は tests/fxf_engine_test.js・tests/tp_engine_test.js で検証する
    - module.exports で検査関数を公開する（tests/drill_mutation_test.js の壊しテストが使う） */
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm');
@@ -136,13 +135,6 @@ function val2(label, id) {
     const re = m[1] ? Number(m[1]) : 0, im = (m[2] === '-' ? -1 : 1) * (m[3] === '-' ? -1 : 1) * (m[4] === '' ? 1 : Number(m[4]));
     return 'c:' + r6(re) + ',' + r6(im);
   }
-  if (id === 'S1') {                                               // (x + p)(x + q) → 展開した係数
-    m = t.match(/^\(x ([+-]) (\d+)\)(?:\(x ([+-]) (\d+)\)|²)$/); if (!m) return 'bad:' + t;
-    const p = (m[1] === '-' ? -1 : 1) * Number(m[2]), q = m[3] ? (m[3] === '-' ? -1 : 1) * Number(m[4]) : p;
-    return 'P:' + (p + q) + ',' + p * q;
-  }
-  if (id === 'S2') { const v = evalExpr(t); return v ? 'q:' + v[0] + '/' + v[1] : 'bad:' + t; }
-  if (id === 'S3') { const a = t.split('・').map(Number); return a.every(x => Number.isInteger(x) && x >= 1 && x <= 9) ? 'g:' + a.reduce((s, x) => s + x, 0) : 'bad:' + t; }
   if (t === '∞') return 'inf';
   if ((m = t.match(/^中心\((.+), (.+)\)、半径 (.+)$/))) return 'C:' + r6(num(m[1])) + ',' + r6(num(m[2])) + ',' + r6(num(m[3]));
   if ((m = t.match(/^y = ±(.*)x$/))) return 'A:' + r6(m[1] === '' ? 1 : num(m[1]));
@@ -156,17 +148,6 @@ function val2(label, id) {
   if ((m = t.match(/^(\d+)°$/))) return 'deg:' + Number(m[1]);
   if (t.includes('π')) return 'r:' + r6(num(t) / Math.PI);
   return 'n:' + r6(num(t));
-}
-// 特殊ドリルの式：かっこと優先順位を自前で解釈して有理数で計算（0で割ると null）。使った数も集める
-function evalExpr(str, used) {
-  const tk = str.replace(/−/g, '-').match(/\d+|[-+×÷()]/g), g = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a; };
-  if (!tk || tk.join('') !== str.replace(/−/g, '-').replace(/\s+/g, '')) return null;
-  const nr = (p, q) => { if (q === 0) return null; if (q < 0) { p = -p; q = -q; } const k = g(p, q) || 1; return [p / k, q / k]; };
-  let i = 0;
-  const prim = () => { const x = tk[i++]; if (x === '(') { const v = sum(); if (tk[i++] !== ')') throw 0; return v; } if (!/^\d+$/.test(x)) throw 0; if (used) used.push(Number(x)); return [Number(x), 1]; };
-  const prod = () => { let a = prim(); while (tk[i] === '×' || tk[i] === '÷') { const op = tk[i++], b = prim(); if (!a || !b) return null; a = op === '×' ? nr(a[0] * b[0], a[1] * b[1]) : (b[0] === 0 ? null : nr(a[0] * b[1], a[1] * b[0])); if (!a) throw 1; } return a; };
-  const sum = () => { let a = prod(); while (tk[i] === '+' || tk[i] === '-') { const op = tk[i++], b = prod(); a = nr(a[0] * b[1] + (op === '+' ? 1 : -1) * b[0] * a[1], a[1] * b[1]); } return a; };
-  try { const v = sum(); return i === tk.length ? v : null; } catch (e) { return null; }
 }
 // 独立した再計算（問題文やparamsから、エンジンとは別の手順で）
 const fac = n => { let r = 1; for (let k = 2; k <= n; k++) r *= k; return r; };
@@ -262,9 +243,6 @@ const ANSWER2 = {
     if (p.f === 'para') { const m = t.match(/(x|y)² = (-?\d*)(x|y)/), c = m[2] === '' ? 1 : m[2] === '-' ? -1 : +m[2]; return m[1] === 'y' ? 'p:' + r6(c / 4) + ',0' : 'p:0,' + r6(c / 4); }
     const m = t.match(/x²(?:\/(\d+))? - y²(?:\/(\d+))? = 1/), A2 = m[1] ? +m[1] : 1, B2 = m[2] ? +m[2] : 1;
     return p.f === 'asym' ? 'A:' + r6(Math.sqrt(B2 / A2)) : 'pm:x:' + r6(Math.sqrt(A2 + B2)); },
-  S1: (p, pb) => { const P = parsePoly(pb.prompt.split(' を')[0]); return 'P:' + pc(P, 1) + ',' + pc(P, 0); },
-  S2: () => 'q:10/1',
-  S3: () => 'g:10',
 };
 const RANGE2 = {
   C1: p => (p.f === 'expand' ? [p.a, p.c].every(v => I(v, 1, 4)) && [p.b, p.d].every(v => NZ(v, -6, 6)) && p.a * p.d + p.b * p.c !== 0
@@ -298,20 +276,12 @@ const RANGE2 = {
   E6: p => p.A.concat(p.B).every(v => I(v, -5, 5)),
   E7: p => I(p.p, 1, 11) && [1, 2, 3, 4, 6].includes(p.q) && p.p / p.q < 2 && I(p.r, 1, 4),
   E8: p => (p.f === 'para' ? NZ(p.p, -4, 4) : I(p.a, 1, 12) && I(p.b, 1, 12)),
-  S1: p => NZ(p.p, -9, 9) && NZ(p.q, -9, 9) && Math.abs(p.p * p.q) <= 48,
-  S2: p => p.d.length === 4 && p.d.every(v => I(v, 1, 9)),
-  S3: p => [2, 3].includes(p.g.length) && p.g.every(v => I(v, 1, 9)),
 };
-// 特殊ドリルの式の追加検査：全て計算でき、4つの数をちょうど1回ずつ使い、正解だけが10
-function checkTenPuzzle(pb) {
-  const want = pb.params.d.slice().sort().join(), res = pb.choices.map(c => { const used = [], v = evalExpr(c.label, used); return { v, used: used.sort().join() }; });
-  return { computable: res.every(r => r.v), digits: res.every(r => r.used === want), onlyOne: res.filter(r => r.v && r.v[0] === 10 && r.v[1] === 1).length === 1 && res[pb.answer].v[0] === 10 && res[pb.answer].v[1] === 1 };
-}
 
 // ---- 1タイプの検査（壊しテストからも使う） ----
 function checkType(D, id, n, seed) {
   const rng = mulberry32(seed);
-  const fail = { one: 0, recompute: 0, dup: 0, range: 0, shape: 0, ten: 0 };
+  const fail = { one: 0, recompute: 0, dup: 0, range: 0, shape: 0 };
   const posCount = [0, 0, 0, 0], ab = /^[AB]/.test(id);
   let example = null;
   for (let k = 0; k < n; k++) {
@@ -329,12 +299,11 @@ function checkType(D, id, n, seed) {
     if (new Set(vals).size !== 4 || new Set(labels).size !== 4 || new Set(keys).size !== 4) fail.dup++;   // 値・表示とも重複なし
     let rangeOk = false; try { rangeOk = !!(ab ? RANGE[id] : RANGE2[id])(pb.params); } catch (e) { rangeOk = false; }
     if (!rangeOk) fail.range++;                                              // 範囲内
-    if (id === 'S2') { const t = checkTenPuzzle(pb); if (!t.computable || !t.digits || !t.onlyOne) fail.ten++; }
     posCount[pb.answer]++;
-    if (!example && (fail.one || fail.recompute || fail.dup || fail.range || fail.shape || fail.ten)) example = JSON.stringify(pb);
+    if (!example && (fail.one || fail.recompute || fail.dup || fail.range || fail.shape)) example = JSON.stringify(pb);
   }
   const spread = Math.min(...posCount) >= n * 0.25 * 0.8 && Math.max(...posCount) <= n * 0.25 * 1.2;   // 各位置 25%±20%
-  const ok = !fail.one && !fail.recompute && !fail.dup && !fail.range && !fail.shape && !fail.ten && spread;
+  const ok = !fail.one && !fail.recompute && !fail.dup && !fail.range && !fail.shape && spread;
   return { id, name: D.TYPES[id].name, n, ...fail, pos: posCount.join('/'), spread, ok, example };
 }
 // 5問セット：通常3問（その難度・タイプ重複なし）＋復習1問（間違えた回数が最も多いタイプ。記録がなければ通常）＋挑戦1問（1つ上の難度の易しいタイプ）
@@ -357,7 +326,7 @@ function checkSets(D) {
   }
   return res;
 }
-module.exports = { loadEngine, checkType, checkSets, val2, evalExpr, ANSWER2, RANGE2 };
+module.exports = { loadEngine, checkType, checkSets, val2, ANSWER2, RANGE2 };
 
 // ---- 実行 ----
 if (require.main === module) {
@@ -368,9 +337,9 @@ if (require.main === module) {
   const sets = checkSets(D);
   Object.values(sets).forEach(r => { if (!r.ok) allOk = false; });
   console.log('ドリルエンジン自動検証：' + typeIds.length + '種 × ' + N + '問（固定シード）');
-  console.log('タイプ | 名前 | 正解1つ違反 | 再計算不一致 | 重複 | 範囲外 | 形式 | 式の検査 | 正解位置(0/1/2/3) | 判定');
+  console.log('タイプ | 名前 | 正解1つ違反 | 再計算不一致 | 重複 | 範囲外 | 形式 | 正解位置(0/1/2/3) | 判定');
   for (const r of rows) {
-    console.log([r.id, r.name, r.one, r.recompute, r.dup, r.range, r.shape, r.id === 'S2' ? r.ten : '-', r.pos, r.ok ? '合格' : '不合格'].join(' | '));
+    console.log([r.id, r.name, r.one, r.recompute, r.dup, r.range, r.shape, r.pos, r.ok ? '合格' : '不合格'].join(' | '));
     if (!r.ok && r.example) console.log('   例: ' + r.example);
   }
   for (const [L, r] of Object.entries(sets)) console.log('5問セット ' + L + '（500セット）：構成 ' + (r.ok ? '合格' : '不合格') + '／復習が最多ミスのタイプ ' + r.reviewHit + '/' + r.withMiss + '／挑戦が上の難度 ' + r.chalUp + '/500');

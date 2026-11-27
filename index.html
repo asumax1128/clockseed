@@ -185,13 +185,40 @@
   .fxf-big{font-size:56px;font-weight:bold;color:#ffd54a}.fxf-big small{font-size:20px;margin-left:4px}
   .fxf-rows{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center;font-size:15px;margin:6px 0 10px}
   .fxf-earn{font-size:15px;background:#0e1328;border:2px solid #3b4a8a;border-radius:10px;padding:8px 12px;margin-bottom:12px}.fxf-earn img{width:18px;height:18px;vertical-align:-3px}
+  .fxf.tp{background:radial-gradient(120% 90% at 50% 0%,#2f5a4a 0%,#13261f 72%)}
+  .tp-select{margin:auto;text-align:center;max-width:720px}.tp-select h2{font-size:24px;margin:0 0 8px}.tp-select p{font-size:15px}
+  .tp-tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}
+  .tp-tier{flex-direction:column;padding:12px 8px;gap:4px;font-size:13px;color:#3a2a18}.tp-tier b{font-size:26px}.tp-tier small{font-size:11px;opacity:.85}
+  .tp-modes{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin:6px 0;font-size:14px}.tp-modes .tool{font-size:14px;padding:6px 12px;color:#3a2a18}
+  .tp-note{font-size:13px!important;opacity:.9}.tp-stat{font-size:13px;margin:4px 0 12px}.tp-go{font-size:22px;padding:10px 36px}
+  .tp-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .tp-chip{background:#52B788;color:#fff;border-radius:12px;padding:2px 12px;font-size:14px;font-weight:bold}.tp-digits{font-size:22px;letter-spacing:.12em;font-weight:bold}
+  .tp-head .tool{font-size:13px;padding:4px 10px;color:#3a2a18}
+  .tp-cards{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;width:100%;margin-top:4px}
+  .tp-card{width:150px;height:150px;border-radius:20px;border:4px solid #c8a24a;background:linear-gradient(180deg,#fffdf5,#f1e2b8);color:#2a1d10;font-size:58px;font-weight:bold;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;box-shadow:0 6px 0 #8a6a2a;cursor:pointer;touch-action:manipulation}
+  .tp-card.sel{border-color:#ff7b5c;box-shadow:0 0 0 5px #ffb36b,0 6px 0 #8a6a2a;transform:translateY(-4px)}
+  .tp-card.won{border-color:#43c97b;background:linear-gradient(180deg,#e9ffe9,#a8e6a0)}
+  .tp-card .ord{position:absolute;top:6px;left:10px;font-size:16px;background:#ff7b5c;color:#fff;border-radius:50%;width:24px;height:24px;line-height:24px}
+  .tp-card .fr{font-size:.62em}.tp-approx{font-size:14px;opacity:.7}
+  .tp-expr{min-height:34px;font-size:28px;font-weight:bold;color:#ffd54a;text-align:center}.tp-guide{font-size:13px;opacity:.85;min-height:18px}
+  .tp-ops{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;width:100%;max-width:700px}
+  .tp-op{min-height:78px;border-radius:16px;border:3px solid #6bd4a8;background:#103529;color:#fff;font-weight:bold;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation}
+  .tp-op .sym{font-size:40px;line-height:1}.tp-op .pv{font-size:12px;opacity:.85;margin-top:2px}.tp-op.on{background:#ffd54a;color:#2a1d10;border-color:#ffd54a}
+  .tp-op.bad{border-color:#e63946}.tp-op:disabled{opacity:.45;cursor:default}
+  .tp-tools,.tp-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.tp-tools .tool,.tp-nav .tool{font-size:15px;padding:7px 14px;color:#3a2a18}
+  .tp-msg{min-height:20px;font-size:14px}.tp-msg.ng{color:#ffb3a8}
+  .tp-done{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 16px;border-radius:12px;font-size:20px}
+  .tp-done.ok{background:#1f5a3a;border:2px solid #43c97b}.tp-done.ng{background:#5a2a2a;border:2px solid #e66}.tp-done b{font-size:22px}.tp-done small{font-size:13px;opacity:.9}
+  .tp-foot{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:13px;opacity:.9;margin-top:auto}.tp-foot img{width:16px;height:16px;vertical-align:-3px}
+  .spbtns .tp-entry{background:#e0f5ea}.spbtns .tp-entry b{font-size:13px;line-height:1.25}
   .spbtns .fxf-entry{background:#e8e4ff}.spbtns .fxf-entry b{font-size:12px;line-height:1.25}
   .roletag{font-size:12px;padding:1px 7px;margin-left:6px;border-radius:3px;color:#fff}
   .roletag.review{background:#3f86bd}.roletag.challenge{background:#c0702a}.roletag.special{background:#7c62d8}
   .spbox{margin:10px 4px 4px;padding:8px 10px;border:2px dashed #b89a6a;background:#fbf2dc}
   .spbox .sphead{display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:14px;margin-bottom:6px;gap:8px;flex-wrap:wrap}
   .spbox .sphead small{font-weight:normal;font-size:12px;color:var(--ink-soft)}
-  .spbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .spbtns{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
   .spbtns .tool{flex-direction:column;font-size:14px;padding:6px 4px}
   .spbtns small{font-size:11px;color:var(--ink-soft)}
   .choice.long{font-size:17px}
@@ -302,6 +329,7 @@
   </div>
 </div>
 <div id="fxfPanel" class="fxf" style="display:none"><div class="fxf-top"><span class="fxf-title">FACTOR×FACTOR ソロ・イージー<small>（移植版）</small></span><button class="fxf-x" id="fxfClose" aria-label="閉じる">×</button></div><div id="fxfBody" class="fxf-body"></div></div>
+<div id="tpPanel" class="fxf tp" style="display:none"><div class="fxf-top"><span class="fxf-title">テンパズル<small>（移植版）</small></span><button class="fxf-x" id="tpClose" aria-label="閉じる">×</button></div><div id="tpBody" class="fxf-body"></div></div>
 <div id="popup" class="overlay"><div class="box pix">
   <div class="q">なにを植える？</div>
   <div class="row" id="popupRow"></div>
@@ -1050,74 +1078,8 @@
       k => pmPt(rt(a * a + b * b + k), 'x'), { f, a, b }, null, null);
   } };
 
-  // ================= 特殊ドリル（S1 因数分解・S2 テンパズル・S3 10さがし） =================
-  const facL = (p, q) => { const one = v => '(x ' + (v < 0 ? MINUS + ' ' + (-v) : '+ ' + v) + ')';
-    const [x, y] = p >= q ? [p, q] : [q, p]; return { label: x === y ? one(x) + '²' : one(x) + one(y), key: 'P:' + (p + q) + ',' + p * q, v: p * q }; };
-  T.S1 = { level: 'S', name: '因数分解ドリル', gen(rng) {
-    let p, q; do { p = nz(rng, -9, 9); q = nz(rng, -9, 9); } while (Math.abs(p * q) > 48);
-    const c = p * q, b = p + q, pairs = [];
-    for (let u = -Math.abs(c); u <= Math.abs(c); u++) if (u && c % u === 0 && u + c / u !== b) pairs.push([u, c / u]);
-    return build(rng, 'S1', 'S', polyStr([1, b, c]) + ' を因数分解すると？', facL(p, q),
-      [facL(-p, -q), facL(p, -q), facL(-p, q)].concat(pairs.length ? [facL(...pick(rng, pairs))] : []),   // 符号ミス／かけて c でも、たして b にならない組
-      k => facL(p + near(k), q), { p, q, b, c }, null, null);
-  } };
-  // テンパズル：4つの数を1回ずつ使い、＋−×÷とかっこで10を作る。式は木で持ち、優先順位に合わせて最小限のかっこで表示する
-  const rq = (p, q) => { if (q < 0) { p = -p; q = -q; } const g = gcd(p, q) || 1; return [p / g, q / g]; };
-  const OPS = { '+': (a, b) => rq(a[0] * b[1] + b[0] * a[1], a[1] * b[1]), '−': (a, b) => rq(a[0] * b[1] - b[0] * a[1], a[1] * b[1]),
-                '×': (a, b) => rq(a[0] * b[0], a[1] * b[1]), '÷': (a, b) => (b[0] === 0 ? null : rq(a[0] * b[1], a[1] * b[0])) };
-  const PREC = { '+': 1, '−': 1, '×': 2, '÷': 2 };
-  const evalT = t => { if (t.n !== undefined) return [t.n, 1]; const a = evalT(t.l), b = evalT(t.r); return a && b ? OPS[t.op](a, b) : null; };
-  function showT(t, parentPrec = 0, right = false, parentOp = null) {
-    if (t.n !== undefined) return String(t.n);
-    const s = showT(t.l, PREC[t.op], false, t.op) + ' ' + t.op + ' ' + showT(t.r, PREC[t.op], true, t.op);
-    const need = PREC[t.op] < parentPrec || (right && PREC[t.op] === parentPrec && (parentOp === '−' || parentOp === '÷'));
-    return need ? '(' + s + ')' : s;
-  }
-  const flatT = t => (t.n !== undefined ? String(t.n) : flatT(t.l) + ' ' + t.op + ' ' + flatT(t.r));   // かっこを付け忘れた式
-  function evalFlat(str) {                                            // 優先順位どおりに左から計算（かっこなし）
-    const tk = str.split(' '), nums = [[+tk[0], 1]], ops = [];
-    for (let i = 1; i < tk.length; i += 2) {
-      const op = tk[i], v = [+tk[i + 1], 1];
-      if (PREC[op] === 2) { const r = OPS[op](nums.pop(), v); if (!r) return null; nums.push(r); } else { ops.push(op); nums.push(v); }
-    }
-    let acc = nums[0]; ops.forEach((op, i) => { acc = OPS[op](acc, nums[i + 1]); });
-    return acc;
-  }
-  function allTrees(ds) {                                             // 4つの数（並べ方も含む）のすべての式
-    if (ds.length === 1) return [{ n: ds[0] }];
-    const out = [];
-    for (let i = 1; i < ds.length; i++) for (const L of allTrees(ds.slice(0, i))) for (const R of allTrees(ds.slice(i))) for (const op of ['+', '−', '×', '÷']) out.push({ op, l: L, r: R });
-    return out;
-  }
-  const perms = a => (a.length <= 1 ? [a] : a.flatMap((x, i) => perms(a.slice(0, i).concat(a.slice(i + 1))).map(p => [x].concat(p))));
-  const tq = (lbl, v) => ({ label: lbl, key: 'q:' + v[0] + '/' + v[1], v: v[0] / v[1] });
-  T.S2 = { level: 'S', name: 'テンパズル', gen(rng) {
-    for (;;) {
-      const d = [ri(rng, 1, 9), ri(rng, 1, 9), ri(rng, 1, 9), ri(rng, 1, 9)], seen = new Set(), sols = [], others = [];
-      for (const p of perms(d)) { const k = p.join(); if (seen.has(k)) continue; seen.add(k);
-        for (const t of allTrees(p)) { const v = evalT(t); if (!v) continue; (v[0] === 10 && v[1] === 1 ? sols : others).push({ t, v }); } }
-      if (!sols.length) continue;
-      const sol = pick(rng, sols), mist = [];
-      const fl = flatT(sol.t), fv = evalFlat(fl);
-      if (fv && !(fv[0] === 10 && fv[1] === 1)) mist.push(tq(fl, fv));             // かっこの付け忘れ
-      const swap = (t, path) => { if (t.n !== undefined) return [];               // 演算子を1つ取り違える
-        const res = []; for (const op of ['+', '−', '×', '÷']) if (op !== t.op) res.push(Object.assign({}, t, { op }));
-        return res.concat(swap(t.l).map(l => Object.assign({}, t, { l })), swap(t.r).map(r => Object.assign({}, t, { r }))); };
-      for (const t of swap(sol.t)) { const v = evalT(t); if (v && !(v[0] === 10 && v[1] === 1) && rng() < 0.5) mist.push(tq(showT(t), v)); }
-      const pool = others.filter(o => o.v[1] === 1 || rng() < 0.3);
-      return build(rng, 'S2', 'S', '4つの数 ' + d.join('・') + ' を1回ずつ使って 10 を作る式は？', tq(showT(sol.t), sol.v), mist,
-        () => { const o = pick(rng, pool.length ? pool : others); return tq(showT(o.t), o.v); }, { d }, null, null);
-    }
-  } };
-  T.S3 = { level: 'S', name: '10さがし', gen(rng) {
-    const grp = (a) => ({ label: a.join('・'), key: 'g:' + a.reduce((s, x) => s + x, 0), v: a.reduce((s, x) => s + x, 0) });
-    const n = pick(rng, [2, 3, 3]); let g;
-    do { g = Array.from({ length: n }, () => ri(rng, 1, 9)); } while (g.reduce((s, x) => s + x, 0) !== 10);
-    const tweak = (delta) => { const a = g.slice(), i = ri(rng, 0, n - 1); a[i] += delta; if (a[i] < 1 || a[i] > 9) return null;
-      for (let k = a.length - 1; k > 0; k--) { const j = Math.floor(rng() * (k + 1)); [a[k], a[j]] = [a[j], a[k]]; } return grp(a); };
-    return build(rng, 'S3', 'S', '合計がちょうど 10 になる組はどれ？', grp(g), [tweak(1), tweak(-1), tweak(2), tweak(-2), tweak(3)],
-      k => { const m = Array.from({ length: n }, () => ri(rng, 1, 9)); return grp(m); }, { g }, null, x => x.v !== 10);
-  } };
+  // 特殊ドリル：選択式の S1（因数分解）・S2（テンパズル）・S3（10さがし）は削除し、
+  // FACTOR×FACTOR 移植版（S4・fxf-engine）とテンパズル移植版（S5・tp-engine）に置き換えた（段階5.7b・5.7c）
 
   const LEVELS = {
     A: { label: '算数（低中）', ready: true, types: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8'] },
@@ -1125,7 +1087,6 @@
     C: { label: '数学I・A', ready: true, types: ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8'] },
     D: { label: '数学II・B', ready: true, types: ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8'] },
     E: { label: '数学III・C', ready: true, types: ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8'] },
-    S: { label: '特殊ドリル', ready: true, special: true, types: ['S2', 'S3'] },   // S1（選択式の因数分解）は段階5.7bで FACTOR×FACTOR 移植版（S4・別モジュール）に置き換え
   };
   // 挑戦問題：1つ上の難度の易しいタイプ（E は E の中で最も基本のタイプ＝E6。E6 を復習に出すときは E4）
   const CHALLENGE = { A: ['B2', 'B4', 'B6'], B: ['C5', 'C7', 'C1'], C: ['D1', 'D2', 'D7'], D: ['E4', 'E6', 'E1'], E: ['E6', 'E4'] };
@@ -1147,9 +1108,7 @@
     out.push(Object.assign(generate(challenge, rng), { role: 'challenge' }));
     return out;
   }
-  // 特殊ドリル：同じタイプを n 問
-  const makeSpecialSet = (type, rng, n) => Array.from({ length: n || 5 }, () => Object.assign(generate(type, rng || Math.random), { role: 'special' }));
-  root.ClockseedDrill = { TYPES: T, LEVELS, CHALLENGE, generate, makeSet, makeSpecialSet };
+  root.ClockseedDrill = { TYPES: T, LEVELS, CHALLENGE, generate, makeSet };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 
@@ -1476,6 +1435,114 @@
   }
   root.ClockseedFxF = { CONFIG, GEN, LEVEL_POINTS, LEVEL_NAME, JUDGE_TIERS, JUDGE_BAD, levelFor, multiply, polyEqual, formatFactor, formatPoly, factorKey,
     flipSign, buildBoard, judgeOf, newGame, tick, answer, advance, dropTarget, SOURCE: 'asumax1128/factorfactor@2af9777f6188f70817e25a69ea9a25df1212c848' };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script id="tp-engine">
+/* ===================================================================
+   ときの種：テンパズル（移植版）のエンジン
+   - 本家 asumax1128/tenpuzzle（commit 36808e0b7601c835e0fc195551ce3ab1734d1875、index.html＝v1.2）の
+     ソロプレイの核だけを移植した：問題プール（解けることを本家のソルバーで確かめ済みの組）・ティア・
+     カードを合体させる盤面（merge / undo / reset / preview）・操作方法A（数字→記号→数字）とB（数字2枚→記号）・判定。
+   - DOM・ゲーム状態に触れない純粋な関数（乱数は引数）。window.ClockseedTP を公開するだけ。
+   - プールは本家 pool-data（495組）のうち 入門・初級・中級（解法の数 40〜95／20〜39／10〜19）の269組：
+     [組の数字, ティア(0=入門 1=初級 2=中級), 解法の数（本家の数え方）, 答えの一例]
+   =================================================================== */
+(function (root) {
+  'use strict';
+  const POOL_RAW = [["1118",2,10,"1+1+1×8"],["1119",0,49,"1+1-(1-9)"],["1124",2,12,"1+1+2×4"],["1125",0,61,"1-1+2×5"],["1126",2,15,"1+1+2+6"],["1127",2,17,"(1+1)×(7-2)"],["1128",0,61,"1-1+2+8"],["1129",0,60,"9+2÷(1+1)"],["1135",2,11,"1+1+3+5"],["1136",2,16,"1×1+3+6"],["1137",0,61,"1-1+3+7"],["1138",0,51,"(1+1)×(8-3)"],["1139",2,19,"3+9-(1+1)"],["1145",1,21,"4×5÷(1+1)"],["1146",0,61,"1-1+4+6"],["1147",0,51,"7×(1+1)-4"],["1148",1,21,"4+8-(1+1)"],["1155",1,38,"1-1+5+5"],["1156",0,50,"5+6-1×1"],["1157",2,19,"5+7-(1+1)"],["1166",2,11,"6+6-(1+1)"],["1223",2,12,"1×2×(2+3)"],["1224",2,18,"4+2×(1+2)"],["1225",2,12,"1+2+2+5"],["1226",1,33,"2×(6+1-2)"],["1227",1,31,"2+7-(1-2)"],["1228",2,15,"2×(8-(1+2))"],["1229",0,47,"1+2-(2-9)"],["1233",2,11,"3×3-(1-2)"],["1234",1,30,"1+2+3+4"],["1235",1,33,"5×(3+1-2)"],["1236",0,40,"3+6-(1-2)"],["1237",1,21,"7-3×(1-2)"],["1238",1,36,"1-2+3+8"],["1239",0,67,"9+3÷(1+2)"],["1244",2,19,"1×2+4+4"],["1245",0,95,"4+5-(1-2)"],["1246",2,18,"6-4×(1-2)"],["1247",1,37,"1-2+4+7"],["1248",0,68,"4+8-1×2"],["1249",0,48,"4+9-(1+2)"],["1255",2,15,"5×(5-(1+2))"],["1256",1,33,"5×6÷(1+2)"],["1257",0,56,"5+7-1×2"],["1258",1,39,"5+8-(1+2)"],["1266",1,29,"6+6-1×2"],["1267",0,47,"6+7-(1+2)"],["1268",1,29,"6×(1+2)-8"],["1278",2,10,"1-7+2×8"],["1289",2,10,"9×1×2-8"],["1334",2,17,"1-3+3×4"],["1335",2,16,"3+5-(1-3)"],["1339",0,47,"1+3-(3-9)"],["1344",2,15,"4+4-(1-3)"],["1345",2,16,"5×(4+1-3)"],["1348",1,27,"1-3+4+8"],["1349",0,66,"9+4÷(1+3)"],["1355",1,25,"5×(5-1×3)"],["1356",0,70,"5×(6-(1+3))"],["1357",1,30,"1-3+5+7"],["1358",0,59,"5×8÷(1+3)"],["1359",1,34,"5+9-(1+3)"],["1366",1,20,"1-3+6+6"],["1367",0,56,"7-6÷(1-3)"],["1368",0,59,"6+8-(1+3)"],["1369",2,13,"1+6+9÷3"],["1377",2,19,"7+7-(1+3)"],["1379",2,12,"7+9÷(1×3)"],["1446",2,10,"(1+4)×(6-4)"],["1449",0,47,"1+4-(4-9)"],["1456",2,17,"5×(6-1×4)"],["1457",2,10,"(1+4)×(7-5)"],["1458",0,84,"1-4+5+8"],["1459",0,72,"9+5÷(1+4)"],["1467",1,25,"1-4+6+7"],["1468",0,59,"(1+4)×(8-6)"],["1469",1,34,"6+9-(1+4)"],["1477",1,28,"7+7-1×4"],["1478",1,35,"7+8-(1+4)"],["1488",2,12,"8+8÷(1×4)"],["1557",2,10,"1×5×(7-5)"],["1559",0,47,"1+5-(5-9)"],["1568",1,36,"1-5+6+8"],["1569",0,68,"9+6÷(1+5)"],["1577",2,17,"1-5+7+7"],["1578",0,55,"7+8-1×5"],["1579",0,43,"7+9-(1+5)"],["1588",1,21,"8+8-(1+5)"],["1669",0,48,"1+6-(6-9)"],["1678",1,25,"1-6+7+8"],["1679",0,66,"9+7÷(1+6)"],["1688",1,28,"8+8-1×6"],["1689",1,33,"8+9-(1+6)"],["1779",0,47,"1+7-(7-9)"],["1788",2,15,"1-7+8+8"],["1789",0,64,"9+8÷(1+7)"],["1799",2,18,"9+9-(1+7)"],["1889",0,47,"1+8-(8-9)"],["1899",0,44,"1+8+9÷9"],["1999",1,35,"1+9+9-9"],["2225",1,34,"(2+2)÷(2÷5)"],["2228",1,35,"2+2-(2-8)"],["2234",2,13,"(2+3)÷(2÷4)"],["2236",2,13,"2÷2+3+6"],["2237",0,42,"2-2+3+7"],["2238",1,22,"3+8-2÷2"],["2239",1,22,"2+2-(3-9)"],["2244",2,12,"2×4-(2-4)"],["2246",0,57,"4×(2+2)-6"],["2247",2,19,"4+7-2÷2"],["2249",2,14,"9+4÷(2+2)"],["2255",1,27,"2-2+5+5"],["2256",2,14,"5×(6-(2+2))"],["2258",1,31,"5×8÷(2+2)"],["2259",1,27,"5+9-(2+2)"],["2268",1,28,"6+8-(2+2)"],["2269",2,13,"2×9-(2+6)"],["2277",2,14,"7+7-(2+2)"],["2288",2,14,"8+8÷(2+2)"],["2335",0,45,"3×5-(2+3)"],["2336",1,23,"(2+3)÷(3÷6)"],["2337",2,18,"7-3×(2-3)"],["2338",0,44,"2+3-(3-8)"],["2344",1,20,"4×4-2×3"],["2345",0,45,"4+5-(2-3)"],["2346",1,28,"(2+3)×(6-4)"],["2347",1,27,"2-3+4+7"],["2348",1,35,"(2+3)÷(4÷8)"],["2349",0,41,"2+3-(4-9)"],["2356",1,35,"2-3+5+6"],["2357",1,24,"(2+3)×(7-5)"],["2359",1,21,"9+5÷(2+3)"],["2366",2,13,"6+6×2÷3"],["2369",0,47,"6+9-(2+3)"],["2378",0,41,"7+8-(2+3)"],["2379",2,17,"(2+3)×(9-7)"],["2389",2,12,"2×8+3-9"],["2444",2,13,"4×4-(2+4)"],["2445",0,46,"5×(2+4-4)"],["2446",2,11,"2×4-(4-6)"],["2447",2,10,"7÷(2÷4)-4"],["2448",0,55,"2+4-(4-8)"],["2449",2,14,"(2-4)×(4-9)"],["2456",2,13,"5×(2×4-6)"],["2457",1,39,"2-4+5+7"],["2458",1,26,"5×(8-(2+4))"],["2459",1,26,"2+4-(5-9)"],["2466",1,29,"2-4+6+6"],["2467",2,17,"7-6÷(2-4)"],["2468",1,28,"6-8÷(2-4)"],["2469",2,18,"9+6÷(2+4)"],["2478",2,17,"2×7+4-8"],["2479",0,43,"7+9-(2+4)"],["2488",1,22,"8+8-(2+4)"],["2489",2,19,"9+8÷(2×4)"],["2555",1,31,"5×(2+5-5)"],["2556",2,18,"2×5×(6-5)"],["2558",0,41,"2+5-(5-8)"],["2559",2,14,"5×(9-(2+5))"],["2566",0,40,"2×5+6-6"],["2567",0,40,"2-5+6+7"],["2568",1,26,"8-6÷(2-5)"],["2569",1,27,"2+5-(6-9)"],["2577",0,42,"2×5+7-7"],["2579",2,17,"9+7÷(2+5)"],["2588",0,41,"2×5+8-8"],["2589",0,46,"8+9-(2+5)"],["2599",0,40,"2×5+9-9"],["2668",0,52,"2+6-(6-8)"],["2677",2,17,"2-6+7+7"],["2678",2,17,"(2-7)×(6-8)"],["2679",1,38,"2+6-(7-9)"],["2689",1,20,"9+8÷(2+6)"],["2699",2,19,"9+9-(2+6)"],["2778",0,43,"2+7-(7-8)"],["2779",2,10,"(2-7)×(7-9)"],["2788",2,11,"2+7+8÷8"],["2789",1,26,"2+7-(8-9)"],["2799",2,11,"2+7+9÷9"],["2888",1,28,"2+8+8-8"],["2889",2,15,"(2+8)×(9-8)"],["2899",0,41,"2+8+9-9"],["3337",1,28,"3+3-(3-7)"],["3345",2,16,"5×(3+3-4)"],["3346",0,43,"3-3+4+6"],["3347",2,15,"4+7-3÷3"],["3348",2,15,"3+3-(4-8)"],["3355",1,27,"3-3+5+5"],["3356",2,14,"3×3-(5-6)"],["3358",2,10,"5×(8-(3+3))"],["3359",1,20,"3+3-(5-9)"],["3369",2,12,"9+6÷(3+3)"],["3379",1,20,"7+9-(3+3)"],["3388",2,12,"8+8-(3+3)"],["3445",2,16,"4+5-(3-4)"],["3446",1,22,"6-4×(3-4)"],["3447",0,40,"3+4-(4-7)"],["3448",2,12,"3×4-8÷4"],["3455",1,21,"5×(3+4-5)"],["3456",0,51,"3-4+5+6"],["3457",1,22,"3×4+5-7"],["3458",1,29,"3+4-(5-8)"],["3459",2,11,"5×(9-(3+4))"],["3468",1,20,"3×4+6-8"],["3469",1,32,"3+4-(6-9)"],["3479",2,18,"9+7÷(3+4)"],["3489",1,38,"8+9-(3+4)"],["3557",0,41,"3+5-(5-7)"],["3566",1,21,"3-5+6+6"],["3567",1,26,"7-6÷(3-5)"],["3568",1,28,"3+5-(6-8)"],["3569",1,31,"3×5×6÷9"],["3578",2,14,"8+(3+7)÷5"],["3579",1,25,"3+5-(7-9)"],["3589",1,24,"9+8÷(3+5)"],["3599",2,19,"9+9-(3+5)"],["3667",0,40,"3+6-(6-7)"],["3668",2,19,"8-6÷(3-6)"],["3677",2,11,"3+6+7÷7"],["3678",1,25,"3+6-(7-8)"],["3689",1,36,"3+6-(8-9)"],["3699",2,11,"3+6+9÷9"],["3777",1,28,"3+7+7-7"],["3778",2,17,"(3+7)×(8-7)"],["3788",0,42,"3+7+8-8"],["3789",2,12,"(3+7)×(9-8)"],["3799",0,40,"3+7+9-9"],["3889",2,15,"3+8+8-9"],["4446",1,29,"4+4-(4-6)"],["4455",1,25,"4-4+5+5"],["4456",1,26,"5×(4+4-6)"],["4457",2,15,"4+4-(5-7)"],["4458",2,16,"4×4×5÷8"],["4468",2,18,"4+4-(6-8)"],["4479",2,15,"4+4-(7-9)"],["4489",2,11,"9+8÷(4+4)"],["4499",2,11,"9+9-(4+4)"],["4556",0,41,"4+5-(5-6)"],["4557",2,17,"5×(4+5-7)"],["4566",2,11,"4+5+6÷6"],["4567",1,30,"4+5-(6-7)"],["4568",2,16,"4×5÷(8-6)"],["4578",1,32,"4+5-(7-8)"],["4579",2,12,"4×5÷(9-7)"],["4589",1,25,"4+5-(8-9)"],["4599",2,11,"4+5+9÷9"],["4666",1,28,"4+6+6-6"],["4667",2,18,"(4+6)×(7-6)"],["4677",0,42,"4+6+7-7"],["4678",1,26,"(4+6)×(8-7)"],["4688",0,49,"4+6+8-8"],["4689",2,13,"(4+6)×(9-8)"],["4699",0,40,"4+6+9-9"],["4778",2,15,"4+7+7-8"],["4789",1,27,"4+7+8-9"],["5555",2,15,"5+5+5-5"],["5556",2,11,"(5+5)×(6-5)"],["5566",1,25,"5+5+6-6"],["5567",2,11,"(5+5)×(7-6)"],["5577",1,25,"5+5+7-7"],["5588",1,25,"5+5+8-8"],["5589",2,11,"(5+5)×(9-8)"],["5599",1,25,"5+5+9-9"],["5666",2,10,"5+6-6÷6"],["5667",2,15,"5+6+6-7"],["5678",1,36,"5+6+7-8"],["5689",1,25,"5+6+8-9"],["5779",2,15,"5+7+7-9"],["6679",2,15,"6+6+7-9"]];
+  const TIERS = ['入門', '初級', '中級'];
+  const TIER_SOLUTIONS = { '入門': [40, 95], '初級': [20, 39], '中級': [10, 19] };   // 本家のティア＝解法の数の帯
+  const POOL = POOL_RAW.map(([k, t, n, ex]) => ({ key: k, digits: k.split('').map(Number), tier: TIERS[t], nSolutions: n, example: ex }));
+
+  // ---- 分数（本家 frac / add / sub / mul / div：約分済み・分母は正） ----
+  const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a; };
+  function frac(n, d = 1) { if (d < 0) { n = -n; d = -d; } const g = gcd(n, d) || 1; n /= g; d /= g; return { n: n === 0 ? 0 : n, d: n === 0 ? 1 : d }; }
+  const OPF = { '+': (a, b) => frac(a.n * b.d + b.n * a.d, a.d * b.d), '-': (a, b) => frac(a.n * b.d - b.n * a.d, a.d * b.d),
+                '*': (a, b) => frac(a.n * b.n, a.d * b.d), '/': (a, b) => (b.n === 0 ? null : frac(a.n * b.d, a.d * b.n)) };
+  const SYM = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+  const eq = (a, b) => a.n === b.n && a.d === b.d;
+  const fracStr = f => (f.d === 1 ? String(f.n) : f.n + '/' + f.d).replace(/-/g, '−');
+  const approx = f => (f.n / f.d).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+  // ---- 式の木（本家と同じ形：葉 ['n', k]、節 [op, 左, 右]） ----
+  const leaf = k => ['n', k], node = (op, a, b) => [op, a, b];
+  const PREC = { '+': 1, '-': 1, '*': 2, '/': 2 };
+  function infix(e, pp = 0, right = false, pop = null) {                        // 本家 infix：最小限のかっこ
+    if (e[0] === 'n') return String(e[1]);
+    const s = infix(e[1], PREC[e[0]], false, e[0]) + ' ' + SYM[e[0]] + ' ' + infix(e[2], PREC[e[0]], true, e[0]);
+    return PREC[e[0]] < pp || (right && PREC[e[0]] === pp && (pop === '-' || pop === '/')) ? '(' + s + ')' : s;
+  }
+  function evalTree(e) { if (e[0] === 'n') return frac(e[1]); const a = evalTree(e[1]), b = evalTree(e[2]); return a && b ? OPF[e[0]](a, b) : null; }
+  const leaves = e => (e[0] === 'n' ? [e[1]] : leaves(e[1]).concat(leaves(e[2])));
+  // 判定：4つの数をちょうど1回ずつ使い（多すぎ・少なすぎ・別の数は不可）、0で割らず、値がちょうど10（分数の途中経過は可）
+  function judge(tree, digits) {
+    if (!Array.isArray(tree)) return { ok: false, reason: 'bad' };
+    const used = leaves(tree).slice().sort().join(','), want = digits.slice().sort().join(',');
+    if (used !== want) return { ok: false, reason: 'digits' };
+    const v = evalTree(tree);
+    if (!v) return { ok: false, reason: 'divzero' };
+    if (!eq(v, frac(10))) return { ok: false, reason: 'notTen', value: v };
+    return { ok: true, value: v };
+  }
+  // 式の文字列 → 木（本家 parse：数・＋−×÷・かっこ。テストと答えの一例の読み取りに使う）
+  function parse(str) {
+    const toks = String(str).replace(/−/g, '-').replace(/\s+/g, '').match(/\d+|[-+×÷*/()]/g) || [];
+    let p = 0;
+    const expr = () => { let a = term(); while (toks[p] === '+' || toks[p] === '-') { const op = toks[p++]; a = node(op, a, term()); } return a; };
+    const term = () => { let a = factor(); while (toks[p] === '×' || toks[p] === '÷' || toks[p] === '*' || toks[p] === '/') { const t = toks[p++]; a = node(t === '×' || t === '*' ? '*' : '/', a, factor()); } return a; };
+    const factor = () => { const t = toks[p++]; if (t === '(') { const a = expr(); if (toks[p++] !== ')') throw new Error('parse: )'); return a; } if (!/^\d+$/.test(t || '')) throw new Error('parse: ' + t); return leaf(Number(t)); };
+    const e = expr(); if (p !== toks.length) throw new Error('parse: rest'); return e;
+  }
+
+  // ---- 盤面（本家 newBoard / preview / merge / undo / reset / isFinished / isWin） ----
+  const newBoard = digits => ({ cards: digits.map(k => ({ v: frac(k), e: leaf(k) })), history: [] });
+  const cloneCards = cs => cs.map(c => ({ v: { n: c.v.n, d: c.v.d }, e: JSON.parse(JSON.stringify(c.e)) }));
+  function preview(b, i, j, op) {                                               // i が左（1枚目）、j が右（2枚目）
+    const a = b.cards[i], c = b.cards[j];
+    if (!a || !c || i === j || !OPF[op]) return { ok: false, error: 'badsel' };
+    const v = OPF[op](a.v, c.v);
+    return v ? { ok: true, v, e: node(op, a.e, c.e) } : { ok: false, error: 'divzero' };
+  }
+  function merge(b, i, j, op) {                                                 // 結果は1枚目の位置に置く
+    const pv = preview(b, i, j, op); if (!pv.ok) return pv;
+    b.history.push(cloneCards(b.cards));
+    b.cards = b.cards.map((c, k) => (k === i ? { v: pv.v, e: pv.e } : c)).filter((_, k) => k !== j);
+    return { ok: true, index: j < i ? i - 1 : i };
+  }
+  const undo = b => { if (!b.history.length) return false; b.cards = b.history.pop(); return true; };
+  const reset = (b, digits) => { const n = newBoard(digits); b.cards = n.cards; b.history = []; };
+  const isFinished = b => b.cards.length === 1, isWin = b => b.cards.length === 1 && eq(b.cards[0].v, frac(10));
+  // ---- 操作方法A「数字 → 記号 → 数字」（本家 aTapCard / aTapOp / aFlip / aExpr / aGuide） ----
+  const newInputA = () => ({ first: null, op: null, flip: false });
+  const clearInputA = st => { st.first = null; st.op = null; st.flip = false; };
+  function aTapCard(st, b, i) {
+    if (!(i >= 0 && i < b.cards.length)) return { type: 'ignore' };
+    if (st.first === null) { st.first = i; return { type: 'select' }; }
+    if (i === st.first) { const had = st.op !== null; clearInputA(st); return { type: had ? 'cancel' : 'deselect' }; }
+    if (st.op === null) { st.first = i; return { type: 'reselect' }; }
+    const L = st.flip ? i : st.first, R = st.flip ? st.first : i, r = merge(b, L, R, st.op);
+    if (!r.ok) return { type: 'blocked', error: r.error };                       // 1枚目・記号・向きは残す
+    clearInputA(st); return { type: 'merge', result: r };
+  }
+  const aTapOp = (st, op) => { if (st.first === null || !OPF[op]) return false; st.op = op; return true; };
+  const aFlip = st => { if (st.first === null || st.op === null) return false; st.flip = !st.flip; return true; };
+  function aExpr(st, b) {
+    if (st.first === null || !b.cards[st.first]) return '';
+    const a = fracStr(b.cards[st.first].v); if (st.op === null) return a;
+    return st.flip ? '? ' + SYM[st.op] + ' ' + a : a + ' ' + SYM[st.op] + ' ?';
+  }
+  const aGuide = st => (st.first === null ? '数字をえらぶ' : st.op === null ? '記号をえらぶ' : 'もう1つの数字をえらぶ');
+  // 操作方法B：2枚えらんだ順（本家 onCard：もう一度押すと外れる、3枚目は選び直し）
+  function bTapCard(sel, i) { const at = sel.indexOf(i); if (at >= 0) sel.splice(at, 1); else if (sel.length < 2) sel.push(i); else { sel.length = 0; sel.push(i); } return sel; }
+
+  // ---- 出題：えらんだティアの組から一様に。直前に出した組は避ける ----
+  function pick(tier, rng, avoid) {
+    const list = POOL.filter(p => p.tier === tier && (!avoid || avoid.indexOf(p.key) < 0));
+    const from = list.length ? list : POOL.filter(p => p.tier === tier);
+    return from[Math.floor(rng() * from.length)];
+  }
+  root.ClockseedTP = { POOL, TIERS, TIER_SOLUTIONS, SYM, frac, eq, fracStr, approx, leaf, node, infix, evalTree, leaves, judge, parse,
+    newBoard, preview, merge, undo, reset, isFinished, isWin, newInputA, clearInputA, aTapCard, aTapOp, aFlip, aExpr, aGuide, bTapCard, pick,
+    SOURCE: 'asumax1128/tenpuzzle@36808e0b7601c835e0fc195551ce3ab1734d1875' };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 
@@ -4153,12 +4220,8 @@
     ds = { kind: 'set', level: drillLevel, set: DRILL.makeSet(drillLevel, Math.random, 5, { missed: missedTypes(drillLevel) }), i: 0, results: [], locked: false };
     renderDrillQ();
   }
-  // 特殊ドリル（同じタイプを5問）
+  // 特殊ドリル（FACTOR×FACTOR 移植版・テンパズル移植版。どちらも全画面の別モジュール）
   const spToday = () => (state.drill.spDay === localDay() ? state.drill.spCount : 0);
-  function startSpecial(type) {
-    ds = { kind: 'sp', type, level: 'S', set: DRILL.makeSpecialSet(type, Math.random, 5), i: 0, results: [], locked: false };
-    renderDrillQ();
-  }
   function specialBox() {
     const box = document.createElement('div'); box.className = 'spbox'; box.id = 'specialBox';
     const left = Math.max(0, SPECIAL_REWARD.perDay - spToday()), H = SPECIAL_REWARD.hi, Lo = SPECIAL_REWARD.lo;
@@ -4167,11 +4230,9 @@
     { const r = state.drill.stats[FXF_TYPE] || { ok: 0, n: 0 }, b = document.createElement('button');   // FACTOR×FACTOR ソロ・イージー（移植版）
       b.className = 'tool pix fxf-entry'; b.dataset.sp = 'FXF'; b.innerHTML = '<b>FACTOR×FACTOR<br>ソロ・イージー（移植版）</b><small>正解 ' + r.ok + ' / ' + r.n + '</small>';
       b.onclick = openFxf; g.appendChild(b); }
-    for (const id of DRILL.LEVELS.S.types) {
-      const r = state.drill.stats[id] || { ok: 0, n: 0 }, b = document.createElement('button');
-      b.className = 'tool pix'; b.dataset.sp = id; b.innerHTML = '<b>' + DRILL.TYPES[id].name + '</b><small>正解 ' + r.ok + ' / ' + r.n + '</small>';
-      b.onclick = () => startSpecial(id); g.appendChild(b);
-    }
+    { const r = state.drill.stats[TP_TYPE] || { ok: 0, n: 0 }, b = document.createElement('button');   // テンパズル（移植版）
+      b.className = 'tool pix tp-entry'; b.dataset.sp = 'TP'; b.innerHTML = '<b>テンパズル<br>（移植版）</b><small>正解 ' + r.ok + ' / ' + r.n + '</small>';
+      b.onclick = () => openTp(); g.appendChild(b); }
     box.appendChild(g); return box;
   }
   function visualSvg(v) {             // 問題の図（時計・図形・長方形・三角形）
@@ -4270,8 +4331,7 @@
       (tk ? icon('ic_ticket') + ' 即完了チケット +' + tk + '枚<br>' : '') +
       '連続正解 ' + state.drill.streak + '問</div>' + statusHtml();
     const acts = document.createElement('div'); acts.className = 'dacts';
-    const again = ds.kind === 'sp' ? (t => () => startSpecial(t))(ds.type) : startDrillSet;
-    acts.appendChild(mkBtn('もう一度（5問）', false, again));
+    acts.appendChild(mkBtn('もう一度（5問）', false, startDrillSet));
     acts.appendChild(mkBtn('時短を使う', false, openSkip));
     acts.appendChild(mkBtn('メニューへ', false, renderDrillMenu));
     body.appendChild(acts);
@@ -4413,6 +4473,116 @@
     fxf.drag = null;
   }
   $('fxfClose').onclick = closeFxf;
+  // ---------- テンパズル（移植版）：ドリルメニューから開く全画面のモジュール ----------
+  // 町の Canvas・セーブ構造には触らない。報酬だけ drillAnswer('S', 'S5', 正誤) で特殊ドリルと同じに払う（1問ごとにすぐ保存）
+  //   解けた → 報酬あり／ギブアップ（答えを見る）→ 報酬なし・連続正解0（問題数には数える）／
+  //   10にならなかった・やり直し・リセット・別の問題へ → 何も起きない（判定前の修正は自由）
+  const TPZ = window.ClockseedTP, TP_TYPE = 'S5';
+  let tpz = null;                                   // { stage:'select'|'play', tier, mode:'A'|'B', entry, board, inA, selB, msg, done:null|'solved'|'gaveup', recent:[], earned }
+  const tpOpen = () => $('tpPanel').style.display === 'flex';
+  function openTp() {
+    $('drillPanel').style.display = 'none'; ds = null;
+    tpz = { stage: 'select', tier: '入門', mode: 'A', recent: [], earned: { sec: 0, shards: 0, ok: 0, n: 0, tickets: 0 } };
+    $('tpPanel').style.display = 'flex'; renderTp();
+  }
+  function closeTp() { tpz = null; $('tpPanel').style.display = 'none'; hudSig = ''; openDrill(); }
+  function tpNew(tier) {
+    if (tier) tpz.tier = tier;
+    const e = TPZ.pick(tpz.tier, Math.random, tpz.recent);
+    tpz.recent = tpz.recent.concat(e.key).slice(-8);
+    Object.assign(tpz, { stage: 'play', entry: e, board: TPZ.newBoard(e.digits), inA: TPZ.newInputA(), selB: [], msg: '', msgKind: '', done: null, result: null });
+    renderTp();
+  }
+  function tpPay(ok) {
+    const r = drillAnswer('S', TP_TYPE, ok), E = tpz.earned;
+    E.n++; if (ok) E.ok++; E.sec += r.sec; E.shards += r.shards; if (r.ticket) { E.tickets++; toast('10問連続正解！ 即完了チケットを1枚手に入れました'); }
+    hudSig = ''; return r;
+  }
+  const tpSpNote = () => { const left = Math.max(0, SPECIAL_REWARD.perDay - spToday());
+    return left ? '今日あと' + left + '問は 1問 +' + SPECIAL_REWARD.hi.sec + '秒・カケラ' + SPECIAL_REWARD.hi.shards : '今日の高効率は終了（1問 +' + SPECIAL_REWARD.lo.sec + '秒・カケラ' + SPECIAL_REWARD.lo.shards + '）'; };
+  const tpCardHTML = v => (v.d === 1 ? fmtMath(TPZ.fracStr(v)) : '<span class="fr"><span>' + TPZ.fracStr({ n: v.n, d: 1 }) + '</span><span>' + v.d + '</span></span><small class="tp-approx">≈' + TPZ.approx(v) + '</small>');
+  function renderTp() {
+    const el = $('tpBody');
+    if (tpz.stage === 'select') {
+      const cnt = t => TPZ.POOL.filter(p => p.tier === t).length, r = state.drill.stats[TP_TYPE] || { ok: 0, n: 0 };
+      const desc = { '入門': '答え方がたくさんある組（解き方 40〜95通り）', '初級': '解き方 20〜39通りの組', '中級': '解き方 10〜19通りの組' };
+      el.innerHTML = '<div class="tp-select"><h2>テンパズル（移植版）</h2><p>4つの数を1回ずつ使い、＋−×÷で <b>10</b> を作ろう。2枚のカードを合体させていき、最後の1枚が10になれば正解。</p>' +
+        '<div class="tp-tiers">' + TPZ.TIERS.map(t => '<button class="tool pix tp-tier' + (tpz.tier === t ? ' sel' : '') + '" data-tier="' + t + '"><b>' + t + '</b><small>' + desc[t] + '</small><small>' + cnt(t) + '組</small></button>').join('') + '</div>' +
+        '<div class="tp-modes"><span>操作方法</span>' +
+        '<button class="tool pix' + (tpz.mode === 'A' ? ' sel' : '') + '" data-mode="A">A　数字 → 記号 → 数字</button>' +
+        '<button class="tool pix' + (tpz.mode === 'B' ? ' sel' : '') + '" data-mode="B">B　数字2枚 → 記号</button></div>' +
+        '<p class="tp-note">1問解くごとに特殊ドリルのごほうび（' + tpSpNote() + '）。ギブアップ（答えを見る）した問題はごほうびなし・連続正解が0に。</p>' +
+        '<div class="tp-stat">これまで 正解 ' + r.ok + ' / ' + r.n + '</div>' +
+        '<button class="tool pix act tp-go" id="tpGo">' + tpz.tier + 'で はじめる</button></div>';
+      el.querySelectorAll('[data-tier]').forEach(b => b.onclick = () => { tpz.tier = b.dataset.tier; renderTp(); });
+      el.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { tpz.mode = b.dataset.mode; renderTp(); });
+      $('tpGo').onclick = () => tpNew(); return;
+    }
+    const e = tpz.entry, b = tpz.board, A = tpz.mode === 'A', won = TPZ.isWin(b);
+    let h = '<div class="tp-head"><span class="tp-chip">' + e.tier + '</span><span class="tp-digits">' + e.digits.join('　') + '</span>' +
+      '<button class="tool pix small" id="tpTier">難易度</button></div>';
+    h += '<div class="tp-cards" id="tpCards">' + b.cards.map((c, i) => {
+      const si = A ? (tpz.inA.first === i ? 0 : -1) : tpz.selB.indexOf(i);
+      return '<button class="tp-card' + (si >= 0 ? ' sel' : '') + (won ? ' won' : '') + '" data-i="' + i + '"' + (tpz.done ? ' disabled' : '') + '>' + (si >= 0 && !A ? '<span class="ord">' + (si + 1) + '</span>' : '') + tpCardHTML(c.v) + '</button>';
+    }).join('') + '</div>';
+    if (A) h += '<div class="tp-expr" id="tpExpr">' + fmtMath(TPZ.aExpr(tpz.inA, b)) + '</div><div class="tp-guide">' + (tpz.done ? '' : TPZ.aGuide(tpz.inA)) + '</div>';
+    const two = !A && tpz.selB.length === 2;
+    h += '<div class="tp-ops">' + ['+', '-', '*', '/'].map(op => {
+      let pv = '', bad = false, dis = !!tpz.done;
+      if (A) { dis = dis || tpz.inA.first === null; }
+      else if (two) { const p = TPZ.preview(b, tpz.selB[0], tpz.selB[1], op); if (p.ok) pv = TPZ.fracStr(b.cards[tpz.selB[0]].v) + ' ' + TPZ.SYM[op] + ' ' + TPZ.fracStr(b.cards[tpz.selB[1]].v) + ' = ' + TPZ.fracStr(p.v); else { pv = '0では割れません'; bad = true; } }
+      else { pv = tpz.selB.length ? 'もう1枚えらぶ' : 'カードを2枚えらぶ'; dis = true; }
+      return '<button class="tp-op' + (A && tpz.inA.op === op ? ' on' : '') + (bad ? ' bad' : '') + '" data-op="' + op + '"' + (dis ? ' disabled' : '') + '><span class="sym">' + TPZ.SYM[op] + '</span>' + (A ? '' : '<span class="pv">' + fmtMath(pv) + '</span>') + '</button>';
+    }).join('') + '</div>';
+    h += '<div class="tp-tools"><button class="tool pix" id="tpSwap"' + (tpz.done || (A ? tpz.inA.op === null : !two) ? ' disabled' : '') + '>⇄ 向きを入れ替え</button>' +
+      '<button class="tool pix" id="tpUndo"' + (tpz.done || !b.history.length ? ' disabled' : '') + '>↶ 1手戻す</button>' +
+      '<button class="tool pix" id="tpReset"' + (tpz.done || !b.history.length ? ' disabled' : '') + '>リセット</button></div>';
+    h += '<div class="tp-msg ' + (tpz.msgKind || '') + '" id="tpMsg">' + tpz.msg + '</div>';
+    if (tpz.done === 'solved') h += '<div class="tp-done ok" id="tpDone"><b>10 ができた！</b><span>' + fmtMath(TPZ.infix(b.cards[0].e)) + ' = 10</span><small>' + tpz.result + '</small></div>';
+    if (tpz.done === 'gaveup') h += '<div class="tp-done ng" id="tpDone"><b>答えの一例</b><span>' + fmtMath(TPZ.infix(TPZ.parse(e.example))) + ' = 10</span><small>ギブアップ：ごほうびなし・連続正解は0になりました</small></div>';
+    h += '<div class="tp-nav">' + (tpz.done ? '' : '<button class="tool pix" id="tpGive">ギブアップ（答えを見る）</button><button class="tool pix" id="tpSkip">別の問題へ →</button>') +
+      (tpz.done ? '<button class="tool pix act" id="tpNext">次の問題へ →</button>' : '') + '</div>';
+    const E = tpz.earned;
+    h += '<div class="tp-foot"><span id="tpEarn">' + icon('ic_hourglass') + '+' + fmtStock(E.sec) + ' ' + icon('ic_shard') + '+' + fmtShard(E.shards) + '　解いた数 ' + E.ok + '</span><small>' + tpSpNote() + '</small></div>';
+    $('tpBody').innerHTML = h;
+    $('tpCards').querySelectorAll('.tp-card').forEach(c => c.addEventListener('click', () => tpCard(Number(c.dataset.i))));
+    $('tpBody').querySelectorAll('.tp-op').forEach(o => o.addEventListener('click', () => tpOp(o.dataset.op)));
+    const on = (id, fn) => { const x = $(id); if (x) x.onclick = fn; };
+    on('tpSwap', () => { if (A ? TPZ.aFlip(tpz.inA) : (tpz.selB.reverse(), true)) { tpz.msg = ''; renderTp(); } });
+    on('tpUndo', () => { if (TPZ.undo(b)) { tpz.selB = []; TPZ.clearInputA(tpz.inA); tpz.msg = ''; renderTp(); } });
+    on('tpReset', () => { TPZ.reset(b, e.digits); tpz.selB = []; TPZ.clearInputA(tpz.inA); tpz.msg = ''; renderTp(); });
+    on('tpGive', () => { tpz.done = 'gaveup'; tpPay(false); renderTp(); });
+    on('tpSkip', () => tpNew());
+    on('tpNext', () => tpNew());
+    on('tpTier', () => { tpz.stage = 'select'; renderTp(); });
+  }
+  function tpAfterMerge() {
+    const b = tpz.board;
+    if (TPZ.isFinished(b)) {
+      const j = TPZ.judge(b.cards[0].e, tpz.entry.digits);                 // 4つの数を1回ずつ・0で割らない・ちょうど10
+      if (j.ok) { const r = tpPay(true); tpz.done = 'solved'; tpz.result = '+' + r.sec + '秒・カケラ+' + fmtShard(r.shards) + (r.ticket ? '・チケット+1' : ''); tpz.msg = ''; }
+      else { tpz.msg = TPZ.fracStr(b.cards[0].v) + ' になりました。1手戻すかリセットしよう'; tpz.msgKind = 'ng'; }
+    } else tpz.msg = '';
+    renderTp();
+  }
+  function tpCard(i) {
+    if (!tpz || tpz.done) return;
+    if (tpz.mode === 'A') {
+      const r = TPZ.aTapCard(tpz.inA, tpz.board, i);
+      if (r.type === 'blocked') { tpz.msg = r.error === 'divzero' ? '0 で割ることはできません。別の数字をえらんでください' : 'えらび直してください'; tpz.msgKind = 'ng'; renderTp(); return; }
+      if (r.type === 'merge') { tpAfterMerge(); return; }
+    } else TPZ.bTapCard(tpz.selB, i);
+    tpz.msg = ''; renderTp();
+  }
+  function tpOp(op) {
+    if (!tpz || tpz.done) return;
+    if (tpz.mode === 'A') { if (TPZ.aTapOp(tpz.inA, op)) { tpz.msg = ''; renderTp(); } return; }
+    if (tpz.selB.length !== 2) return;
+    const r = TPZ.merge(tpz.board, tpz.selB[0], tpz.selB[1], op);
+    if (!r.ok) { tpz.msg = r.error === 'divzero' ? '0 で割ることはできません' : 'カードを2枚えらんでください'; tpz.msgKind = 'ng'; renderTp(); return; }
+    tpz.selB = []; tpAfterMerge();
+  }
+  $('tpClose').onclick = closeTp;
 
   // ---------- ガチャ（時計塔のパネル） ----------
   const CAT_ICON = { seed: 'ic_seed', decor: 'ic_decor', helper: 'ic_helper', cons: 'ic_potion' };
@@ -4742,6 +4912,8 @@
       const pair = []; g.q.tiles.forEach((a, i) => g.q.tiles.forEach((b, j) => { if (i < j && FXF.polyEqual(FXF.multiply(a.factor, b.factor), g.q.poly)) pair.push([a.id, b.id]); }));
       return { stage: fxf.stage, phase: g.phase, hp: g.hp, score: g.score, combo: g.combo, caught: g.caught, misses: g.misses, timeouts: g.timeouts, level: g.q.level, target: g.q.target,
         tiles: g.q.tiles.map(t => ({ id: t.id, label: t.label })), pairs: pair, cleared: g.cleared, clearBonus: g.clearBonus, playMs: g.playMs, earned: Object.assign({}, fxf.earned) }; },
+    tp: () => (tpz ? { stage: tpz.stage, tier: tpz.tier, mode: tpz.mode, key: tpz.entry && tpz.entry.key, digits: tpz.entry && tpz.entry.digits, example: tpz.entry && tpz.entry.example,
+      cards: tpz.board ? tpz.board.cards.map(c => TPZ.fracStr(c.v)) : null, done: tpz.done || null, msg: tpz.msg, earned: Object.assign({}, tpz.earned) } : null),
     fxfTileCenter: id => { const el = document.querySelector('#fxfGrid [data-tile-id="' + id + '"]'); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; },
     drillSetInfo: () => (ds ? { kind: ds.kind || 'set', level: ds.level, i: ds.i, set: ds.set.map(p => ({ type: p.type, level: p.level, role: p.role })) } : null),
     timers: () => timers().map(x => ({ id: x.id, remaining: x.ready - now(), dur: origDur(x) })),

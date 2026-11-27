@@ -78,6 +78,17 @@
   .wrow .nm small{display:block;font-size:11px;font-weight:normal;color:var(--ink-soft)}
   .wrow .cnt{min-width:64px;font-size:20px;font-weight:bold;text-align:right}
   .hint{font-size:12px;color:var(--ink-soft);margin-top:8px}
+  .pgauge{height:18px;background:#5a3a22;padding:3px;margin:8px 0 4px;min-width:280px}
+  .pgauge i{display:block;height:100%;width:0;background:#f2d27a;box-shadow:inset 0 -3px 0 #d9b24c,inset 0 2px 0 #fff0b0}
+  .mline{margin:6px 0;font-size:17px;font-weight:bold;text-align:left}
+  .mline.sub{font-size:14px;font-weight:normal;color:var(--ink-soft)}
+  .mline img{width:22px;height:22px;vertical-align:middle}
+  .mrow{display:flex;align-items:center;gap:12px;padding:8px 4px;border-top:3px dotted #c9ad7c;text-align:left;flex-wrap:wrap}
+  .mrow .recipe{display:flex;align-items:center;gap:8px;flex:1;min-width:250px;font-weight:bold;font-size:16px}
+  .mrow .recipe img{width:30px;height:30px}
+  .mrow .recipe small{display:block;font-size:11px;font-weight:normal;color:var(--ink-soft)}
+  .mrow .short{color:#b8503c}
+  .mact{margin-top:10px;display:flex;justify-content:center}
   #toast{position:fixed;top:86px;left:50%;transform:translateX(-50%);z-index:12;display:none;padding:8px 18px;
     font-weight:bold;letter-spacing:.06em;pointer-events:none}
 </style>
@@ -95,6 +106,7 @@
       <span class="stock" title="小麦"><img class="px" data-icon="ic_wheat" alt="小麦"><span id="sWheat">0</span></span>
       <span class="stock" title="にんじん"><img class="px" data-icon="ic_carrot" alt="にんじん"><span id="sCarrot">0</span></span>
       <span class="stock" id="stockPotato" title="じゃがいも" style="display:none"><img class="px" data-icon="ic_potato" alt="じゃがいも"><span id="sPotato">0</span></span>
+      <span class="stock" id="stockFlour" title="小麦粉" style="display:none"><img class="px" data-icon="ic_flour" alt="小麦粉"><span id="sFlour">0</span></span>
     </button>
   </div>
   <div id="palette" style="position:absolute"></div>
@@ -114,20 +126,24 @@
   <div id="warehouseList"></div>
   <div class="hint">生のまま売ると単価どおりのゴールドになります</div>
 </div></div>
+<div id="millPanel" class="overlay"><div class="box pix">
+  <div class="panelhd"><b id="millTitle">製粉所</b><button id="millClose" aria-label="閉じる">×</button></div>
+  <div id="millBody"></div>
+</div></div>
 <div id="toast" class="pix"></div>
 
 <script>
 (() => {
   'use strict';
   const SAVE_KEY = 'clockseed.save';
-  const SAVE_VERSION = 2;
+  const SAVE_VERSION = 3;
   const MAX_PLOTS = 9;                 // 区画の最大数（町Lv2で 6 → 9）
   const BASE_PLOTS = 6;
   const ORDER_COUNT = 3;               // 同時に出る注文の数
-  const ORDER_MIN = 3, ORDER_MAX = 9;  // 注文の個数の範囲
+  const ORDER_MIN = 3, ORDER_MAX = 9;  // 生の作物の注文の個数の範囲
   const TOWN_LV_EXP = [0, 30];         // 町経験値の累計がこの値に達するとLv(添字+1)。Lv2が現在の最大
 
-  // デバッグ：?fast=N で育成時間をN分の1に
+  // デバッグ：?fast=N で育成・建設・加工の時間をN分の1に（開始時点の倍速で終了時刻を確定）
   const FAST = (() => {
     const v = parseFloat(new URLSearchParams(location.search).get('fast'));
     return isFinite(v) && v > 0 ? v : 1;
@@ -141,19 +157,43 @@
   };
   const CROP_KEYS = Object.keys(CROPS);
 
+  // 施設データ。cost＝建設費(G)、buildMs＝建設時間
+  const BUILDINGS = {
+    mill: { name: '製粉所', unlockLv: 2, cost: 100, buildMs: 3 * 60 * 1000 },
+  };
+  // レシピデータ（材料・個数・加工時間・製品・単価）。UIはこの定義から生成する
+  const RECIPES = {
+    flour: { building: 'mill', inputs: { wheat: 2 }, ms: 2 * 60 * 1000,
+             product: { key: 'flour', name: '小麦粉', icon: 'ic_flour', qty: 1, price: 35, orderExp: 20, orderQty: [2, 6] } },
+  };
+  // 倉庫に入るもの全て（作物＋加工品）
+  const ITEMS = {};
+  for (const k of CROP_KEYS) ITEMS[k] = Object.assign({ orderQty: [ORDER_MIN, ORDER_MAX] }, CROPS[k]);
+  for (const r of Object.values(RECIPES)) {
+    const pr = r.product;
+    ITEMS[pr.key] = { name: pr.name, icon: pr.icon, price: pr.price, orderExp: pr.orderExp, orderQty: pr.orderQty, building: r.building };
+  }
+  const ITEM_KEYS = Object.keys(ITEMS);
+  const BUILDING_KEYS = Object.keys(BUILDINGS);
+
   const townLevelOf = exp => { let lv = 1; TOWN_LV_EXP.forEach((need, i) => { if (exp >= need) lv = i + 1; }); return lv; };
   const plotsForLevel = lv => (lv >= 2 ? MAX_PLOTS : BASE_PLOTS);
+  const buildingBuilt = (bs, key, t = Date.now()) => !!(bs && bs[key] && t >= bs[key].builtAt);
+  // 注文・倉庫に出せるか：作物は町Lv、加工品は施設の完成が条件
+  const itemAvailable = (k, lv, bs) => { const it = ITEMS[k]; return it.building ? buildingBuilt(bs, it.building) : it.unlockLv <= lv; };
 
   // ---------- セーブ ----------
-  function newOrder(lv) {
-    const open = CROP_KEYS.filter(k => CROPS[k].unlockLv <= lv);
-    return { crop: open[Math.floor(Math.random() * open.length)],
-             qty: ORDER_MIN + Math.floor(Math.random() * (ORDER_MAX - ORDER_MIN + 1)) };
+  function newOrder(lv, bs) {
+    const open = ITEM_KEYS.filter(k => itemAvailable(k, lv, bs));
+    const k = open[Math.floor(Math.random() * open.length)], [lo, hi] = ITEMS[k].orderQty;
+    return { crop: k, qty: lo + Math.floor(Math.random() * (hi - lo + 1)) };
   }
   function freshState() {
     const st = { saveVersion: SAVE_VERSION, plots: Array(MAX_PLOTS).fill(null),
-                 storage: { wheat: 0, carrot: 0, potato: 0 }, gold: 0, townExp: 0, orders: [] };
-    while (st.orders.length < ORDER_COUNT) st.orders.push(newOrder(1));
+                 storage: {}, gold: 0, townExp: 0, orders: [], buildings: {} };
+    for (const k of ITEM_KEYS) st.storage[k] = 0;
+    for (const k of BUILDING_KEYS) st.buildings[k] = null;
+    while (st.orders.length < ORDER_COUNT) st.orders.push(newOrder(1, st.buildings));
     return st;
   }
   const nat = n => (Number.isInteger(n) && n >= 0 ? n : 0);
@@ -176,13 +216,21 @@
           s.plots[i] = { crop: p.crop, plantedAt: p.plantedAt, readyAt: p.readyAt };
         }
       }
-      for (const k of CROP_KEYS) s.storage[k] = nat(d.storage && d.storage[k]);
+      for (const k of ITEM_KEYS) s.storage[k] = nat(d.storage && d.storage[k]);
+      for (const k of BUILDING_KEYS) {                // 施設：建設と加工は終了時刻（timestamp）で持つ
+        const b = d.buildings && d.buildings[k];
+        if (b && isFinite(b.startedAt) && isFinite(b.builtAt)) {
+          const j = b.job, okJob = j && RECIPES[j.recipe] && RECIPES[j.recipe].building === k && isFinite(j.startedAt) && isFinite(j.readyAt);
+          s.buildings[k] = { startedAt: b.startedAt, builtAt: b.builtAt,
+                             job: okJob ? { recipe: j.recipe, startedAt: j.startedAt, readyAt: j.readyAt } : null };
+        }
+      }
       s.orders = [];
       for (let i = 0; i < ORDER_COUNT; i++) {
         const o = Array.isArray(d.orders) ? d.orders[i] : null;
-        const ok = o && CROPS[o.crop] && CROPS[o.crop].unlockLv <= lv &&
-                   Number.isInteger(o.qty) && o.qty >= ORDER_MIN && o.qty <= ORDER_MAX;
-        s.orders.push(ok ? { crop: o.crop, qty: o.qty } : newOrder(lv));
+        const ok = o && ITEMS[o.crop] && itemAvailable(o.crop, lv, s.buildings) && Number.isInteger(o.qty) &&
+                   o.qty >= ITEMS[o.crop].orderQty[0] && o.qty <= ITEMS[o.crop].orderQty[1];
+        s.orders.push(ok ? { crop: o.crop, qty: o.qty } : newOrder(lv, s.buildings));
       }
       return s;
     } catch (e) { return freshState(); }
@@ -217,6 +265,34 @@
   }
   const stageOf = (p, t) => !p ? 0 : t >= p.readyAt ? 3 : progress(p, t) >= 0.5 ? 2 : 1;
 
+  // ---------- 施設：建設と加工（どちらも終了時刻ベース） ----------
+  const bState = (key, t = now()) => { const b = state.buildings[key]; return !b ? 'none' : t >= b.builtAt ? 'built' : 'building'; };
+  function startBuild(key) {
+    const B = BUILDINGS[key];
+    if (!B || townLevel() < B.unlockLv || state.buildings[key] || state.gold < B.cost) return false;
+    const t = now();
+    state.gold -= B.cost;
+    state.buildings[key] = { startedAt: t, builtAt: t + B.buildMs / FAST, job: null };
+    save(); return true;
+  }
+  const canCraft = rk => Object.entries(RECIPES[rk].inputs).every(([k, n]) => state.storage[k] >= n);
+  function startJob(key, rk) {                       // 加工は1施設につき同時に1件。材料は開始時に消費
+    const r = RECIPES[rk], b = state.buildings[key];
+    if (!r || r.building !== key || bState(key) !== 'built' || b.job || !canCraft(rk)) return false;
+    for (const [k, n] of Object.entries(r.inputs)) state.storage[k] -= n;
+    const t = now();
+    b.job = { recipe: rk, startedAt: t, readyAt: t + r.ms / FAST };
+    save(); return true;
+  }
+  function collectJob(key) {                         // 完了した製品は施設に留まり、受け取ると倉庫へ
+    const b = state.buildings[key];
+    if (!b || !b.job || now() < b.job.readyAt) return false;
+    const r = RECIPES[b.job.recipe];
+    state.storage[r.product.key] += r.product.qty;
+    b.job = null;
+    save(); return true;
+  }
+
   // ---------- 注文・町経験値・売却 ----------
   let onLevelUp = () => {};
   function gainExp(n) {
@@ -225,7 +301,7 @@
     if (townLevel() > before) onLevelUp(townLevel());
   }
   // 報酬ゴールド＝単価×個数×1.3（端数切り上げ）。小数誤差を避けるため整数で ceil(x*13/10) を計算
-  const orderReward = o => ({ gold: Math.floor((CROPS[o.crop].price * o.qty * 13 + 9) / 10), exp: CROPS[o.crop].orderExp });
+  const orderReward = o => ({ gold: Math.floor((ITEMS[o.crop].price * o.qty * 13 + 9) / 10), exp: ITEMS[o.crop].orderExp });
   function deliver(i) {
     const o = state.orders[i];
     if (!o || state.storage[o.crop] < o.qty) return false;
@@ -233,15 +309,15 @@
     state.storage[o.crop] -= o.qty;
     state.gold += r.gold;
     gainExp(r.exp);                                  // 先に経験値を加算（Lvが上がれば新作物も注文に出る）
-    state.orders[i] = newOrder(townLevel());
+    state.orders[i] = newOrder(townLevel(), state.buildings);
     save(); return true;
   }
-  function sell(crop, n) {
-    const c = CROPS[crop];
+  function sell(item, n) {
+    const c = ITEMS[item];
     if (!c) return 0;
-    n = Math.min(n, state.storage[crop]);
+    n = Math.min(n, state.storage[item]);
     if (n <= 0) return 0;
-    state.storage[crop] -= n;
+    state.storage[item] -= n;
     state.gold += c.price * n;
     save(); return n;
   }
@@ -263,10 +339,11 @@
     aisle: [{ x: 9, y: 7, w: 8, h: 1, lv: 1 }, { x: 9, y: 10, w: 8, h: 1, lv: 2 }], // 畑の中の土の通路
     tower: { x: 56, y: 118 },                          // 時計塔の足元（ドット座標）
     board: { x: 82, y: 138 },                          // 注文掲示板の足元（ドット座標）
+    mill:  { x: 256, y: 62 },                          // 製粉所（建設予定地）の足元。畑の北東
     fence: lv => ({ x0: 136, x1: 280, y0: 76, y1: lv >= 2 ? 220 : 172, gateFrom: 108, gateTo: 140 }),
     plots: [[9, 5], [12, 5], [15, 5], [9, 8], [12, 8], [15, 8],      // 区画左上（タイル）、2×2。
             [9, 11], [12, 11], [15, 11]],                            // 末尾3つは町Lv2で現れる
-    keepClear: [{ x: 0, y: 4, w: 7, h: 6 }, { x: 6, y: 6, w: 3, h: 3 }, { x: 7, y: 4, w: 12, h: 10 }],
+    keepClear: [{ x: 0, y: 4, w: 7, h: 6 }, { x: 6, y: 6, w: 3, h: 3 }, { x: 7, y: 4, w: 12, h: 10 }, { x: 13, y: 0, w: 6, h: 4 }],
   };
   const PLOT_PX = 2 * T;
   const plotRect = i => ({ x: LAYOUT.plots[i][0] * T, y: LAYOUT.plots[i][1] * T, w: PLOT_PX, h: PLOT_PX });
@@ -654,6 +731,20 @@
       '..MMMMMMMM..',
       '....MMMM....',
     ],
+    ic_flour: [
+      '............',
+      '....FFFF....',
+      '...FaaaaF...',
+      '....zzzz....',
+      '..FFaaaaFF..',
+      '.FaafffffaaF',
+      '.FafffyyfffF',
+      '.FaffyYYyffF',
+      '.FafffyyfffF',
+      '.FaaffffffaF',
+      '..FaaaaaaaF.',
+      '...FFFFFFF..',
+    ],
     ic_gold: [
       '....oooo....',
       '..ooyyyyoo..',
@@ -669,6 +760,83 @@
       '....oooo....',
     ],
   });
+
+  // ---- 製粉所（風車小屋）：建設予定地／建設中／完成。羽根は別スプライトで回す ----
+  const mkGrid = (W, H) => Array.from({ length: H }, () => Array(W).fill('.'));
+  const gridRows = g => g.map(r => r.join(''));
+  function millTower(g, top, bot, cx, hwTop, hwBot) {      // 石積みの塔（左が明るく右が影）
+    for (let y = top; y <= bot; y++) {
+      const hw = Math.round(hwTop + (y - top) * (hwBot - hwTop) / Math.max(1, bot - top)), row = y - top;
+      for (let x = cx - hw; x < cx + hw; x++) {
+        const u = (x - (cx - hw)) / (2 * hw);
+        let ch = u < .35 ? 'a' : u < .7 ? 'b' : 'n';
+        if (row % 4 === 3) ch = u < .35 ? 'b' : u < .7 ? 'B' : 'm';
+        else if ((x + (Math.floor(row / 4) % 2) * 3) % 6 === 5) ch = u < .7 ? 'B' : 'm';
+        g[y][x] = ch;
+      }
+      g[y][cx - hw] = 'm'; g[y][cx + hw - 1] = 'm';
+    }
+  }
+  const millPlinth = (g, cx, y0) => { for (const [dy, ch] of [[0, 'B'], [1, 'm']]) for (let x = cx - 14; x < cx + 14; x++) g[y0 + dy][x] = ch; };
+  SPR_SRC.mill = (() => {
+    const W = 36, H = 44, cx = 18, g = mkGrid(W, H);
+    millTower(g, 17, 41, cx, 8, 13); millPlinth(g, cx, 42);
+    for (let y = 4; y <= 16; y++) {                              // 屋根（キャップ）
+      const hw = Math.max(1, Math.round(1 + (y - 4) * 11 / 12));
+      for (let x = cx - hw; x < cx + hw; x++) {
+        const u = (x - (cx - hw)) / (2 * hw);
+        g[y][x] = (y % 3 === 0) ? 'R' : u < .3 ? 'l' : u < .65 ? 'r' : 'R';
+      }
+      g[y][cx - hw] = 'x'; g[y][cx + hw - 1] = 'x';
+    }
+    for (let x = cx - 12; x < cx + 12; x++) g[16][x] = 'x';
+    for (const y of [1]) { g[y][cx - 1] = 'z'; g[y][cx] = 'z'; }
+    for (const y of [2, 3]) { g[y][cx - 1] = 'x'; g[y][cx] = 'x'; }
+    for (let y = 24; y <= 28; y++) for (let x = 16; x <= 19; x++) g[y][x] = 'm';          // 窓
+    for (let y = 25; y <= 27; y++) for (let x = 17; x <= 18; x++) g[y][x] = 'v';
+    g[25][17] = 'i';
+    for (let x = cx - 12; x < cx + 12; x++) { g[31][x] = 'W'; g[32][x] = 'V'; }             // 張り出しの足場板
+    for (let y = 33; y <= 41; y++) {                                                          // 扉
+      const half = y === 33 ? 2 : y === 34 ? 3 : 4;
+      for (let x = cx - half; x < cx + half; x++) g[y][x] = (x === cx - half || x === cx + half - 1 || y === 33) ? 'm' : (x === cx ? 'U' : 'u');
+    }
+    g[38][cx + 2] = 'z';
+    return gridRows(g);
+  })();
+  SPR_SRC.mill_wip = (() => {                                    // 建設中：積みかけの石と足場
+    const W = 36, H = 44, cx = 18, g = mkGrid(W, H);
+    millTower(g, 32, 41, cx, 11, 13); millPlinth(g, cx, 42);
+    for (const x of [8, 11, 15, 20, 24]) { g[31][x] = 'b'; g[31][x + 1] = 'a'; }
+    for (let y = 16; y <= 41; y++) { g[y][3] = 'W'; g[y][4] = 'V'; g[y][31] = 'W'; g[y][32] = 'V'; }
+    for (const y of [24, 33]) for (let x = 3; x <= 32; x++) { g[y][x] = 'W'; g[y + 1][x] = 'V'; }
+    for (let k = 0; k < 9; k++) { g[32 - k][5 + k] = 'V'; g[32 - k][30 - k] = 'V'; }       // 筋交い
+    for (let y = 12; y <= 13; y++) for (let x = 33; x <= 35; x++) g[y][x] = 'r';           // 旗
+    for (let y = 38; y <= 41; y++) for (let x = 24; x <= 28; x++) g[y][x] = (y === 38 || x === 24 || x === 28) ? 'X' : 'W';
+    return gridRows(g);
+  })();
+  SPR_SRC.mill_site = (() => {                                   // 建設予定地：杭と縄で囲った均し地
+    const W = 36, H = 14, g = mkGrid(W, H);
+    for (let y = 3; y < 13; y++) for (let x = 3; x < 33; x++) g[y][x] = ((x * 7 + y * 3) % 11 === 0) ? 's' : ((x + y) % 9 === 0 ? 'u' : 'd');
+    for (let x = 3; x < 33; x++) { g[3][x] = 's'; g[12][x] = 'B'; }
+    for (let y = 3; y < 13; y++) { g[y][3] = 's'; g[y][32] = 's'; }
+    const stake = (x, y) => { for (let k = 0; k < 5; k++) { g[y - k][x] = 'W'; g[y - k][x + 1] = 'V'; } };
+    stake(2, 6); stake(32, 6); stake(2, 13); stake(32, 13);
+    for (let x = 4; x < 32; x += 2) { g[3][x] = 'F'; g[10][x] = 'F'; }
+    g[9][3] = 'r'; g[9][4] = 'r'; g[8][3] = 'r';
+    return gridRows(g);
+  })();
+  SPR_SRC.blades = (() => {                                      // 風車の羽根（4枚）。中心は (15,15)
+    const N = 31, c = 15, g = mkGrid(N, N);
+    const put = (x, y, ch) => { g[c + y][c + x] = ch; };
+    for (let k = 0; k < 4; k++) {
+      const rot = (x, y) => { for (let r = 0; r < k; r++) [x, y] = [-y, x]; return [x, y]; };
+      for (let d = 2; d <= 15; d++) { const [x, y] = rot(0, -d); put(x, y, d % 4 === 0 ? 'W' : 'V'); }
+      for (let d = 4; d <= 14; d++) for (let w = 1; w <= 3; w++) { const [x, y] = rot(w, -d); put(x, y, (d % 2 === 0 || w === 3) ? 'F' : 'f'); }
+    }
+    for (const [x, y] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) put(x, y, 'o');
+    put(0, 0, 'z');
+    return gridRows(g);
+  })();
 
   // 注文掲示板：小さな屋根つきのコルクボードに紙が3枚
   SPR_SRC.board = (() => {
@@ -953,7 +1121,7 @@
   function framing() {            // 時計塔と畑の両方が入るカメラ（現在のカメラは変えずに目標値だけ返す）
     const keep = { x: cam.x, y: cam.y, zoom: cam.zoom };
     // 時計塔と畑の両方が入る範囲（上下は UI の分だけ余白）
-    const x0 = 30, x1 = 290, y0 = LAYOUT.tower.y - SPR.tower.height - 4, y1 = LAYOUT.fence(townLevel()).y1 + 6, padTop = 64, padBot = 84;
+    const x0 = 30, x1 = 290, y0 = townLevel() >= 2 ? MILL.top - 6 : LAYOUT.tower.y - SPR.tower.height - 4, y1 = LAYOUT.fence(townLevel()).y1 + 6, padTop = 64, padBot = 84;
     const S = Math.min((VW - 32) / (x1 - x0), (VH - padTop - padBot) / (y1 - y0));
     cam.zoom = S / BASE;
     clampCam();
@@ -984,6 +1152,55 @@
     LIGHT = { warm, sun, vig, haze };
   }
 
+  // ---------- 施設（製粉所）の描画 ----------
+  const MILL = (() => {
+    const F = LAYOUT.mill, H = SPR.mill.height;
+    return { x: F.x, y: F.y, left: F.x - (SPR.mill.width >> 1), top: F.y - H };
+  })();
+  const MILL_HUB = { x: 18, y: 19 };
+  let millAngle = 0;
+  const millSpinning = t => { const b = state.buildings.mill; return !!(b && t >= b.builtAt && b.job && t < b.job.readyAt); };
+  const millUnlocked = () => townLevel() >= BUILDINGS.mill.unlockLv;
+  function millRect() {            // タップ判定（ワールド座標）
+    return bState('mill') === 'none' ? { x: MILL.left - 2, y: MILL.y - 32, w: 40, h: 36 } : { x: MILL.left - 2, y: MILL.top - 2, w: 40, h: 50 };
+  }
+  function pushFacilities(objs, t) {
+    if (!millUnlocked()) return;
+    const st = bState('mill', t), spr = st === 'none' ? SPR.mill_site : st === 'building' ? SPR.mill_wip : SPR.mill;
+    const x = MILL.left, y = MILL.y - spr.height;
+    objs.push({ y: MILL.y, shadow: st === 'none' ? null : [MILL.x, MILL.y - 1, 15, 3.5],
+      draw: c => {
+        c.drawImage(spr, x, y);
+        if (st === 'built') {                                  // 羽根（加工中だけ回る）
+          const q = Math.PI / 16, a = Math.round(millAngle / q) * q;
+          c.save(); c.translate(MILL.left + MILL_HUB.x + .5, MILL.top + MILL_HUB.y + .5); c.rotate(a);
+          c.drawImage(SPR.blades, -15.5, -15.5); c.restore();
+        }
+      } });
+  }
+  function gaugeBar(x, y, w, frac) {
+    px(ctx, x - 1, y - 1, 'rgba(40,25,15,.75)', w + 2, 4); px(ctx, x, y, '#7a5a3a', w, 2);
+    px(ctx, x, y, '#f2d27a', Math.round(w * Math.min(1, Math.max(0, frac))), 2);
+  }
+  function drawFacilityMarkers(ts, t) {
+    if (!millUnlocked()) return;
+    const st = bState('mill', t), b = state.buildings.mill, bob = Math.round(Math.sin(ts * 4) * 1.5);
+    if (st === 'none') {                                       // 建設予定地：金貨が跳ねる（足りないときは薄く）
+      ctx.globalAlpha = state.gold >= BUILDINGS.mill.cost ? 1 : .5;
+      ctx.drawImage(SPR.ic_gold, MILL.x - 6, MILL.y - 28 + bob);
+      ctx.globalAlpha = 1;
+    } else if (st === 'building') {
+      gaugeBar(MILL.x - 14, MILL.y + 4, 28, (t - b.startedAt) / (b.builtAt - b.startedAt));
+    } else if (b.job) {
+      if (t >= b.job.readyAt) {                                // 完成品が待っている：製品アイコンの吹き出し
+        const bx = MILL.x + 15, by = MILL.y - 36 + bob;          // 建物の右脇（上端はHUDに隠れるため）
+        px(ctx, bx, by, '#5a3a22', 16, 16); px(ctx, bx + 1, by + 1, '#fff6e0', 14, 14);
+        ctx.drawImage(SPR[RECIPES[b.job.recipe].product.icon], bx + 2, by + 2);
+        px(ctx, bx + 2, by + 16, '#5a3a22', 4, 1); px(ctx, bx + 3, by + 17, '#5a3a22', 2, 1);
+      } else gaugeBar(MILL.x - 14, MILL.y + 4, 28, (t - b.job.startedAt) / (b.job.readyAt - b.job.startedAt));
+    }
+  }
+
   // ---------- 描画 ----------
   let GROUND = null, builtLevel = 0;
   function rebuildWorld() {            // 町レベルが変わったとき：地面・柵を作り直す
@@ -1009,6 +1226,7 @@
     const t = now(), ts = tms / 1000;
     if (townLevel() !== builtLevel) rebuildWorld();
     const AP = activePlots();
+    if (millSpinning(t)) millAngle += dt * 0.55;
     stepParticles(dt, ts);
     if (camTarget) {
       const k = 1 - Math.exp(-dt * 4);
@@ -1025,6 +1243,7 @@
 
     // 区画の土
     const objs = statics.concat(fenceObjs);
+    pushFacilities(objs, t);
     state.plots.forEach((p, i) => {
       if (i >= AP) return;
       const R = plotRect(i), st = stageOf(p, t);
@@ -1049,6 +1268,7 @@
       px(ctx, bx + 4, by + 2, '#c8503a', 1, 4); px(ctx, bx + 4, by + 7, '#c8503a', 1, 1);
       px(ctx, bx + 3, by + 11, '#5a3a22', 3, 1); px(ctx, bx + 4, by + 12, '#5a3a22', 1, 1);
     }
+    drawFacilityMarkers(ts, t);
 
     // 区画の上のしるし（空き：＋、育成中：ゲージ、収穫可：きらめき）
     state.plots.forEach((p, i) => {
@@ -1096,6 +1316,7 @@
     ctx.globalCompositeOperation = 'source-over';
 
     updateHud();
+    tickMill();
     requestAnimationFrame(frame);
   }
 
@@ -1103,9 +1324,10 @@
 
   // ---------- HUD（ゴールド・町Lv・経験値ゲージ・倉庫） ----------
   let hudSig = '';
+  const itemVisible = k => ITEMS[k].building ? (bState(ITEMS[k].building) === 'built' || state.storage[k] > 0) : ITEMS[k].unlockLv <= townLevel();
   function updateHud() {
     const lv = townLevel(), exp = state.townExp, st = state.storage;
-    const sig = [lv, exp, state.gold, st.wheat, st.carrot, st.potato].join();
+    const sig = [lv, exp, state.gold, st.wheat, st.carrot, st.potato, st.flour, itemVisible('flour')].join();
     if (sig === hudSig) return;
     hudSig = sig;
     $('lvText').textContent = '町Lv' + lv;
@@ -1117,8 +1339,9 @@
       $('expText').textContent = exp + '/' + need;
     }
     $('sGold').textContent = state.gold;
-    $('sWheat').textContent = st.wheat; $('sCarrot').textContent = st.carrot; $('sPotato').textContent = st.potato;
-    $('stockPotato').style.display = lv >= CROPS.potato.unlockLv ? '' : 'none';
+    $('sWheat').textContent = st.wheat; $('sCarrot').textContent = st.carrot; $('sPotato').textContent = st.potato; $('sFlour').textContent = st.flour;
+    $('stockPotato').style.display = itemVisible('potato') ? '' : 'none';
+    $('stockFlour').style.display = itemVisible('flour') ? '' : 'none';
   }
   let toastTimer = 0;
   function toast(msg) {
@@ -1129,7 +1352,7 @@
   // ---------- 作物パレット／作物選択ポップアップ ----------
   let selected = null;
   const pal = $('palette');
-  const iconImg = k => `<img class="px" src="${iconURL(CROPS[k].icon)}" alt="">`;
+  const iconImg = k => `<img class="px" src="${iconURL(ITEMS[k].icon)}" alt="">`;
   function cropBtn(k, onclick, isSel) {
     const c = CROPS[k], locked = c.unlockLv > townLevel();
     const b = document.createElement('button');
@@ -1166,7 +1389,7 @@
     state.orders.forEach((o, i) => {
       const have = state.storage[o.crop], r = orderReward(o), short = o.qty - have;
       const row = document.createElement('div'); row.className = 'orow';
-      row.innerHTML = '<div class="ocrop">' + iconImg(o.crop) + '<span>' + CROPS[o.crop].name + ' ×' + o.qty +
+      row.innerHTML = '<div class="ocrop">' + iconImg(o.crop) + '<span>' + ITEMS[o.crop].name + ' ×' + o.qty +
         '<small>倉庫に ' + have + '個</small></span></div>' +
         '<div class="orew"><span>' + goldImg + r.gold + '</span><span class="xp">町経験値 +' + r.exp + '</span></div>';
       const b = document.createElement('button'); b.className = 'tool pix act';
@@ -1178,12 +1401,12 @@
   function openOrders() { renderOrders(); $('ordersPanel').style.display = 'flex'; }
   $('ordersClose').onclick = () => { $('ordersPanel').style.display = 'none'; };
 
-  // ---------- 倉庫パネル（生売り） ----------
+  // ---------- 倉庫パネル（生売り・加工品も同じ） ----------
   function renderWarehouse() {
     const list = $('warehouseList'); list.innerHTML = '';
-    for (const k of CROP_KEYS) {
-      const c = CROPS[k];
-      if (c.unlockLv > townLevel()) continue;
+    for (const k of ITEM_KEYS) {
+      const c = ITEMS[k];
+      if (!itemVisible(k)) continue;
       const n = state.storage[k];
       const row = document.createElement('div'); row.className = 'wrow';
       row.innerHTML = '<div class="nm">' + iconImg(k) + '<span>' + c.name + '<small>単価 ' + c.price + 'G</small></span></div>' +
@@ -1200,7 +1423,74 @@
   $('warehouse').onclick = () => { renderWarehouse(); $('warehousePanel').style.display = 'flex'; };
   $('warehouseClose').onclick = () => { $('warehousePanel').style.display = 'none'; };
 
-  for (const id of ['popup', 'ordersPanel', 'warehousePanel']) {
+  // ---------- 製粉所パネル（建設予定地／建設中／加工）。レシピ定義から生成 ----------
+  const fmtTime = ms => { const sec = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
+  const millRecipes = () => Object.keys(RECIPES).filter(rk => RECIPES[rk].building === 'mill');
+  let millRenderedSig = '';
+  function millSig() {
+    const st = bState('mill'), b = state.buildings.mill, t = now();
+    const job = b && b.job ? (t >= b.job.readyAt ? 'done' : 'run') : 'none';
+    return [st, job, state.gold >= BUILDINGS.mill.cost, millRecipes().map(canCraft).join()].join('|');
+  }
+  function mkBtn(label, disabled, onclick) {
+    const b = document.createElement('button'); b.className = 'tool pix act'; b.textContent = label; b.disabled = disabled;
+    if (!disabled) b.onclick = onclick; return b;
+  }
+  function renderMill() {
+    const body = $('millBody'), B = BUILDINGS.mill, st = bState('mill'), b = state.buildings.mill;
+    millRenderedSig = millSig();
+    body.innerHTML = '';
+    const add = (html, cls) => { const d = document.createElement('div'); d.className = cls || 'mline'; d.innerHTML = html; body.appendChild(d); return d; };
+    const gauge = '<div class="pgauge"><i id="mFill"></i></div><div class="mline sub" id="mTime"></div>';
+    if (st === 'none') {
+      $('millTitle').textContent = '建設予定地';
+      add('<b>' + B.name + '</b>を建てますか？');
+      add('建設費 ' + goldImg + B.cost + 'G ／ 建設時間 ' + (B.buildMs / 60000) + '分');
+      add('所持金 ' + goldImg + state.gold + 'G', 'mline sub');
+      const act = add('', 'mact');
+      act.appendChild(state.gold >= B.cost ? mkBtn('建設開始', false, () => { if (startBuild('mill')) renderMill(); })
+                                           : mkBtn('あと' + (B.cost - state.gold) + 'G 必要', true));
+    } else if (st === 'building') {
+      $('millTitle').textContent = B.name + '（建設中）';
+      add('石を積んでいます…');
+      add(gauge, 'mline');
+    } else {
+      $('millTitle').textContent = B.name;
+      if (b.job) {
+        const r = RECIPES[b.job.recipe], pr = r.product, done = now() >= b.job.readyAt;
+        add((done ? '完成！ ' : '加工中： ') + iconImg(pr.key) + ' ' + pr.name + ' ×' + pr.qty);
+        if (done) add('', 'mact').appendChild(mkBtn('受け取る', false, () => { if (collectJob('mill')) renderMill(); }));
+        else add(gauge, 'mline');
+      }
+      for (const rk of millRecipes()) {
+        const r = RECIPES[rk], pr = r.product, ok = canCraft(rk), busy = !!b.job;
+        const ins = Object.entries(r.inputs).map(([k, n]) => iconImg(k) + ITEMS[k].name + ' <span class="' +
+          (state.storage[k] >= n ? '' : 'short') + '">' + state.storage[k] + '/' + n + '</span>').join(' ＋ ');
+        const row = document.createElement('div'); row.className = 'mrow';
+        row.innerHTML = '<div class="recipe">' + ins + ' → ' + iconImg(pr.key) + '<span>' + pr.name + ' ×' + pr.qty +
+          '<small>加工 ' + (r.ms / 60000) + '分 ／ 単価 ' + pr.price + 'G</small></span></div>';
+        row.appendChild(mkBtn(busy ? (now() >= b.job.readyAt ? '受け取り待ち' : '加工中') : ok ? '加工開始' : '材料が足りません', busy || !ok, () => { if (startJob('mill', rk)) renderMill(); }));
+        body.appendChild(row);
+      }
+    }
+    tickMill(true);
+  }
+  function tickMill(force) {            // パネルの表示だけを更新（状態は時刻との差分で計算）
+    if ($('millPanel').style.display !== 'flex') return;
+    if (!force && millSig() !== millRenderedSig) { renderMill(); return; }
+    const b = state.buildings.mill, t = now(), f = $('mFill');
+    if (!f || !b) return;
+    let from, to;
+    if (t < b.builtAt) { from = b.startedAt; to = b.builtAt; }
+    else if (b.job && t < b.job.readyAt) { from = b.job.startedAt; to = b.job.readyAt; }
+    else return;
+    f.style.width = (100 * Math.min(1, (t - from) / (to - from))).toFixed(1) + '%';
+    $('mTime').textContent = 'あと ' + fmtTime(to - t);
+  }
+  function openMill() { renderMill(); $('millPanel').style.display = 'flex'; }
+  $('millClose').onclick = () => { $('millPanel').style.display = 'none'; };
+
+  for (const id of ['popup', 'ordersPanel', 'warehousePanel', 'millPanel']) {
     const el = $(id);
     el.addEventListener('pointerdown', e => { if (e.target === el) { el.style.display = 'none'; if (id === 'popup') popupPlot = -1; } });
   }
@@ -1209,7 +1499,7 @@
     hudSig = '';
     buildPalette(); buildPopupRow();
     rebuildWorld(); camTarget = framing();
-    toast('町Lv' + lv + '！ じゃがいもと畑の3区画が解放されました');
+    toast('町Lv' + lv + '！ じゃがいも・畑の3区画・製粉所の建設予定地が解放されました');
   };
 
   // ---------- 操作：区画のなぞり／カメラ移動／ズーム ----------
@@ -1234,6 +1524,7 @@
   let pan = null, pinch = null;
   const mid = () => { const a = [...ptrs.values()]; return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2, d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) }; };
   function startPan(x, y, tap = false) { gesture = 'pan'; pan = { sx: x, sy: y, cx: cam.x, cy: cam.y, moved: 0, tap }; canvas.classList.add('grabbing'); }
+  function hitMill(sx, sy) { if (!millUnlocked()) return false; const w = toWorld(sx, sy), R = millRect(); return w.x >= R.x && w.x < R.x + R.w && w.y >= R.y && w.y < R.y + R.h; }
   function hitBoard(sx, sy) { const w = toWorld(sx, sy); return w.x >= BOARD.x && w.x < BOARD.x + BOARD.w && w.y >= BOARD.y && w.y < BOARD.y + BOARD.h; }
   function startPinch() {
     mode = null; gesture = 'pinch';
@@ -1251,7 +1542,7 @@
     if (ptrs.size === 2) { startPinch(); return; }
     if (ptrs.size > 2) return;
     const i = plotAt(e.clientX, e.clientY);
-    if (i < 0) { startPan(e.clientX, e.clientY, hitBoard(e.clientX, e.clientY)); return; }   // 区画の外 → カメラ（掲示板の上のタップは注文パネル）
+    if (i < 0) { startPan(e.clientX, e.clientY, hitBoard(e.clientX, e.clientY) ? 'board' : hitMill(e.clientX, e.clientY) ? 'mill' : false); return; }   // 区画の外 → カメラ（掲示板の上のタップは注文パネル）
     gesture = 'farm';                                         // 区画の上 → なぞり優先（カメラは動かさない）
     touched = new Set();
     const p = state.plots[i];
@@ -1277,9 +1568,9 @@
   const up = e => {
     ptrs.delete(e.pointerId);
     if (ptrs.size === 0) {
-      const tapBoard = e.type === 'pointerup' && gesture === 'pan' && pan && pan.tap && pan.moved < 8;
+      const tapped = e.type === 'pointerup' && gesture === 'pan' && pan && pan.tap && pan.moved < 8 ? pan.tap : null;
       gesture = null; mode = null; touched = new Set(); canvas.classList.remove('grabbing');
-      if (tapBoard) openOrders();
+      if (tapped === 'board') openOrders(); else if (tapped === 'mill') openMill();
     }
     else if (gesture === 'pinch' && ptrs.size === 1) { const [q] = ptrs.values(); startPan(q.x, q.y); }
   };
@@ -1297,6 +1588,7 @@
     plotCenter: i => { const R = plotRect(i); return toScreen(R.x + R.w / 2, R.y + R.h / 2); },
     worldToScreen: toScreen,
     boardCenter: () => toScreen(BOARD.cx, BOARD.top + 10),
+    millCenter: () => toScreen(MILL.x, MILL.y - (bState('mill') === 'none' ? 8 : 20)),
     camera: () => ({ x: cam.x, y: cam.y, zoom: cam.zoom }),
     spriteSizes: () => Object.fromEntries(Object.entries(SPR).map(([k, v]) => [k, [v.width, v.height]])),
   };

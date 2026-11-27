@@ -24,11 +24,18 @@
 
   .hud{position:fixed;z-index:2;pointer-events:none}
   .hud > *{pointer-events:auto}
-  #title{top:10px;left:12px;padding:4px 12px;font-size:20px;font-weight:bold;letter-spacing:.14em;
-    display:flex;align-items:center;gap:8px}
+  #topbar{position:absolute;top:8px;left:12px;right:12px;display:flex;align-items:center;gap:12px}
+  #title{padding:4px 12px;font-size:20px;font-weight:bold;letter-spacing:.14em;display:flex;align-items:center;gap:8px;white-space:nowrap}
   #title img{width:24px;height:24px}
   #fastBadge{background:#b8503c;color:#fff4e4;padding:1px 6px;font-size:11px;letter-spacing:.05em;display:none}
-  #warehouse{top:10px;right:12px;display:flex;align-items:center;gap:14px;padding:4px 14px;font-weight:bold;font-size:20px}
+  #town{margin-right:auto;display:flex;align-items:center;gap:8px;padding:4px 12px;font-weight:bold;font-size:17px;white-space:nowrap}
+  #expBar{display:block;width:96px;height:12px;background:#5a3a22;padding:2px}
+  #expFill{display:block;height:100%;width:0;background:#7fc24a;box-shadow:inset 0 -3px 0 #5c9c36,inset 0 2px 0 #b6e07a}
+  #expText{font-size:13px;color:var(--ink-soft);min-width:42px}
+  #gold{display:flex;align-items:center;gap:6px;padding:4px 14px;font-weight:bold;font-size:20px}
+  #gold img{width:26px;height:26px}
+  #warehouse{display:flex;align-items:center;gap:12px;padding:4px 14px;font-weight:bold;font-size:20px;
+    border:0;font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
   #warehouse .ttl{font-size:13px;color:var(--ink-soft);letter-spacing:.12em}
   .stock{display:flex;align-items:center;gap:4px}
   .stock img{width:28px;height:28px}
@@ -40,39 +47,85 @@
   .tool img{width:36px;height:36px}
   .tool small{display:block;font-size:11px;font-weight:normal;color:var(--ink-soft);text-align:left}
   .tool.sel{background:var(--sel);transform:translateY(-5px)}
+  .tool.locked{opacity:.55;cursor:default;filter:grayscale(.6)}
+  .tool:disabled{cursor:default}
+  .tool.act{padding:8px 16px;min-width:96px;justify-content:center;font-size:17px}
+  .tool.act:disabled{opacity:.6;background:#e5d6b6;color:var(--ink-soft)}
+  .tool.small{padding:5px 12px;font-size:15px}
 
-  #popup{position:fixed;inset:0;background:#2a1a1040;display:none;align-items:center;justify-content:center;z-index:10}
-  #popup .box{padding:14px 22px;text-align:center}
-  #popup .q{font-weight:bold;letter-spacing:.1em}
+  .overlay{position:fixed;inset:0;background:#2a1a1040;display:none;align-items:center;justify-content:center;z-index:10}
+  .overlay .box{padding:14px 22px;text-align:center;max-width:94vw;max-height:88vh;overflow:auto}
+  .overlay .q{font-weight:bold;letter-spacing:.1em}
   #popup .row{display:flex;gap:16px;margin:14px 0 8px}
-  #popup .cancel{background:none;border:none;font-size:14px;color:var(--ink-soft);
+  .overlay .cancel{background:none;border:none;font-size:14px;color:var(--ink-soft);
     text-decoration:underline;cursor:pointer;font-family:inherit}
+  .panelhd{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:10px}
+  .panelhd b{font-size:20px;letter-spacing:.14em}
+  .panelhd button{font-family:inherit;font-size:20px;color:var(--ink-soft);background:none;border:0;cursor:pointer;padding:0 6px}
+  .orow{display:flex;align-items:center;gap:16px;padding:8px 6px;border-top:3px dotted #c9ad7c;text-align:left}
+  .orow:first-child{border-top:0}
+  .ocrop{display:flex;align-items:center;gap:8px;flex:1;min-width:190px;font-weight:bold;font-size:19px}
+  .ocrop img{width:36px;height:36px}
+  .ocrop small{display:block;font-size:11px;font-weight:normal;color:var(--ink-soft)}
+  .orew{display:flex;flex-direction:column;gap:2px;font-size:15px;font-weight:bold;min-width:120px}
+  .orew span{display:flex;align-items:center;gap:4px}
+  .orew img{width:18px;height:18px}
+  .orew .xp{color:#4c8a34}
+  .wrow{display:flex;align-items:center;gap:14px;padding:8px 6px;border-top:3px dotted #c9ad7c;text-align:left}
+  .wrow:first-child{border-top:0}
+  .wrow .nm{display:flex;align-items:center;gap:8px;min-width:170px;font-weight:bold;font-size:19px}
+  .wrow .nm img{width:34px;height:34px}
+  .wrow .nm small{display:block;font-size:11px;font-weight:normal;color:var(--ink-soft)}
+  .wrow .cnt{min-width:64px;font-size:20px;font-weight:bold;text-align:right}
+  .hint{font-size:12px;color:var(--ink-soft);margin-top:8px}
+  #toast{position:fixed;top:86px;left:50%;transform:translateX(-50%);z-index:12;display:none;padding:8px 18px;
+    font-weight:bold;letter-spacing:.06em;pointer-events:none}
 </style>
 </head>
 <body>
 <canvas id="world" aria-label="ときの種の町（畑と時計塔）"></canvas>
 
 <div class="hud" style="inset:0">
-  <div id="title" class="pix" style="position:absolute"><img class="px" data-icon="ic_sprout" alt="">ときの種<span id="fastBadge"></span></div>
-  <div id="warehouse" class="pix" style="position:absolute" aria-label="倉庫">
-    <span class="ttl">倉庫</span>
-    <span class="stock" title="小麦"><img class="px" data-icon="ic_wheat" alt="小麦"><span id="sWheat">0</span></span>
-    <span class="stock" title="にんじん"><img class="px" data-icon="ic_carrot" alt="にんじん"><span id="sCarrot">0</span></span>
+  <div id="topbar">
+    <div id="title" class="pix"><img class="px" data-icon="ic_sprout" alt="">ときの種<span id="fastBadge"></span></div>
+    <div id="town" class="pix" title="町レベル"><span id="lvText">町Lv1</span><span id="expBar"><i id="expFill"></i></span><span id="expText">0/30</span></div>
+    <div id="gold" class="pix" title="ゴールド"><img class="px" data-icon="ic_gold" alt="ゴールド"><span id="sGold">0</span></div>
+    <button id="warehouse" class="pix" aria-label="倉庫（タップで売却パネルを開く）">
+      <span class="ttl">倉庫</span>
+      <span class="stock" title="小麦"><img class="px" data-icon="ic_wheat" alt="小麦"><span id="sWheat">0</span></span>
+      <span class="stock" title="にんじん"><img class="px" data-icon="ic_carrot" alt="にんじん"><span id="sCarrot">0</span></span>
+      <span class="stock" id="stockPotato" title="じゃがいも" style="display:none"><img class="px" data-icon="ic_potato" alt="じゃがいも"><span id="sPotato">0</span></span>
+    </button>
   </div>
   <div id="palette" style="position:absolute"></div>
 </div>
-<div id="popup"><div class="box pix">
+<div id="popup" class="overlay"><div class="box pix">
   <div class="q">なにを植える？</div>
   <div class="row" id="popupRow"></div>
   <button class="cancel" id="popupCancel">やめる</button>
 </div></div>
+<div id="ordersPanel" class="overlay"><div class="box pix">
+  <div class="panelhd"><b>注文掲示板</b><button id="ordersClose" aria-label="閉じる">×</button></div>
+  <div id="orderList"></div>
+  <div class="hint">納品すると倉庫から作物を消費し、ゴールドと町経験値がもらえます（報酬ゴールド＝単価×個数×1.3）</div>
+</div></div>
+<div id="warehousePanel" class="overlay"><div class="box pix">
+  <div class="panelhd"><b>倉庫</b><button id="warehouseClose" aria-label="閉じる">×</button></div>
+  <div id="warehouseList"></div>
+  <div class="hint">生のまま売ると単価どおりのゴールドになります</div>
+</div></div>
+<div id="toast" class="pix"></div>
 
 <script>
 (() => {
   'use strict';
   const SAVE_KEY = 'clockseed.save';
-  const SAVE_VERSION = 1;
-  const PLOT_COUNT = 6;
+  const SAVE_VERSION = 2;
+  const MAX_PLOTS = 9;                 // 区画の最大数（町Lv2で 6 → 9）
+  const BASE_PLOTS = 6;
+  const ORDER_COUNT = 3;               // 同時に出る注文の数
+  const ORDER_MIN = 3, ORDER_MAX = 9;  // 注文の個数の範囲
+  const TOWN_LV_EXP = [0, 30];         // 町経験値の累計がこの値に達するとLv(添字+1)。Lv2が現在の最大
 
   // デバッグ：?fast=N で育成時間をN分の1に
   const FAST = (() => {
@@ -80,33 +133,56 @@
     return isFinite(v) && v > 0 ? v : 1;
   })();
 
-  // 作物データ（チェーン表 v0.1）
+  // 作物データ（チェーン表）。price＝生売り単価、orderExp＝注文1件あたりの町経験値
   const CROPS = {
-    wheat:  { name: '小麦',   icon: 'ic_wheat',  growMs: 2 * 60 * 1000, yield: 3 },
-    carrot: { name: 'にんじん', icon: 'ic_carrot', growMs: 4 * 60 * 1000, yield: 3 },
+    wheat:  { name: '小麦',      icon: 'ic_wheat',  growMs: 2 * 60 * 1000, yield: 3, price: 10, orderExp: 10, unlockLv: 1 },
+    carrot: { name: 'にんじん',  icon: 'ic_carrot', growMs: 4 * 60 * 1000, yield: 3, price: 16, orderExp: 10, unlockLv: 1 },
+    potato: { name: 'じゃがいも', icon: 'ic_potato', growMs: 6 * 60 * 1000, yield: 2, price: 30, orderExp: 14, unlockLv: 2 },
   };
+  const CROP_KEYS = Object.keys(CROPS);
+
+  const townLevelOf = exp => { let lv = 1; TOWN_LV_EXP.forEach((need, i) => { if (exp >= need) lv = i + 1; }); return lv; };
+  const plotsForLevel = lv => (lv >= 2 ? MAX_PLOTS : BASE_PLOTS);
 
   // ---------- セーブ ----------
-  function freshState() {
-    return { saveVersion: SAVE_VERSION, plots: Array(PLOT_COUNT).fill(null),
-             storage: { wheat: 0, carrot: 0 } };
+  function newOrder(lv) {
+    const open = CROP_KEYS.filter(k => CROPS[k].unlockLv <= lv);
+    return { crop: open[Math.floor(Math.random() * open.length)],
+             qty: ORDER_MIN + Math.floor(Math.random() * (ORDER_MAX - ORDER_MIN + 1)) };
   }
+  function freshState() {
+    const st = { saveVersion: SAVE_VERSION, plots: Array(MAX_PLOTS).fill(null),
+                 storage: { wheat: 0, carrot: 0, potato: 0 }, gold: 0, townExp: 0, orders: [] };
+    while (st.orders.length < ORDER_COUNT) st.orders.push(newOrder(1));
+    return st;
+  }
+  const nat = n => (Number.isInteger(n) && n >= 0 ? n : 0);
   function load() {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return freshState();
       const d = JSON.parse(raw);
       if (!d || typeof d.saveVersion !== 'number') return freshState();
+      if (d.saveVersion < SAVE_VERSION) {            // 旧セーブからの移行：念のため原本を退避
+        try { localStorage.setItem(SAVE_KEY + '.v' + d.saveVersion + '.backup', raw); } catch (e) {}
+      }
       const s = freshState();
-      for (let i = 0; i < PLOT_COUNT; i++) {
+      s.townExp = nat(d.townExp);
+      s.gold = nat(d.gold);
+      const lv = townLevelOf(s.townExp), open = plotsForLevel(lv);
+      for (let i = 0; i < open; i++) {
         const p = d.plots && d.plots[i];
-        if (p && CROPS[p.crop] && isFinite(p.plantedAt) && isFinite(p.readyAt)) {
+        if (p && CROPS[p.crop] && CROPS[p.crop].unlockLv <= lv && isFinite(p.plantedAt) && isFinite(p.readyAt)) {
           s.plots[i] = { crop: p.crop, plantedAt: p.plantedAt, readyAt: p.readyAt };
         }
       }
-      for (const k of Object.keys(CROPS)) {
-        const n = d.storage && d.storage[k];
-        s.storage[k] = Number.isInteger(n) && n >= 0 ? n : 0;
+      for (const k of CROP_KEYS) s.storage[k] = nat(d.storage && d.storage[k]);
+      s.orders = [];
+      for (let i = 0; i < ORDER_COUNT; i++) {
+        const o = Array.isArray(d.orders) ? d.orders[i] : null;
+        const ok = o && CROPS[o.crop] && CROPS[o.crop].unlockLv <= lv &&
+                   Number.isInteger(o.qty) && o.qty >= ORDER_MIN && o.qty <= ORDER_MAX;
+        s.orders.push(ok ? { crop: o.crop, qty: o.qty } : newOrder(lv));
       }
       return s;
     } catch (e) { return freshState(); }
@@ -118,6 +194,8 @@
 
   // ---------- ロジック（常に現在時刻との差分で判定） ----------
   const now = () => Date.now();
+  const townLevel = () => townLevelOf(state.townExp);
+  const activePlots = () => plotsForLevel(townLevel());
   function progress(p, t) {           // 0..1
     const total = p.readyAt - p.plantedAt;
     if (total <= 0) return 1;
@@ -125,7 +203,7 @@
   }
   const isReady = (p, t) => !!p && t >= p.readyAt;
   function plant(i, crop) {
-    if (state.plots[i] || !CROPS[crop]) return false;
+    if (i < 0 || i >= activePlots() || state.plots[i] || !CROPS[crop] || CROPS[crop].unlockLv > townLevel()) return false;
     const t = now();
     state.plots[i] = { crop, plantedAt: t, readyAt: t + CROPS[crop].growMs / FAST };
     save(); return true;
@@ -139,6 +217,35 @@
   }
   const stageOf = (p, t) => !p ? 0 : t >= p.readyAt ? 3 : progress(p, t) >= 0.5 ? 2 : 1;
 
+  // ---------- 注文・町経験値・売却 ----------
+  let onLevelUp = () => {};
+  function gainExp(n) {
+    const before = townLevel();
+    state.townExp += n;
+    if (townLevel() > before) onLevelUp(townLevel());
+  }
+  // 報酬ゴールド＝単価×個数×1.3（端数切り上げ）。小数誤差を避けるため整数で ceil(x*13/10) を計算
+  const orderReward = o => ({ gold: Math.floor((CROPS[o.crop].price * o.qty * 13 + 9) / 10), exp: CROPS[o.crop].orderExp });
+  function deliver(i) {
+    const o = state.orders[i];
+    if (!o || state.storage[o.crop] < o.qty) return false;
+    const r = orderReward(o);
+    state.storage[o.crop] -= o.qty;
+    state.gold += r.gold;
+    gainExp(r.exp);                                  // 先に経験値を加算（Lvが上がれば新作物も注文に出る）
+    state.orders[i] = newOrder(townLevel());
+    save(); return true;
+  }
+  function sell(crop, n) {
+    const c = CROPS[crop];
+    if (!c) return 0;
+    n = Math.min(n, state.storage[crop]);
+    if (n <= 0) return 0;
+    state.storage[crop] -= n;
+    state.gold += c.price * n;
+    save(); return n;
+  }
+
   /* =====================================================================
      描画エンジン（Canvas・タイル制・ドット絵スプライト）
      ここから下は見た目と操作だけ。ゲーム状態は上のロジックだけが変更する。
@@ -147,17 +254,19 @@
 
   // ---------- 設定値（将来の町レベルで拡張） ----------
   const T = 16;                       // 1タイル = 16ドット
-  const MAP = { w: 20, h: 14 };       // タイル数
+  const MAP = { w: 20, h: 16 };       // タイル数
   const WORLD_SEED = 20261127;        // 自然物の配置シード（セーブには含めない）
   const ZOOM_MIN = 0.7, ZOOM_MAX = 1.5;
   const LAYOUT = {
     plaza: { x: 1, y: 5, w: 5, h: 4 },                 // 広場（タイル）
     path:  [{ x: 6, y: 7, w: 3, h: 1 }],               // 石畳の道
-    aisle: { x: 9, y: 7, w: 8, h: 1 },                 // 畑の中の土の通路
+    aisle: [{ x: 9, y: 7, w: 8, h: 1, lv: 1 }, { x: 9, y: 10, w: 8, h: 1, lv: 2 }], // 畑の中の土の通路
     tower: { x: 56, y: 118 },                          // 時計塔の足元（ドット座標）
-    fence: { x0: 136, x1: 280, y0: 76, y1: 172, gateFrom: 108, gateTo: 140 },
-    plots: [[9, 5], [12, 5], [15, 5], [9, 8], [12, 8], [15, 8]], // 区画左上（タイル）、2×2
-    keepClear: [{ x: 0, y: 4, w: 7, h: 6 }, { x: 6, y: 6, w: 3, h: 3 }, { x: 7, y: 4, w: 12, h: 8 }],
+    board: { x: 82, y: 138 },                          // 注文掲示板の足元（ドット座標）
+    fence: lv => ({ x0: 136, x1: 280, y0: 76, y1: lv >= 2 ? 220 : 172, gateFrom: 108, gateTo: 140 }),
+    plots: [[9, 5], [12, 5], [15, 5], [9, 8], [12, 8], [15, 8],      // 区画左上（タイル）、2×2。
+            [9, 11], [12, 11], [15, 11]],                            // 末尾3つは町Lv2で現れる
+    keepClear: [{ x: 0, y: 4, w: 7, h: 6 }, { x: 6, y: 6, w: 3, h: 3 }, { x: 7, y: 4, w: 12, h: 10 }],
   };
   const PLOT_PX = 2 * T;
   const plotRect = i => ({ x: LAYOUT.plots[i][0] * T, y: LAYOUT.plots[i][1] * T, w: PLOT_PX, h: PLOT_PX });
@@ -189,6 +298,7 @@
     p: '#3f7448', P: '#24483a',
     W: '#cf9b60', V: '#8f6238', X: '#4f321c',
     1: '#f6a9bd', 2: '#fff6e2', 3: '#f6d55c', 4: '#b9a7f0',
+    N: '#d6b27c', M: '#b08650', O: '#8a6538',
   };
 
   // ---------- スプライト（文字列マップ） ----------
@@ -490,6 +600,93 @@
   })();
   SPR_SRC.tower = TOWER.rows;
 
+  // じゃがいも：濃い緑の茂み＋土の上にのぞく薄茶の実
+  Object.assign(SPR_SRC, {
+    potato1: [
+      '.e...e.',
+      'eEe.eEe',
+      '.eEgEe.',
+      '..egE..',
+      '...g...',
+      '...g...',
+    ],
+    potato2: [
+      '...e...e...',
+      '..eEe.eEe..',
+      '.eEjEeEjEe.',
+      'eEjjEEEjjEe',
+      'eEjEeEeEjEe',
+      '.eEeEEEeEe.',
+      '..eEeEeEe..',
+      '...eEgEe...',
+      '....eg.e...',
+      '.....g.....',
+      '.....g.....',
+      '.....g.....',
+    ],
+    potato3: [
+      '...e...e...',
+      '..eEe.eEe..',
+      '.eEjEeEjEe.',
+      'eEjjEEEjjEe',
+      '.eEjEeEjEe.',
+      '..eEeEeEe..',
+      '...eEgEe...',
+      '....egE....',
+      '.....g.....',
+      '..NNN.NNN..',
+      '.NNNNMNNNN.',
+      '.NNMNMNNMN.',
+      '.MMMMMMMMM.',
+      '..OOOOOOO..',
+    ],
+    ic_potato: [
+      '............',
+      '....NNNN....',
+      '..NNNNNNNN..',
+      '.NNNNNMNNNN.',
+      '.NNMNNNNNNN.',
+      'NNNNNNNNMNNN',
+      'NNNNMNNNNNNM',
+      'NNNNNNNMNNMM',
+      '.NNNNNNNNMM.',
+      '.MNNNNNMMMM.',
+      '..MMMMMMMM..',
+      '....MMMM....',
+    ],
+    ic_gold: [
+      '....oooo....',
+      '..ooyyyyoo..',
+      '.oywwyyyyYo.',
+      '.oywyyoyyYo.',
+      'oywyyyooyyYo',
+      'oyyyyyooyyYo',
+      'oyyyyyooyyYo',
+      'oyyyyyooyyYo',
+      '.oyyyyyyyYo.',
+      '.oyyyyyyYYo.',
+      '..ooYYYYoo..',
+      '....oooo....',
+    ],
+  });
+
+  // 注文掲示板：小さな屋根つきのコルクボードに紙が3枚
+  SPR_SRC.board = (() => {
+    const W = 24, H = 24, g = Array.from({ length: H }, () => Array(W).fill('.'));
+    const rect = (x, y, w, h, c) => { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) g[j][i] = c; };
+    rect(1, 0, 22, 1, 'x'); rect(0, 1, 24, 3, 'r'); rect(0, 1, 24, 1, 'l'); rect(0, 3, 24, 1, 'R'); rect(0, 4, 24, 1, 'x');
+    rect(2, 5, 20, 14, 'X'); rect(3, 6, 18, 12, 'W'); rect(4, 7, 16, 10, 'd');
+    for (let k = 0; k < 14; k++) g[8 + ((k * 5) % 8)][5 + ((k * 7) % 14)] = 'u';
+    const paper = (x, y, w, h) => {
+      rect(x, y, w, h, 'f'); rect(x, y + h - 1, w, 1, 'F');
+      for (let j = y + 2; j < y + h - 1; j += 2) rect(x + 1, j, w - 2, 1, 'F');
+      g[y][x + (w >> 1)] = 'r';
+    };
+    paper(5, 8, 4, 6); paper(10, 9, 5, 6); paper(16, 8, 3, 7);
+    rect(5, 19, 3, 5, 'X'); rect(6, 19, 1, 5, 'W'); rect(16, 19, 3, 5, 'X'); rect(17, 19, 1, 5, 'W');
+    return g.map(r => r.join(''));
+  })();
+
   function buildSprite(rows) {
     const w = Math.max(...rows.map(r => r.length)), h = rows.length;
     const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
@@ -510,12 +707,16 @@
   // ---------- 地面タイル ----------
   const TILE = { GRASS: 0, PLAZA: 1, STONE: 2, DIRT: 3, FIELD: 4 };
   const ground = [];
-  for (let y = 0; y < MAP.h; y++) { ground.push(new Array(MAP.w).fill(TILE.GRASS)); }
   const fillT = (r, v) => { for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) ground[y][x] = v; };
-  fillT(LAYOUT.plaza, TILE.PLAZA);
-  LAYOUT.path.forEach(r => fillT(r, TILE.STONE));
-  fillT(LAYOUT.aisle, TILE.DIRT);
-  LAYOUT.plots.forEach(([x, y]) => fillT({ x, y, w: 2, h: 2 }, TILE.FIELD));
+  function layoutGround(lv) {
+    ground.length = 0;
+    for (let y = 0; y < MAP.h; y++) ground.push(new Array(MAP.w).fill(TILE.GRASS));
+    fillT(LAYOUT.plaza, TILE.PLAZA);
+    LAYOUT.path.forEach(r => fillT(r, TILE.STONE));
+    LAYOUT.aisle.forEach(r => { if (r.lv <= lv) fillT(r, TILE.DIRT); });
+    LAYOUT.plots.slice(0, plotsForLevel(lv)).forEach(([x, y]) => fillT({ x, y, w: 2, h: 2 }, TILE.FIELD));
+  }
+  layoutGround(townLevel());
 
   const px = (c, x, y, col, w = 1, h = 1) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
   function paintGrass(c, ox, oy, r) {
@@ -634,23 +835,31 @@
     statics.push({ y: LAYOUT.tower.y, shadow: [LAYOUT.tower.x + 3, LAYOUT.tower.y - 1, 19, 5],
       draw: c => { c.drawImage(s, x, y); drawClockHands(c, x + TOWER.faceCx, y + TOWER.faceCy); } });
   }
-  // 柵
-  {
-    const F = LAYOUT.fence, P = SPR.post, RH = SPR.railH, RV = SPR.railV;
+  // 注文掲示板
+  const BOARD = (() => {
+    const sp = SPR.board, B = LAYOUT.board, x = B.x - (sp.width >> 1), y = B.y - sp.height;
+    statics.push({ y: B.y, shadow: [B.x, B.y - 1, 11, 3], draw: c => c.drawImage(sp, x, y) });
+    return { x: x - 3, y: y - 3, w: sp.width + 6, h: sp.height + 6, cx: B.x, top: y };
+  })();
+  // 柵（町レベルで広がる）
+  let fenceObjs = [];
+  function buildFence(lv) {
+    const out = [], F = LAYOUT.fence(lv), P = SPR.post, RH = SPR.railH, RV = SPR.railV;
     const inGate = y => y > F.gateFrom && y < F.gateTo;
     for (let x = F.x0; x <= F.x1; x += T) for (const yy of [F.y0, F.y1]) {
-      statics.push({ y: yy, shadow: [x, yy, 3, 1], draw: c => c.drawImage(P, x - 2, yy - 10) });
-      if (x < F.x1) statics.push({ y: yy - .1, draw: c => c.drawImage(RH, x + 2, yy - 9, T - 4, 7) });
+      out.push({ y: yy, shadow: [x, yy, 3, 1], draw: c => c.drawImage(P, x - 2, yy - 10) });
+      if (x < F.x1) out.push({ y: yy - .1, draw: c => c.drawImage(RH, x + 2, yy - 9, T - 4, 7) });
     }
     for (const xx of [F.x0, F.x1]) for (let y = F.y0 + T; y < F.y1; y += T) {
       const gate = xx === F.x0 && inGate(y);
-      if (!gate) statics.push({ y, shadow: [xx, y, 3, 1], draw: c => c.drawImage(P, xx - 2, y - 10) });
+      if (!gate) out.push({ y, shadow: [xx, y, 3, 1], draw: c => c.drawImage(P, xx - 2, y - 10) });
     }
     for (const xx of [F.x0, F.x1]) for (let y = F.y0; y < F.y1; y += T) {
       const y2 = y + T;
       if (xx === F.x0 && (inGate(y) || inGate(y2) || (y === F.gateFrom && y2 > F.gateFrom))) continue;
-      statics.push({ y: y2 - .2, draw: c => c.drawImage(RV, xx - 2, y - 2, 4, T - 8) });
+      out.push({ y: y2 - .2, draw: c => c.drawImage(RV, xx - 2, y - 2, 4, T - 8) });
     }
+    return out;
   }
   // 木・草むら（固定シード）
   {
@@ -741,9 +950,10 @@
     buildLightCache();
     clampCam();
   }
-  function initialCamera() {
+  function framing() {            // 時計塔と畑の両方が入るカメラ（現在のカメラは変えずに目標値だけ返す）
+    const keep = { x: cam.x, y: cam.y, zoom: cam.zoom };
     // 時計塔と畑の両方が入る範囲（上下は UI の分だけ余白）
-    const x0 = 30, x1 = 290, y0 = LAYOUT.tower.y - SPR.tower.height - 4, y1 = LAYOUT.fence.y1 + 6, padTop = 64, padBot = 84;
+    const x0 = 30, x1 = 290, y0 = LAYOUT.tower.y - SPR.tower.height - 4, y1 = LAYOUT.fence(townLevel()).y1 + 6, padTop = 64, padBot = 84;
     const S = Math.min((VW - 32) / (x1 - x0), (VH - padTop - padBot) / (y1 - y0));
     cam.zoom = S / BASE;
     clampCam();
@@ -751,7 +961,12 @@
     cam.x = (x0 + x1) / 2;
     cam.y = (y0 + y1) / 2 - (padTop - padBot) / 2 / s2;
     clampCam();
+    const r = { x: cam.x, y: cam.y, zoom: cam.zoom };
+    Object.assign(cam, keep);
+    return r;
   }
+  const initialCamera = () => Object.assign(cam, framing());
+  let camTarget = null;           // 町Lvアップ時に、広がった畑が入る位置へゆっくり寄せる
 
   // ---------- 光（画面全体） ----------
   let LIGHT = null;
@@ -770,7 +985,15 @@
   }
 
   // ---------- 描画 ----------
-  const GROUND = bakeGround();
+  let GROUND = null, builtLevel = 0;
+  function rebuildWorld() {            // 町レベルが変わったとき：地面・柵を作り直す
+    const lv = townLevel();
+    layoutGround(lv);
+    GROUND = bakeGround();
+    fenceObjs = buildFence(lv);
+    builtLevel = lv;
+  }
+  rebuildWorld();
   const shadow = (c, x, y, rx, ry, a = .26) => {
     c.fillStyle = `rgba(48,30,20,${a})`; c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); c.fill();
   };
@@ -784,7 +1007,15 @@
   function frame(tms) {
     const dt = Math.min(.1, (tms - lastT) / 1000); lastT = tms;
     const t = now(), ts = tms / 1000;
+    if (townLevel() !== builtLevel) rebuildWorld();
+    const AP = activePlots();
     stepParticles(dt, ts);
+    if (camTarget) {
+      const k = 1 - Math.exp(-dt * 4);
+      cam.x += (camTarget.x - cam.x) * k; cam.y += (camTarget.y - cam.y) * k; cam.zoom += (camTarget.zoom - cam.zoom) * k;
+      clampCam();
+      if (Math.abs(camTarget.x - cam.x) + Math.abs(camTarget.y - cam.y) + Math.abs(camTarget.zoom - cam.zoom) * 100 < 0.3) camTarget = null;
+    }
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
@@ -793,8 +1024,9 @@
     ctx.drawImage(GROUND, 0, 0);
 
     // 区画の土
-    const objs = statics.slice();
+    const objs = statics.concat(fenceObjs);
     state.plots.forEach((p, i) => {
+      if (i >= AP) return;
       const R = plotRect(i), st = stageOf(p, t);
       ctx.drawImage(p ? PLOT_IMG[i].wet : PLOT_IMG[i].dry, R.x, R.y);
       if (!p) return;
@@ -810,8 +1042,17 @@
     objs.sort((a, b) => a.y - b.y);
     for (const o of objs) o.draw(ctx);
 
+    // 納品できる注文があれば掲示板の上に「！」
+    if (state.orders.some(o => state.storage[o.crop] >= o.qty)) {
+      const bob = Math.round(Math.sin(ts * 4) * 1.5), bx = BOARD.cx - 4, by = BOARD.top - 14 + bob;
+      px(ctx, bx, by, '#5a3a22', 9, 11); px(ctx, bx + 1, by + 1, '#fff6e0', 7, 9);
+      px(ctx, bx + 4, by + 2, '#c8503a', 1, 4); px(ctx, bx + 4, by + 7, '#c8503a', 1, 1);
+      px(ctx, bx + 3, by + 11, '#5a3a22', 3, 1); px(ctx, bx + 4, by + 12, '#5a3a22', 1, 1);
+    }
+
     // 区画の上のしるし（空き：＋、育成中：ゲージ、収穫可：きらめき）
     state.plots.forEach((p, i) => {
+      if (i >= AP) return;
       const R = plotRect(i), st = stageOf(p, t);
       if (!p) {
         ctx.globalAlpha = .55 + .25 * Math.sin(ts * 2.4 + i);
@@ -854,53 +1095,127 @@
     }
     ctx.globalCompositeOperation = 'source-over';
 
-    $('sWheat').textContent = state.storage.wheat;
-    $('sCarrot').textContent = state.storage.carrot;
+    updateHud();
     requestAnimationFrame(frame);
   }
 
   if (FAST !== 1) { const b = $('fastBadge'); b.style.display = 'inline'; b.textContent = '×' + FAST + ' DEBUG'; }
 
-  // ---------- 作物パレット ----------
+  // ---------- HUD（ゴールド・町Lv・経験値ゲージ・倉庫） ----------
+  let hudSig = '';
+  function updateHud() {
+    const lv = townLevel(), exp = state.townExp, st = state.storage;
+    const sig = [lv, exp, state.gold, st.wheat, st.carrot, st.potato].join();
+    if (sig === hudSig) return;
+    hudSig = sig;
+    $('lvText').textContent = '町Lv' + lv;
+    const need = TOWN_LV_EXP[lv];                 // 次のLvに必要な累計経験値（最大Lvなら undefined）
+    if (need === undefined) { $('expFill').style.width = '100%'; $('expText').textContent = 'MAX'; }
+    else {
+      const base = TOWN_LV_EXP[lv - 1];
+      $('expFill').style.width = (100 * (exp - base) / (need - base)).toFixed(1) + '%';
+      $('expText').textContent = exp + '/' + need;
+    }
+    $('sGold').textContent = state.gold;
+    $('sWheat').textContent = st.wheat; $('sCarrot').textContent = st.carrot; $('sPotato').textContent = st.potato;
+    $('stockPotato').style.display = lv >= CROPS.potato.unlockLv ? '' : 'none';
+  }
+  let toastTimer = 0;
+  function toast(msg) {
+    const el = $('toast'); el.textContent = msg; el.style.display = 'block';
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.style.display = 'none'; }, 4200);
+  }
+
+  // ---------- 作物パレット／作物選択ポップアップ ----------
   let selected = null;
   const pal = $('palette');
   const iconImg = k => `<img class="px" src="${iconURL(CROPS[k].icon)}" alt="">`;
+  function cropBtn(k, onclick, isSel) {
+    const c = CROPS[k], locked = c.unlockLv > townLevel();
+    const b = document.createElement('button');
+    b.className = 'tool pix' + (isSel ? ' sel' : '') + (locked ? ' locked' : '');
+    b.disabled = locked;
+    b.innerHTML = iconImg(k) + '<span>' + c.name + '<small>' +
+      (locked ? '町Lv' + c.unlockLv + 'で解放' : (c.growMs / 60000) + '分 / ' + c.yield + '個') + '</small></span>';
+    if (!locked) b.onclick = onclick;
+    return b;
+  }
   function buildPalette() {
     pal.innerHTML = '';
-    for (const k of Object.keys(CROPS)) {
-      const b = document.createElement('button');
-      b.className = 'tool pix' + (selected === k ? ' sel' : '');
-      b.innerHTML = iconImg(k) + '<span>' + CROPS[k].name +
-        '<small>' + (CROPS[k].growMs / 60000) + '分 / ' + CROPS[k].yield + '個</small></span>';
-      b.onclick = () => { selected = selected === k ? null : k; buildPalette(); };
-      pal.appendChild(b);
-    }
+    for (const k of CROP_KEYS) pal.appendChild(cropBtn(k, () => { selected = selected === k ? null : k; buildPalette(); }, selected === k));
   }
-  buildPalette();
-
-  // ---------- ポップアップ（空き区画タップ→作物選択） ----------
   const popup = $('popup');
   let popupPlot = -1;
-  const row = $('popupRow');
-  for (const k of Object.keys(CROPS)) {
-    const b = document.createElement('button');
-    b.className = 'tool pix'; b.innerHTML = iconImg(k) + '<span>' + CROPS[k].name + '</span>';
-    b.onclick = () => {
+  function buildPopupRow() {
+    const row = $('popupRow'); row.innerHTML = '';
+    for (const k of CROP_KEYS) row.appendChild(cropBtn(k, () => {
       const i = popupPlot; closePopup();
       selected = k; buildPalette();
       if (i >= 0) plant(i, k);
-    };
-    row.appendChild(b);
+    }, false));
   }
-  function openPopup(i) { popupPlot = i; popup.style.display = 'flex'; }
+  buildPalette(); buildPopupRow();
+  function openPopup(i) { popupPlot = i; buildPopupRow(); popup.style.display = 'flex'; }
   function closePopup() { popup.style.display = 'none'; popupPlot = -1; }
   $('popupCancel').onclick = closePopup;
-  popup.addEventListener('pointerdown', e => { if (e.target === popup) closePopup(); });
+
+  // ---------- 注文パネル ----------
+  const goldImg = `<img class="px" src="${iconURL('ic_gold')}" alt="G">`;
+  function renderOrders() {
+    const list = $('orderList'); list.innerHTML = '';
+    state.orders.forEach((o, i) => {
+      const have = state.storage[o.crop], r = orderReward(o), short = o.qty - have;
+      const row = document.createElement('div'); row.className = 'orow';
+      row.innerHTML = '<div class="ocrop">' + iconImg(o.crop) + '<span>' + CROPS[o.crop].name + ' ×' + o.qty +
+        '<small>倉庫に ' + have + '個</small></span></div>' +
+        '<div class="orew"><span>' + goldImg + r.gold + '</span><span class="xp">町経験値 +' + r.exp + '</span></div>';
+      const b = document.createElement('button'); b.className = 'tool pix act';
+      if (short > 0) { b.textContent = 'あと' + short + '個'; b.disabled = true; }
+      else { b.textContent = '納品'; b.onclick = () => { if (deliver(i)) renderOrders(); }; }
+      row.appendChild(b); list.appendChild(row);
+    });
+  }
+  function openOrders() { renderOrders(); $('ordersPanel').style.display = 'flex'; }
+  $('ordersClose').onclick = () => { $('ordersPanel').style.display = 'none'; };
+
+  // ---------- 倉庫パネル（生売り） ----------
+  function renderWarehouse() {
+    const list = $('warehouseList'); list.innerHTML = '';
+    for (const k of CROP_KEYS) {
+      const c = CROPS[k];
+      if (c.unlockLv > townLevel()) continue;
+      const n = state.storage[k];
+      const row = document.createElement('div'); row.className = 'wrow';
+      row.innerHTML = '<div class="nm">' + iconImg(k) + '<span>' + c.name + '<small>単価 ' + c.price + 'G</small></span></div>' +
+        '<div class="cnt">' + n + '個</div>';
+      const b1 = document.createElement('button'); b1.className = 'tool pix small';
+      b1.textContent = '1個売る +' + c.price + 'G'; b1.disabled = n < 1;
+      b1.onclick = () => { sell(k, 1); renderWarehouse(); };
+      const b2 = document.createElement('button'); b2.className = 'tool pix small';
+      b2.textContent = '全部売る +' + (c.price * n) + 'G'; b2.disabled = n < 1;
+      b2.onclick = () => { sell(k, n); renderWarehouse(); };
+      row.appendChild(b1); row.appendChild(b2); list.appendChild(row);
+    }
+  }
+  $('warehouse').onclick = () => { renderWarehouse(); $('warehousePanel').style.display = 'flex'; };
+  $('warehouseClose').onclick = () => { $('warehousePanel').style.display = 'none'; };
+
+  for (const id of ['popup', 'ordersPanel', 'warehousePanel']) {
+    const el = $(id);
+    el.addEventListener('pointerdown', e => { if (e.target === el) { el.style.display = 'none'; if (id === 'popup') popupPlot = -1; } });
+  }
+
+  onLevelUp = lv => {
+    hudSig = '';
+    buildPalette(); buildPopupRow();
+    rebuildWorld(); camTarget = framing();
+    toast('町Lv' + lv + '！ じゃがいもと畑の3区画が解放されました');
+  };
 
   // ---------- 操作：区画のなぞり／カメラ移動／ズーム ----------
   function plotAt(sx, sy) {
     const w = toWorld(sx, sy);
-    for (let i = 0; i < PLOT_COUNT; i++) {
+    for (let i = 0, n = activePlots(); i < n; i++) {
       const R = plotRect(i);   // 背の高い穂も押せるよう上に少し広げる
       if (w.x >= R.x - 1 && w.x < R.x + R.w + 1 && w.y >= R.y - 6 && w.y < R.y + R.h + 1) return i;
     }
@@ -918,7 +1233,8 @@
   let gesture = null;          // 'farm' | 'pan' | 'pinch'
   let pan = null, pinch = null;
   const mid = () => { const a = [...ptrs.values()]; return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2, d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) }; };
-  function startPan(x, y) { gesture = 'pan'; pan = { sx: x, sy: y, cx: cam.x, cy: cam.y }; canvas.classList.add('grabbing'); }
+  function startPan(x, y, tap = false) { gesture = 'pan'; pan = { sx: x, sy: y, cx: cam.x, cy: cam.y, moved: 0, tap }; canvas.classList.add('grabbing'); }
+  function hitBoard(sx, sy) { const w = toWorld(sx, sy); return w.x >= BOARD.x && w.x < BOARD.x + BOARD.w && w.y >= BOARD.y && w.y < BOARD.y + BOARD.h; }
   function startPinch() {
     mode = null; gesture = 'pinch';
     const m = mid(); pinch = { d0: Math.max(10, m.d), z0: cam.zoom, w: toWorld(m.x, m.y) };
@@ -929,13 +1245,13 @@
     clampCam();
   }
   canvas.addEventListener('pointerdown', e => {
-    e.preventDefault();
+    e.preventDefault(); camTarget = null;
     try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
     ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (ptrs.size === 2) { startPinch(); return; }
     if (ptrs.size > 2) return;
     const i = plotAt(e.clientX, e.clientY);
-    if (i < 0) { startPan(e.clientX, e.clientY); return; }   // 区画の外 → カメラ
+    if (i < 0) { startPan(e.clientX, e.clientY, hitBoard(e.clientX, e.clientY)); return; }   // 区画の外 → カメラ（掲示板の上のタップは注文パネル）
     gesture = 'farm';                                         // 区画の上 → なぞり優先（カメラは動かさない）
     touched = new Set();
     const p = state.plots[i];
@@ -952,6 +1268,7 @@
     if (gesture === 'pinch' && ptrs.size >= 2) {
       const m = mid(); zoomAround(m.x, m.y, pinch.w, pinch.z0 * m.d / pinch.d0);
     } else if (gesture === 'pan') {
+      pan.moved = Math.max(pan.moved, Math.hypot(e.clientX - pan.sx, e.clientY - pan.sy));
       cam.x = pan.cx - (e.clientX - pan.sx) / scale(); cam.y = pan.cy - (e.clientY - pan.sy) / scale(); clampCam();
     } else if (gesture === 'farm' && mode) {
       apply(plotAt(e.clientX, e.clientY));
@@ -959,13 +1276,17 @@
   });
   const up = e => {
     ptrs.delete(e.pointerId);
-    if (ptrs.size === 0) { gesture = null; mode = null; touched = new Set(); canvas.classList.remove('grabbing'); }
+    if (ptrs.size === 0) {
+      const tapBoard = e.type === 'pointerup' && gesture === 'pan' && pan && pan.tap && pan.moved < 8;
+      gesture = null; mode = null; touched = new Set(); canvas.classList.remove('grabbing');
+      if (tapBoard) openOrders();
+    }
     else if (gesture === 'pinch' && ptrs.size === 1) { const [q] = ptrs.values(); startPan(q.x, q.y); }
   };
   canvas.addEventListener('pointerup', up);
   canvas.addEventListener('pointercancel', up);
   canvas.addEventListener('wheel', e => {
-    e.preventDefault();
+    e.preventDefault(); camTarget = null;
     zoomAround(e.clientX, e.clientY, toWorld(e.clientX, e.clientY), cam.zoom * Math.exp(-e.deltaY * .0015));
   }, { passive: false });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -975,6 +1296,7 @@
   window.__clockseed = {
     plotCenter: i => { const R = plotRect(i); return toScreen(R.x + R.w / 2, R.y + R.h / 2); },
     worldToScreen: toScreen,
+    boardCenter: () => toScreen(BOARD.cx, BOARD.top + 10),
     camera: () => ({ x: cam.x, y: cam.y, zoom: cam.zoom }),
     spriteSizes: () => Object.fromEntries(Object.entries(SPR).map(([k, v]) => [k, [v.width, v.height]])),
   };

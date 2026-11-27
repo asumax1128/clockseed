@@ -42,6 +42,22 @@
 
   #palette{bottom:12px;left:0;right:0;display:flex;gap:10px;flex-wrap:nowrap;justify-content:center;pointer-events:none}
   #palette > *{pointer-events:auto}
+  #variantBar{position:fixed;bottom:66px;left:0;right:0;display:none;gap:6px;justify-content:center;flex-wrap:wrap;pointer-events:none;z-index:5}
+  #variantBar > *{pointer-events:auto}
+  .vbtn{padding:3px 10px 3px 6px;font-size:14px;gap:5px}
+  .vbtn img{width:24px;height:24px}
+  .vbtn small{display:block;font-size:10px;opacity:.8}
+  #popup .vlabel{font-size:13px;color:#7a5a30;margin-top:4px;text-align:center}
+  #popup #popupVar{margin:6px 0 8px;gap:8px}
+  .onote{font-size:13px;padding:6px 10px;margin:4px 0;border-radius:6px;background:#f6ecd0;display:flex;align-items:center;gap:6px}
+  .onote img{width:22px;height:22px}
+  .onote.forecast{background:#e4eef6;color:#2f4a66}
+  .onote.boost{background:#f8e0c8;color:#7a3e12}
+  .orow.peddler{background:#fbe8b8;outline:2px solid #d8a040}
+  .ptag{background:#c0702a;color:#fff;font-size:11px;padding:1px 5px;border-radius:4px;margin-right:4px}
+  .vtag{background:#7c62d8;color:#fff;font-size:10px;padding:0 4px;border-radius:4px;margin-left:4px}
+  .dexbuff{font-size:12px;color:#7a5a30;margin:2px 0 6px}
+  .sbtns .keeper{background:#e8dcff}
   #palette .tool span,#warehouse .ttl,.stock{white-space:nowrap}
   #warehouse.compact{gap:6px;font-size:15px;padding:4px 10px}
   #warehouse.compact .stock{gap:2px}
@@ -226,6 +242,7 @@
     </button>
   </div>
   <div id="palette" style="position:absolute"></div>
+  <div id="variantBar"></div>
   <div id="subHud">
     <button id="drillHud" class="pix" title="時計塔のドリル（時短ストック・カケラ・即完了チケット）">
       <span><img class="px" data-icon="ic_hourglass" alt="時短"><span id="dhStock">0:00</span></span>
@@ -240,6 +257,7 @@
 <div id="popup" class="overlay"><div class="box pix">
   <div class="q">なにを植える？</div>
   <div class="row" id="popupRow"></div>
+  <div id="popupVarWrap" style="display:none"><div class="vlabel">変種（ガチャで解放した種）</div><div class="row" id="popupVar"></div></div>
   <button class="cancel" id="popupCancel">やめる</button>
 </div></div>
 <div id="ordersPanel" class="overlay"><div class="box pix">
@@ -691,7 +709,7 @@
 (() => {
   'use strict';
   const SAVE_KEY = 'clockseed.save';
-  const SAVE_VERSION = 7;
+  const SAVE_VERSION = 8;
   const MAX_PLOTS = 24;                // 区画の最大数（町Lv8で24）
   const ORDER_COUNT = 3;               // 同時に出る注文の数
   const ORDER_MIN = 3, ORDER_MAX = 9;  // 生の作物の注文の個数の範囲
@@ -765,6 +783,23 @@
     const pr = r.product;
     ITEMS[pr.key] = { name: pr.name, icon: pr.icon, price: pr.price, orderExp: pr.orderExp, orderQty: pr.orderQty, building: r.building, recipe: rk };
   }
+  // 変種の種（ガチャ）→ 通常種の作物。bonus＝生売り価格の上乗せ（％）、expBonus＝注文の町経験値の上乗せ（％）
+  const VARIANTS = {
+    sd01: { crop: 'wheat', bonus: 5 },  sd02: { crop: 'carrot', bonus: 5 }, sd03: { crop: 'potato', bonus: 5 },  sd04: { crop: 'tomato', bonus: 0 },
+    sd05: { crop: 'corn', bonus: 5 },   sd06: { crop: 'strawberry', bonus: 0 }, sd07: { crop: 'pumpkin', bonus: 5 }, sd08: { crop: 'grape', bonus: 0 },
+    sd09: { crop: 'wheat', bonus: 0 },  sd10: { crop: 'strawberry', bonus: 15, expBonus: 20 }, sd11: { crop: 'carrot', bonus: 5 }, sd12: { crop: 'potato', bonus: 0 },
+    sd13: { crop: 'corn', bonus: 5 },   sd14: { crop: 'pumpkin', bonus: 10 }, sd15: { crop: 'tomato', bonus: 0 }, sd16: { crop: 'grape', bonus: 5 },
+  };
+  const VARIANT_KEYS = Object.keys(VARIANTS);
+  const VARIANT_ORDER_QTY = [1, 4];
+  for (const sd of VARIANT_KEYS) {                   // 変種の収穫物：倉庫では専用の品目（v_sd01 など）
+    const V = VARIANTS[sd], c = CROPS[V.crop];
+    ITEMS['v_' + sd] = { name: window.ClockseedGacha.byId[sd].name, icon: 'v_' + sd + '_ic', price: c.price, vBonus: V.bonus, seed: sd, variantOf: V.crop,
+      unlockLv: c.unlockLv, orderQty: VARIANT_ORDER_QTY, orderExp: V.expBonus ? Math.ceil(c.orderExp * (100 + V.expBonus) / 100) : c.orderExp };
+  }
+  // 品目別の価格修飾（所持しているだけで常時発動。売値と注文報酬の両方に効く。合計の上限は+15%）
+  const PRICE_MODS = { tsauce: [['sd04', 10], ['sd15', 15]], fries: [['sd12', 10]], sjam: [['sd06', 15]], gjam: [['sd08', 15]], bread: [['sd09', 15]], jambread: [['sd09', 15]] };
+  const GARDENER_MOD = 5, MOD_CAP = 15;              // 伝説の庭師（hp09）：全ての変種の生売り価格+5%（上限の計算に含める）
   const ITEM_KEYS = Object.keys(ITEMS);
   const BUILDING_KEYS = Object.keys(BUILDINGS);
 
@@ -783,11 +818,12 @@
   const buildingBuilt = (bs, key, t = Date.now()) => !!(bs && bs[key] && t >= bs[key].builtAt);
   // 注文・倉庫に出せるか：作物は町Lv。加工品は「施設が完成」「レシピが町Lvで解放済み」「材料が全て手に入る」の3つ
   // （材料までさかのぼって確かめるので、作れない品物の注文は出ない）
-  function itemAvailable(k, lv, bs) {
+  function itemAvailable(k, lv, bs, gs) {
     const it = ITEMS[k];
+    if (it.seed) return !!(gs && gs.items && gs.items[it.seed]) && it.unlockLv <= lv;
     if (!it.recipe) return it.unlockLv <= lv;
     const r = RECIPES[it.recipe];
-    return buildingBuilt(bs, r.building) && (r.unlockLv || 1) <= lv && Object.keys(r.inputs).every(i => itemAvailable(i, lv, bs));
+    return buildingBuilt(bs, r.building) && (r.unlockLv || 1) <= lv && Object.keys(r.inputs).every(i => itemAvailable(i, lv, bs, gs));
   }
 
   // ---------- 町の配置（タイル座標）。描画と隣接ルールの両方で使う ----------
@@ -817,17 +853,28 @@
   const facNeighbors = (k, bs, t) => BUILDING_KEYS.filter(o => o !== k && buildingBuilt(bs, o, t) && tilesTouch(FACILITY_TILES[k], FACILITY_TILES[o]));
 
   // ---------- セーブ ----------
-  function newOrder(lv, bs) {
-    const open = ITEM_KEYS.filter(k => itemAvailable(k, lv, bs));
+  function rollOrder(lv, bs, gs) {
+    const open = ITEM_KEYS.filter(k => itemAvailable(k, lv, bs, gs));
     const k = open[Math.floor(Math.random() * open.length)], [lo, hi] = ITEMS[k].orderQty;
     return { crop: k, qty: lo + Math.floor(Math.random() * (hi - lo + 1)) };
   }
+  const newOrderId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  // 次の注文を取り出す。次の次をすぐ決めておく（st.nextOrder）。注文はすべてここから作る
+  function takeOrder(st, lv) {
+    const q = st.nextOrder, ok = q && ITEMS[q.crop] && itemAvailable(q.crop, lv, st.buildings, st.gacha);
+    const o = ok ? { crop: q.crop, qty: q.qty } : rollOrder(lv, st.buildings, st.gacha);
+    st.nextOrder = rollOrder(lv, st.buildings, st.gacha);
+    return o;
+  }
+  const freshBuffs = () => ({ fert: 0, fertPlus: 0, double: 0, boost: 0 });     // 消耗品の予約数
+  const freshHelpers = () => ({ keeperDay: '', peddlerDay: '', peddler: null, crowSeen: [] });
   function freshState() {
     const st = { saveVersion: SAVE_VERSION, plots: Array(MAX_PLOTS).fill(null),
-                 storage: {}, gold: 0, townExp: 0, orders: [], buildings: {}, drill: freshDrill(), gacha: window.ClockseedGacha.freshState() };
+                 storage: {}, gold: 0, townExp: 0, orders: [], orderIds: [], nextOrder: null, buildings: {}, drill: freshDrill(), gacha: window.ClockseedGacha.freshState(),
+                 buffs: freshBuffs(), helpers: freshHelpers() };
     for (const k of ITEM_KEYS) st.storage[k] = 0;
     for (const k of BUILDING_KEYS) st.buildings[k] = null;
-    while (st.orders.length < ORDER_COUNT) st.orders.push(newOrder(1, st.buildings));
+    while (st.orders.length < ORDER_COUNT) { st.orders.push(takeOrder(st, 1)); st.orderIds.push(newOrderId()); }
     return st;
   }
   const nat = n => (Number.isInteger(n) && n >= 0 ? n : 0);
@@ -849,6 +896,7 @@
         if (p && CROPS[p.crop] && CROPS[p.crop].unlockLv <= lv && isFinite(p.plantedAt) && isFinite(p.readyAt)) {
           s.plots[i] = { crop: p.crop, plantedAt: p.plantedAt, readyAt: p.readyAt };
           if (isFinite(p.skipMs) && p.skipMs > 0) s.plots[i].skipMs = p.skipMs;      // 時短で前倒しした量（元の所要時間を保つため）
+          if (p.v && VARIANTS[p.v] && VARIANTS[p.v].crop === p.crop) s.plots[i].v = p.v;   // 変種（version 8〜）
         }
       }
       for (const k of ITEM_KEYS) s.storage[k] = nat(d.storage && d.storage[k]);
@@ -873,12 +921,22 @@
           if (/^[A-E]\d{1,2}$/.test(id) && v && nat(v.n) >= nat(v.ok)) D.stats[id] = { ok: nat(v.ok), n: nat(v.n) };
         }
       }
-      s.orders = [];
-      for (let i = 0; i < ORDER_COUNT; i++) {
-        const o = Array.isArray(d.orders) ? d.orders[i] : null;
-        const ok = o && ITEMS[o.crop] && itemAvailable(o.crop, lv, s.buildings) && Number.isInteger(o.qty) &&
+      // 消耗品の予約・お手伝いの記録（version 7 以前には無い → 初期値）
+      if (d.buffs) for (const k of Object.keys(s.buffs)) s.buffs[k] = nat(d.buffs[k]);
+      const dh = d.helpers || {}, isDay = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+      s.helpers.keeperDay = isDay(dh.keeperDay) ? dh.keeperDay : '';
+      s.helpers.peddlerDay = isDay(dh.peddlerDay) ? dh.peddlerDay : '';
+      const P = dh.peddler;
+      s.helpers.peddler = P && CROPS[P.crop] && Number.isInteger(P.qty) && P.qty > 0 && isDay(P.day) && typeof P.id === 'string' ? { crop: P.crop, qty: P.qty, day: P.day, id: P.id } : null;
+      s.helpers.crowSeen = Array.isArray(dh.crowSeen) ? dh.crowSeen.filter(x => typeof x === 'string').slice(-20) : [];
+      const validOrder = o => o && ITEMS[o.crop] && itemAvailable(o.crop, lv, s.buildings, s.gacha) && Number.isInteger(o.qty) &&
                    o.qty >= ITEMS[o.crop].orderQty[0] && o.qty <= ITEMS[o.crop].orderQty[1];
-        s.orders.push(ok ? { crop: o.crop, qty: o.qty } : newOrder(lv, s.buildings));
+      s.nextOrder = validOrder(d.nextOrder) ? { crop: d.nextOrder.crop, qty: d.nextOrder.qty } : rollOrder(lv, s.buildings, s.gacha);
+      s.orders = []; s.orderIds = [];
+      for (let i = 0; i < ORDER_COUNT; i++) {
+        const o = Array.isArray(d.orders) ? d.orders[i] : null, ok = validOrder(o), id = Array.isArray(d.orderIds) ? d.orderIds[i] : null;
+        s.orders.push(ok ? { crop: o.crop, qty: o.qty } : takeOrder(s, lv));
+        s.orderIds.push(ok && typeof id === 'string' ? id : newOrderId());
       }
       return s;
     } catch (e) { return freshState(); }
@@ -898,20 +956,32 @@
     return Math.min(1, Math.max(0, (t - p.plantedAt) / total));
   }
   const isReady = (p, t) => !!p && t >= p.readyAt;
-  function plant(i, crop) {
+  const ownsHelper = id => !!(state.gacha && state.gacha.items[id]);
+  const variantsOf = crop => VARIANT_KEYS.filter(sd => VARIANTS[sd].crop === crop);
+  const unlockedVariants = crop => variantsOf(crop).filter(sd => state.gacha.items[sd]);
+  function plant(i, crop, v) {
     if (i < 0 || i >= activePlots() || state.plots[i] || !CROPS[crop] || CROPS[crop].unlockLv > townLevel()) return false;
+    if (v && !(VARIANTS[v] && VARIANTS[v].crop === crop && state.gacha.items[v])) return false;   // 変種は解放済みのものだけ
     const t = now();
     let dur = CROPS[crop].growMs / FAST;
     if (plotNearRiver(i, townLevel())) dur = shorten(dur);        // 隣接ルール：川沿いは育成時間10%短縮（植え付け時に readyAt へ反映）
     state.plots[i] = { crop, plantedAt: t, readyAt: t + dur };
+    if (v) state.plots[i].v = v;                                    // 変種：育成時間・収穫数は通常種と同じ
     save(); return true;
   }
+  // 収穫：予約された消耗品を1回分ずつ使う。肥料・改（+2）を先に、なければ肥料（+1）。ダブル収穫は（基本数＋肥料）×2
   function harvest(i) {
     const p = state.plots[i];
     if (!p || !isReady(p, now())) return false;
-    state.storage[p.crop] += CROPS[p.crop].yield;
+    const B = state.buffs, fx = [];
+    let n = CROPS[p.crop].yield;
+    if (B.fertPlus > 0) { n += 2; B.fertPlus -= 1; fx.push('肥料・改 +2'); }
+    else if (B.fert > 0) { n += 1; B.fert -= 1; fx.push('肥料 +1'); }
+    if (B.double > 0) { n *= 2; B.double -= 1; fx.push('ダブル収穫 ×2'); }
+    const key = p.v ? 'v_' + p.v : p.crop;
+    state.storage[key] += n;
     state.plots[i] = null;
-    save(); return true;
+    save(); return { key, n, fx };
   }
   const stageOf = (p, t) => !p ? 0 : t >= p.readyAt ? 3 : progress(p, t) >= 0.5 ? 2 : 1;
 
@@ -925,11 +995,17 @@
     state.buildings[key] = { startedAt: t, builtAt: t + B.buildMs / FAST, job: null };
     save(); return true;
   }
-  const canCraft = rk => Object.entries(RECIPES[rk].inputs).every(([k, n]) => state.storage[k] >= n);
+  // 材料の所持数：作物は変種も数える（製品は通常品）
+  const haveFor = k => state.storage[k] + (CROPS[k] ? variantsOf(k).reduce((a, sd) => a + state.storage['v_' + sd], 0) : 0);
+  const canCraft = rk => Object.entries(RECIPES[rk].inputs).every(([k, n]) => haveFor(k) >= n);
+  function consumeInput(k, n) {                      // 通常種を優先し、足りない分を変種から（種の番号順に）充てる
+    const a = Math.min(n, state.storage[k]); state.storage[k] -= a; n -= a;
+    if (CROPS[k]) for (const sd of variantsOf(k)) { if (!n) break; const b = Math.min(n, state.storage['v_' + sd]); state.storage['v_' + sd] -= b; n -= b; }
+  }
   function startJob(key, rk) {                       // 加工は1施設につき同時に1件。材料は開始時に消費
     const r = RECIPES[rk], b = state.buildings[key];
     if (!r || r.building !== key || bState(key) !== 'built' || b.job || (r.unlockLv || 1) > townLevel() || !canCraft(rk)) return false;
-    for (const [k, n] of Object.entries(r.inputs)) state.storage[k] -= n;
+    for (const [k, n] of Object.entries(r.inputs)) consumeInput(k, n);
     const t = now();
     let ms = r.ms / FAST;
     if (facNeighbors(key, state.buildings, t).length) ms = shorten(ms);   // 隣接ルール：他の施設と隣り合うと加工時間10%短縮（建設には効かない）
@@ -989,15 +1065,19 @@
   }
   const ownedCount = id => state.gacha.items[id] || 0;
   // 使える消耗品（今回の範囲）：時の砂は時短ストックに加算（上限で頭打ち）、即完成券は即完了チケット+1
-  const CONS_USE = { cs02: { sec: 600 }, cs05: { sec: 1800 }, cs06: { ticket: 1 } };
+  const CONS_USE = { cs02: { sec: 600 }, cs05: { sec: 1800 }, cs06: { ticket: 1 },
+                     cs01: { reserve: 'fert' }, cs04: { reserve: 'fertPlus' }, cs08: { reserve: 'double' }, cs07: { reserve: 'boost' }, cs09: { allSand: true } };
   function canUseCons(id) {
     const u = CONS_USE[id];
+    if (u && u.allSand) return ownedCount(id) >= 1 && timers().some(tm => sandAdvance(tm, now()) >= 1000);   // 進められるタイマーが無いときは使わせない
     return !!u && ownedCount(id) >= 1 && !(u.sec && state.drill.stock >= DRILL_STOCK_MAX);   // ストックが満タンの時の砂は使わせない（無駄になる）
   }
   function useConsumable(id) {
     if (!canUseCons(id)) return null;
     const u = CONS_USE[id], D = state.drill;
     state.gacha.items[id] -= 1;
+    if (u.reserve) { state.buffs[u.reserve] += 1; save(); return { reserve: u.reserve, count: state.buffs[u.reserve] }; }
+    if (u.allSand) { const moved = applyAllSand(); save(); return { allSand: moved }; }
     let sec = 0;
     if (u.sec) { const b = D.stock; D.stock = Math.min(DRILL_STOCK_MAX, D.stock + u.sec); sec = D.stock - b; }
     if (u.ticket) D.tickets += u.ticket;
@@ -1008,8 +1088,8 @@
     const o = state.orders[i];
     if (!o || ownedCount('cs03') < 1) return false;
     let n, k = 0;
-    do { n = newOrder(townLevel(), state.buildings); } while (n.crop === o.crop && n.qty === o.qty && ++k < 50);
-    state.gacha.items.cs03 -= 1; state.orders[i] = n;
+    do { n = takeOrder(state, townLevel()); } while (n.crop === o.crop && n.qty === o.qty && ++k < 50);
+    state.gacha.items.cs03 -= 1; state.orders[i] = n; state.orderIds[i] = newOrderId();
     save(); return true;
   }
 
@@ -1030,19 +1110,23 @@
         label: BUILDINGS[k].name + 'の建設', icon: k + '_wip' });
       else if (b.job && t < b.job.readyAt) {
         const pr = RECIPES[b.job.recipe].product;
+        const eff = (k === 'bakery' && ownsHelper('hp03')) || (k === 'ranch' && ownsHelper('hp05')) ? HELPER_SKIP_EFF : 1;
         out.push({ id: 'job:' + k, kind: 'job', ref: b.job, start: b.job.startedAt, ready: b.job.readyAt, skip: b.job.skipMs || 0,
-          label: BUILDINGS[k].name + '：' + pr.name, icon: pr.icon });
+          label: BUILDINGS[k].name + '：' + pr.name, icon: pr.icon, eff });
       }
     }
     return out.sort((a, b) => a.ready - b.ready);
   }
   const origDur = tm => tm.ready - tm.start + tm.skip;
+  // 見習いパン職人（パン屋）・乳しぼり上手なおばあさん（牧場の牛乳）：ストック1秒で1.1秒分進む（追い込み区間の2倍消費と併用）
+  const HELPER_SKIP_EFF = 1.1;
   function skipCostMs(tm, cut, t) {                  // cut ミリ秒縮めるのに必要なストック（ミリ秒）
     const R = tm.ready - t, normal = Math.max(0, Math.min(cut, R - origDur(tm) * SKIP_RUSH));
-    return normal + 2 * (cut - normal);
+    return (normal + 2 * (cut - normal)) / (tm.eff || 1);
   }
   const skipCostSec = (tm, cut, t) => Math.ceil(skipCostMs(tm, cut, t) / 1000 - 1e-9);
   function skipMaxMs(tm, stockMs, t) {               // ストックで縮められる最大量（ミリ秒）
+    stockMs *= tm.eff || 1;
     const R = tm.ready - t, normalAvail = Math.max(0, R - origDur(tm) * SKIP_RUSH);
     if (stockMs <= normalAvail) return stockMs;
     return Math.min(R, normalAvail + (stockMs - normalAvail) / 2);
@@ -1065,6 +1149,24 @@
     shiftTimer(tm, ms);
     save(); return { cost, ms, done: ms >= R };
   }
+  // 時の番人：1日1回、チケットもストックも使わずに1件を即完了（日付が変わると復活）
+  const keeperReady = () => ownsHelper('hp11') && state.helpers.keeperDay !== localDay();
+  function useKeeper(id) {
+    const t = now(), tm = timers(t).find(x => x.id === id);
+    if (!tm || !keeperReady()) return null;
+    state.helpers.keeperDay = localDay();
+    const ms = tm.ready - t;
+    shiftTimer(tm, ms);
+    save(); return { ms };
+  }
+  // 全体時の砂：進行中の全タイマーを10分進める。ただし各タイマーの「元の所要時間の25%」の境界は越えない
+  const ALL_SAND_MS = 10 * 60 * 1000;
+  const sandAdvance = (tm, t) => Math.max(0, Math.min(ALL_SAND_MS, tm.ready - t - origDur(tm) * SKIP_RUSH));
+  function applyAllSand() {
+    const t = now(), list = timers(t).map(tm => [tm, sandAdvance(tm, t)]).filter(([, ms]) => ms > 0);
+    for (const [tm, ms] of list) shiftTimer(tm, ms);
+    return list.map(([tm, ms]) => ({ id: tm.id, ms }));
+  }
   function useTicket(id) {                           // 即完了チケット：ストックを使わずに1件を即完了
     const t = now(), tm = timers(t).find(x => x.id === id);
     if (!tm || state.drill.tickets < 1) return null;
@@ -1082,16 +1184,65 @@
     if (townLevel() > before) onLevelUp(townLevel());
   }
   // 報酬ゴールド＝単価×個数×1.3（端数切り上げ）。小数誤差を避けるため整数で ceil(x*13/10) を計算
-  const orderReward = o => ({ gold: Math.floor((ITEMS[o.crop].price * o.qty * 13 + 9) / 10), exp: ITEMS[o.crop].orderExp });
+  // 単価（売値）＝ 基本価格 ×（1 ＋ 変種の上乗せ ＋ min(15%, 価格修飾の合計)）の切り上げ
+  function priceBonus(k) {
+    const it = ITEMS[k], g = state.gacha.items;
+    let mod = 0;
+    for (const [sd, pct] of PRICE_MODS[k] || []) if (g[sd]) mod += pct;
+    if (it.seed && g.hp09) mod += GARDENER_MOD;
+    return (it.vBonus || 0) + Math.min(MOD_CAP, mod);
+  }
+  const unitPrice = k => Math.floor((ITEMS[k].price * (100 + priceBonus(k)) + 99) / 100);
+  const orderReward = o => ({ gold: Math.floor((unitPrice(o.crop) * o.qty * 13 + 9) / 10), exp: ITEMS[o.crop].orderExp });
+  const BOOST_RATE = 1.5;                            // 注文ブースト券：次の納品1件だけ町経験値+50%（端数切り上げ）
+  function useBoost(exp) { if (state.buffs.boost > 0) { state.buffs.boost -= 1; return { exp: Math.ceil(exp * BOOST_RATE), boosted: true }; } return { exp, boosted: false }; }
   function deliver(i) {
     const o = state.orders[i];
     if (!o || state.storage[o.crop] < o.qty) return false;
-    const r = orderReward(o);
+    const r = orderReward(o), b = useBoost(r.exp);
     state.storage[o.crop] -= o.qty;
     state.gold += r.gold;
-    gainExp(r.exp);                                  // 先に経験値を加算（Lvが上がれば新作物も注文に出る）
-    state.orders[i] = newOrder(townLevel(), state.buildings);
+    gainExp(b.exp);                                  // 先に経験値を加算（Lvが上がれば新作物も注文に出る）
+    state.orders[i] = takeOrder(state, townLevel()); state.orderIds[i] = newOrderId();
+    save(); return { gold: r.gold, exp: b.exp, boosted: b.boosted };
+  }
+  // 行商人：1日1回まで、注文パネルを開いたときに40%で特別注文（解放済みの生の作物を単価×1.5で買い取る。町経験値は2倍）
+  const PEDDLER_RATE = 0.4;
+  function rollPeddler() {
+    const H = state.helpers, day = localDay();
+    if (!ownsHelper('hp06') || H.peddlerDay === day) return false;
+    H.peddlerDay = day;
+    if (Math.random() < PEDDLER_RATE) {
+      const open = CROP_KEYS.filter(k => CROPS[k].unlockLv <= townLevel());
+      H.peddler = { crop: open[Math.floor(Math.random() * open.length)], qty: 3 + Math.floor(Math.random() * 7), day, id: newOrderId() };
+    } else H.peddler = null;
     save(); return true;
+  }
+  const peddlerOrder = () => { const P = state.helpers.peddler; return P && P.day === localDay() ? P : null; };   // その日だけ有効
+  const peddlerReward = P => ({ gold: Math.floor((unitPrice(P.crop) * P.qty * 15 + 9) / 10), exp: ITEMS[P.crop].orderExp * 2 });
+  function deliverPeddler() {
+    const P = peddlerOrder();
+    if (!P || state.storage[P.crop] < P.qty) return false;
+    const r = peddlerReward(P), b = useBoost(r.exp);
+    state.storage[P.crop] -= P.qty; state.gold += r.gold; gainExp(b.exp);
+    state.helpers.peddler = null;
+    save(); return { gold: r.gold, exp: b.exp, boosted: b.boosted };
+  }
+  // 配達ねこ：加工が完了した製品を倉庫へ自動で運ぶ
+  function autoCollect() {
+    if (!ownsHelper('hp02')) return [];
+    const got = [];
+    for (const k of BUILDING_KEYS) { const b = state.buildings[k]; if (b && b.job && now() >= b.job.readyAt) { const pr = RECIPES[b.job.recipe].product; if (collectJob(k)) got.push(pr.name + '×' + pr.qty); } }
+    return got;
+  }
+  // 郵便カラス：納品できる注文が新しく生まれたら知らせる（同じ注文では1回だけ）
+  function crowCheck() {
+    if (!ownsHelper('hp07')) return [];
+    const H = state.helpers, P = peddlerOrder(), list = state.orders.map((o, i) => [o, state.orderIds[i]]).concat(P ? [[P, P.id]] : []);
+    const fresh = list.filter(([o, id]) => state.storage[o.crop] >= o.qty && !H.crowSeen.includes(id));
+    if (!fresh.length) return [];
+    H.crowSeen = H.crowSeen.concat(fresh.map(([, id]) => id)).filter(id => list.some(([, x]) => x === id)).slice(-20);
+    save(); return fresh.map(([o]) => ITEMS[o.crop].name + '×' + o.qty);
   }
   function sell(item, n) {
     const c = ITEMS[item];
@@ -1099,7 +1250,7 @@
     n = Math.min(n, state.storage[item]);
     if (n <= 0) return 0;
     state.storage[item] -= n;
-    state.gold += c.price * n;
+    state.gold += unitPrice(item) * n;
     save(); return n;
   }
 
@@ -1989,6 +2140,43 @@
   }
   const SPR = {};
   for (const k in SPR_SRC) SPR[k] = buildSprite(SPR_SRC[k]);
+  // 変種：葉（緑）は残し、実・穂の色だけを置き換える。rainbow は横位置で色相を回す。star は星空の粒
+  const VARIANT_LOOK = {
+    sd01: '#e8a83a', sd02: '#ff9a2a', sd03: '#f2c62a', sd04: '#4a7ad8', sd05: '#f6e488', sd06: '#f6f2ea', sd07: '#f08a48', sd08: '#d8922e',
+    sd09: 'rainbow', sd10: 'star', sd11: '#ff6a8a', sd12: '#9a52c8', sd13: '#e6c85a', sd14: '#ffc81e', sd15: '#fbfbff', sd16: '#7c62d8',
+  };
+  function recolor(src, look, mark) {
+    const w = src.width, h = src.height, cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const cx = cv.getContext('2d'); cx.drawImage(src, 0, 0);
+    const im = cx.getImageData(0, 0, w, h), d = im.data;
+    const hex = c => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+    const hsl2rgb = (H, S, L) => { const f = n => { const k = (n + H / 30) % 12, a = S * Math.min(L, 1 - L); return 255 * (L - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))); }; return [f(0), f(8), f(4)]; };
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const o = (y * w + x) * 4; if (!d[o + 3]) continue;
+      const r = d[o], g = d[o + 1], b = d[o + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 510;
+      let hue = 0; if (mx !== mn) hue = mx === r ? 60 * (((g - b) / (mx - mn)) % 6) : mx === g ? 60 * ((b - r) / (mx - mn) + 2) : 60 * ((r - g) / (mx - mn) + 4);
+      if (hue < 0) hue += 360;
+      const sat = mx ? (mx - mn) / mx : 0;
+      if ((hue > 70 && hue < 175 && sat > .18) || l < .16) continue;   // 葉・茎・輪郭はそのまま
+      let t;
+      if (look === 'rainbow') t = hsl2rgb((x * 360 / Math.max(4, w)) % 360, .75, Math.min(.85, .25 + l * .8));
+      else if (look === 'star') t = ((x * 7 + y * 13) % 11 === 0) ? [255, 246, 200] : [Math.min(255, 40 + l * 90), Math.min(255, 44 + l * 80), Math.min(255, 120 + l * 150)];
+      else { const c = hex(look), k = Math.min(1.35, .35 + l * 1.25); t = c.map(v => Math.min(255, v * k)); }
+      d[o] = t[0]; d[o + 1] = t[1]; d[o + 2] = t[2];
+    }
+    cx.putImageData(im, 0, 0);
+    if (mark) {                                       // 右上に小さな星（変種のしるし）
+      const X = w - 3, Y = 0;
+      cx.fillStyle = '#6a4a10'; cx.fillRect(X, Y, 3, 3);
+      cx.fillStyle = '#fff2a0'; cx.fillRect(X + 1, Y, 1, 3); cx.fillRect(X, Y + 1, 3, 1);
+    }
+    return cv;
+  }
+  for (const sd of VARIANT_KEYS) {
+    const c = VARIANTS[sd].crop, L = VARIANT_LOOK[sd];
+    for (const st of [1, 2, 3]) SPR['v_' + sd + '_' + st] = recolor(SPR[c + st], L, st === 3);
+    SPR['v_' + sd + '_ic'] = recolor(SPR[CROPS[c].icon], L, true);
+  }
 
   // UIアイコン（ドット絵をそのまま拡大表示）
   const iconURL = k => SPR[k].toDataURL();
@@ -2488,20 +2676,32 @@
       const R = plotRect(i), st = stageOf(p, t);
       ctx.drawImage(p ? PLOT_IMG[i].wet : PLOT_IMG[i].dry, R.x, R.y);
       if (!p) return;
-      const s = SPR[p.crop + st];
+      const s = SPR[(p.v ? 'v_' + p.v + '_' : p.crop) + st];
       SLOTS.forEach(([bx, by], k) => {
         const fx = R.x + bx + SLOT_JIT[i][k], fy = R.y + by;
         objs.push({ y: fy, shadow: [fx, fy, st === 1 ? 3 : 5, st === 1 ? 1 : 1.6],
           draw: c => c.drawImage(s, fx - (s.width >> 1), fy - s.height + 1) });
       });
     });
+    if (ownsHelper('hp04') && AP > 0) {                          // 水やり少年：畑の区画を順にめぐる（演出のみ）
+      const n = Math.min(AP, 6), cyc = ts / 3.2, a = Math.floor(cyc) % n, b2 = (a + 1) % n, f = cyc % 1;
+      const RA = plotRect(a), RB = plotRect(b2), ease = f < .7 ? f / .7 : 1;
+      const wx = Math.round(RA.x + 16 + (RB.x - RA.x) * ease), wy = Math.round(RA.y + PLOT_PX + 3 + (RB.y - RA.y) * ease), water = f >= .7;
+      objs.push({ y: wy, shadow: [wx, wy, 4, 1.4], draw: c => {
+        const step = water ? 0 : Math.floor(ts * 8) % 2, X = wx - 3, Y = wy - 13;
+        px(c, X + 1, Y, '#6a3e1e', 5, 2); px(c, X + 1, Y + 2, '#f0c8a0', 5, 3); px(c, X + 2, Y + 3, '#3a2a20', 1, 1); px(c, X + 4, Y + 3, '#3a2a20', 1, 1);
+        px(c, X, Y + 5, '#3f7fc0', 7, 4); px(c, X + 1, Y + 9, '#5a4030', 2, 3 - step); px(c, X + 4, Y + 9, '#5a4030', 2, 2 + step);
+        px(c, X + 7, Y + 6, '#9aa8b0', 3, 3); px(c, X + 10, Y + 6, '#9aa8b0', 1, 1);
+        if (water) for (let k = 0; k < 3; k++) { const yy = Y + 8 + ((Math.floor(ts * 12) + k * 2) % 6); px(c, X + 11 + k, yy, '#8fd0ff', 1, 1); }
+      } });
+    }
     // 足元の影 → y ソートで立つ物
     for (const o of objs) if (o.shadow) shadow(ctx, ...o.shadow);
     objs.sort((a, b) => a.y - b.y);
     for (const o of objs) o.draw(ctx);
 
     // 納品できる注文があれば掲示板の上に「！」
-    if (state.orders.some(o => state.storage[o.crop] >= o.qty)) {
+    if (state.orders.some(o => state.storage[o.crop] >= o.qty) || (peddlerOrder() && state.storage[peddlerOrder().crop] >= peddlerOrder().qty)) {
       const bob = Math.round(Math.sin(ts * 4) * 1.5), bx = BOARD.cx - 4, by = BOARD.top - 14 + bob;
       px(ctx, bx, by, '#5a3a22', 9, 11); px(ctx, bx + 1, by + 1, '#fff6e0', 7, 9);
       px(ctx, bx + 4, by + 2, '#c8503a', 1, 4); px(ctx, bx + 4, by + 7, '#c8503a', 1, 1);
@@ -2538,6 +2738,19 @@
         px(ctx, R.x + 4, R.y + PLOT_PX - 4, '#7a5a3a', 24, 2);
         px(ctx, R.x + 4, R.y + PLOT_PX - 4, '#f2d27a', Math.round(24 * progress(p, t)), 2);
       } else {
+        if (ownsHelper('hp08')) {                                   // 収穫どき番：収穫できる区画を強く光らせる
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.globalAlpha = .22 + .16 * Math.sin(ts * 4 + i);
+          px(ctx, R.x - 1, R.y - 6, '#ffe890', PLOT_PX + 2, PLOT_PX + 7);
+          ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+          px(ctx, R.x, R.y - 1, '#ffe27a', PLOT_PX, 1); px(ctx, R.x, R.y + PLOT_PX - 1, '#ffe27a', PLOT_PX, 1);
+          px(ctx, R.x, R.y, '#ffe27a', 1, PLOT_PX - 1); px(ctx, R.x + PLOT_PX - 1, R.y, '#ffe27a', 1, PLOT_PX - 1);
+        }
+        if (ownsHelper('hp01') && t - p.readyAt >= SCARECROW_MS) {    // かかし：育ちきってから30分以上たった区画に「！」
+          const bob = Math.round(Math.sin(ts * 5 + i) * 1.2), bx = R.x + 12, by = R.y - 16 + bob;
+          px(ctx, bx, by, '#5a3a22', 8, 11); px(ctx, bx + 1, by + 1, '#fff2c0', 6, 9);
+          px(ctx, bx + 3, by + 2, '#d0402a', 2, 5); px(ctx, bx + 3, by + 8, '#d0402a', 2, 1);
+        }
         for (let k = 0; k < 4; k++) {
           const r = hash2(i, k, 5), ph = r() * 6.28;
           if (Math.sin(ts * 3 + ph) < .55) continue;
@@ -2568,6 +2781,7 @@
     }
     ctx.globalCompositeOperation = 'source-over';
 
+    helperTick(t);
     updateHud();
     tickFac();
     tickSkip();
@@ -2591,11 +2805,15 @@
   procChip.innerHTML = '<img class="px" src="' + iconURL('ic_bread') + '" alt="加工品"><span>0</span>';
   $('stocks').appendChild(procChip);
   // 倉庫に表示する品目：作物は町Lvで解放済み、加工品は注文に出せる（施設完成・レシピ解放・材料あり）か、在庫がある
-  const itemVisible = k => (ITEMS[k].recipe ? itemAvailable(k, townLevel(), state.buildings) : ITEMS[k].unlockLv <= townLevel()) || state.storage[k] > 0;
+  const itemVisible = k => itemAvailable(k, townLevel(), state.buildings, state.gacha) || state.storage[k] > 0;
+  const varChip = document.createElement('span');
+  varChip.className = 'stock'; varChip.id = 'stockVar'; varChip.title = '変種の作物（倉庫パネルで一覧）';
+  varChip.innerHTML = '<img class="px" src="' + iconURL('v_sd10_ic') + '" alt="変種"><span>0</span>';
+  $('stocks').appendChild(varChip);
   function updateHud() {
     const lv = townLevel(), exp = state.townExp, st = state.storage;
     const D = state.drill;
-    const sig = [lv, exp, state.gold, ITEM_KEYS.map(k => st[k] + ':' + itemVisible(k)).join(), D.stock, D.shards, D.tickets, GA.dexCount(state.gacha)].join('|');
+    const sig = [lv, exp, state.gold, ITEM_KEYS.map(k => st[k] + ':' + itemVisible(k)).join(), D.stock, D.shards, D.tickets, GA.dexCount(state.gacha), JSON.stringify(state.buffs)].join('|');
     if (sig === hudSig) return;
     hudSig = sig;
     $('lvText').textContent = '町Lv' + lv;
@@ -2609,16 +2827,29 @@
     $('sGold').textContent = state.gold;
     // 見える品目が7つまでなら全て並べる。それより多いときは作物・牛乳だけ並べ、加工品は「加工品 ×合計」にまとめる
     const vis = ITEM_KEYS.filter(itemVisible), compact = vis.length > 7;
-    let procSum = 0;
+    let procSum = 0, varSum = 0, varVis = false;
     for (const k of ITEM_KEYS) {
-      const e = stockEls[k], show = vis.includes(k) && !(compact && e.proc);
+      const e = stockEls[k], isV = !!ITEMS[k].seed, show = vis.includes(k) && !(compact && (e.proc || isV));
       e.num.textContent = st[k]; e.wrap.style.display = show ? '' : 'none';
       if (compact && e.proc && vis.includes(k)) procSum += st[k];
+      if (compact && isV && vis.includes(k)) { varSum += st[k]; varVis = true; }
     }
-    procChip.style.display = compact ? '' : 'none'; procChip.lastChild.textContent = '加工品 ' + procSum;
+    procChip.style.display = compact && vis.some(k => stockEls[k].proc) ? '' : 'none'; procChip.lastChild.textContent = '加工品 ' + procSum;
+    varChip.style.display = varVis ? '' : 'none'; varChip.lastChild.textContent = '変種 ' + varSum;
     $('warehouse').classList.toggle('compact', compact);
     $('dexHudNum').textContent = GA.dexCount(state.gacha) + '/' + GA.ITEMS.length;
     $('dhStock').textContent = fmtStock(D.stock); $('dhShards').textContent = D.shards; $('dhTickets').textContent = D.tickets;
+  }
+  let helperTickAt = 0;
+  const SCARECROW_MS = 30 * 60 * 1000 / FAST;
+  function helperTick(t, force) {
+    if (!force && t - helperTickAt < 1000) return;
+    helperTickAt = t;
+    const got = autoCollect(), crow = crowCheck(), msg = [];
+    if (got.length) { msg.push('配達ねこが運びました：' + got.join('・')); hudSig = ''; if ($('facPanel').style.display === 'flex') renderFac(); }
+    if (crow.length) msg.push('郵便カラス：納品できる注文があります（' + crow.join('・') + '）');
+    if (msg.length) toast(msg.join('／'), 5200);
+    if ((got.length || crow.length) && $('ordersPanel').style.display === 'flex') renderOrders();
   }
   let toastTimer = 0;
   function toast(msg, ms) {
@@ -2627,7 +2858,7 @@
   }
 
   // ---------- 作物パレット／作物選択ポップアップ ----------
-  let selected = null;
+  let selected = null, selectedV = null;              // selectedV：変種の種（null なら通常）
   const pal = $('palette');
   const iconImg = k => `<img class="px" src="${iconURL(ITEMS[k].icon)}" alt="">`;
   function cropBtn(k, onclick, isSel) {
@@ -2642,9 +2873,24 @@
   }
   // 作物パレットに並べる作物：解放済み＋次に解放される1種（町Lvで並び順どおりに増える）
   function paletteCrops() { const lv = townLevel(), open = CROP_KEYS.filter(k => CROPS[k].unlockLv <= lv), next = CROP_KEYS.find(k => CROPS[k].unlockLv > lv); return next ? open.concat(next) : open; }
+  function variantBtn(sd, onclick, isSel) {
+    const it = ITEMS['v_' + sd], b = document.createElement('button');
+    b.className = 'tool pix vbtn' + (isSel ? ' sel' : ''); b.dataset.v = sd;
+    b.innerHTML = iconImg('v_' + sd) + '<span>' + it.name + '<small>変種 ' + (CROPS[it.variantOf].growMs / 60000) + '分 / ' + CROPS[it.variantOf].yield + '個</small></span>';
+    b.onclick = onclick; return b;
+  }
   function buildPalette() {
     pal.innerHTML = '';
-    for (const k of paletteCrops()) pal.appendChild(cropBtn(k, () => { selected = selected === k ? null : k; buildPalette(); }, selected === k));
+    if (selectedV && (!selected || !unlockedVariants(selected).includes(selectedV))) selectedV = null;
+    for (const k of paletteCrops()) pal.appendChild(cropBtn(k, () => { selected = selected === k ? null : k; selectedV = null; buildPalette(); }, selected === k));
+    const bar = $('variantBar'); bar.innerHTML = '';
+    const vs = selected ? unlockedVariants(selected) : [];
+    bar.style.display = vs.length ? 'flex' : 'none';
+    if (!vs.length) return;
+    const nb = document.createElement('button'); nb.className = 'tool pix vbtn' + (selectedV ? '' : ' sel'); nb.dataset.v = '';
+    nb.innerHTML = iconImg(selected) + '<span>通常<small>' + CROPS[selected].name + '</small></span>';
+    nb.onclick = () => { selectedV = null; buildPalette(); }; bar.appendChild(nb);
+    for (const sd of vs) bar.appendChild(variantBtn(sd, () => { selectedV = sd; buildPalette(); }, selectedV === sd));
   }
   const popup = $('popup');
   let popupPlot = -1;
@@ -2652,8 +2898,16 @@
     const row = $('popupRow'); row.innerHTML = '';
     for (const k of paletteCrops()) row.appendChild(cropBtn(k, () => {
       const i = popupPlot; closePopup();
-      selected = k; buildPalette();
+      selected = k; selectedV = null; buildPalette();
       if (i >= 0) plant(i, k);
+    }, false));
+    const vrow = $('popupVar'); vrow.innerHTML = '';     // 変種（解放済みのものだけ）
+    const vs = paletteCrops().filter(k => CROPS[k].unlockLv <= townLevel()).flatMap(unlockedVariants);
+    $('popupVarWrap').style.display = vs.length ? '' : 'none';
+    for (const sd of vs) vrow.appendChild(variantBtn(sd, () => {
+      const i = popupPlot, k = VARIANTS[sd].crop; closePopup();
+      selected = k; selectedV = sd; buildPalette();
+      if (i >= 0) plant(i, k, sd);
     }, false));
   }
   buildPalette(); buildPopupRow();
@@ -2665,6 +2919,19 @@
   const goldImg = `<img class="px" src="${iconURL('ic_gold')}" alt="G">`;
   function renderOrders() {
     const list = $('orderList'); list.innerHTML = '';
+    const B = state.buffs, P = peddlerOrder();
+    if (B.boost > 0) list.insertAdjacentHTML('beforeend', '<div class="onote boost">注文ブースト券 予約中 ×' + B.boost + '：次の納品の町経験値 +50%</div>');
+    if (P) {                                               // 行商人の特別注文（今日だけ）
+      const have = state.storage[P.crop], r = peddlerReward(P), short = P.qty - have;
+      const row = document.createElement('div'); row.className = 'orow peddler'; row.id = 'peddlerRow';
+      row.innerHTML = '<div class="ocrop">' + iconImg(P.crop) + '<span><b class="ptag">行商人</b>' + ITEMS[P.crop].name + ' ×' + P.qty +
+        '<small>単価×1.5・町経験値×2（今日だけ）　倉庫に ' + have + '個</small></span></div>' +
+        '<div class="orew"><span>' + goldImg + r.gold + '</span><span class="xp">町経験値 +' + r.exp + '</span></div>';
+      const b = document.createElement('button'); b.className = 'tool pix act';
+      if (short > 0) { b.textContent = 'あと' + short + '個'; b.disabled = true; }
+      else { b.textContent = '納品'; b.onclick = () => { const x = deliverPeddler(); if (x) { toast('行商人に納品：+' + x.gold + 'G・町経験値 +' + x.exp + (x.boosted ? '（ブースト）' : '')); renderOrders(); } }; }
+      row.appendChild(b); list.appendChild(row);
+    }
     state.orders.forEach((o, i) => {
       const have = state.storage[o.crop], r = orderReward(o), short = o.qty - have;
       const row = document.createElement('div'); row.className = 'orow';
@@ -2673,7 +2940,7 @@
         '<div class="orew"><span>' + goldImg + r.gold + '</span><span class="xp">町経験値 +' + r.exp + '</span></div>';
       const b = document.createElement('button'); b.className = 'tool pix act';
       if (short > 0) { b.textContent = 'あと' + short + '個'; b.disabled = true; }
-      else { b.textContent = '納品'; b.onclick = () => { if (deliver(i)) renderOrders(); }; }
+      else { b.textContent = '納品'; b.onclick = () => { const x = deliver(i); if (x) { if (x.boosted) toast('注文ブースト券：町経験値 +' + x.exp + '（+50%）'); renderOrders(); } }; }
       row.appendChild(b);
       const rr = document.createElement('button'); rr.className = 'tool pix rrbtn';       // 注文リロール券で引き直す
       rr.textContent = '引き直す（券×' + ownedCount('cs03') + '）'; rr.disabled = ownedCount('cs03') < 1;
@@ -2681,8 +2948,15 @@
       if (!rr.disabled) rr.onclick = () => { if (rerollOrder(i)) renderOrders(); };
       row.appendChild(rr); list.appendChild(row);
     });
+    if (ownsHelper('hp10') && state.nextOrder) {         // 天気読みじいさん：次に来る注文（実際に次に生成される注文と同じ）
+      list.insertAdjacentHTML('beforeend', '<div class="onote forecast" id="forecast">' + iconImg(state.nextOrder.crop) +
+        '<span>天気読みじいさん「次の注文は ' + ITEMS[state.nextOrder.crop].name + ' が来そうじゃ」</span></div>');
+    }
   }
-  function openOrders() { renderOrders(); $('ordersPanel').style.display = 'flex'; }
+  function openOrders() {
+    if (rollPeddler() && peddlerOrder()) toast('行商人がやってきた！ 今日だけの特別注文があります');
+    renderOrders(); $('ordersPanel').style.display = 'flex';
+  }
   $('ordersClose').onclick = () => { $('ordersPanel').style.display = 'none'; };
 
   // ---------- 倉庫パネル（生売り・加工品も同じ） ----------
@@ -2693,13 +2967,14 @@
       if (!itemVisible(k)) continue;
       const n = state.storage[k];
       const row = document.createElement('div'); row.className = 'wrow';
-      row.innerHTML = '<div class="nm">' + iconImg(k) + '<span>' + c.name + '<small>単価 ' + c.price + 'G</small></span></div>' +
+      const up = unitPrice(k), pb = priceBonus(k);
+      row.innerHTML = '<div class="nm">' + iconImg(k) + '<span>' + c.name + (c.seed ? '<b class="vtag">変種</b>' : '') + '<small>単価 ' + up + 'G' + (pb ? '（+' + pb + '%）' : '') + '</small></span></div>' +
         '<div class="cnt">' + n + '個</div>';
       const b1 = document.createElement('button'); b1.className = 'tool pix small';
-      b1.textContent = '1個売る +' + c.price + 'G'; b1.disabled = n < 1;
+      b1.textContent = '1個売る +' + up + 'G'; b1.disabled = n < 1;
       b1.onclick = () => { sell(k, 1); renderWarehouse(); };
       const b2 = document.createElement('button'); b2.className = 'tool pix small';
-      b2.textContent = '全部売る +' + (c.price * n) + 'G'; b2.disabled = n < 1;
+      b2.textContent = '全部売る +' + (up * n) + 'G'; b2.disabled = n < 1;
       b2.onclick = () => { sell(k, n); renderWarehouse(); };
       row.appendChild(b1); row.appendChild(b2); list.appendChild(row);
     }
@@ -2752,7 +3027,7 @@
         const r = RECIPES[rk], pr = r.product, ok = canCraft(rk), busy = !!b.job;
         const lockedR = (r.unlockLv || 1) > townLevel(), adj = facNeighbors(k, state.buildings, now()).length > 0;
         const ins = !Object.keys(r.inputs).length ? '<span>材料なし</span>' : Object.entries(r.inputs).map(([ik, n]) => iconImg(ik) + ITEMS[ik].name + ' <span class="' +
-          (state.storage[ik] >= n ? '' : 'short') + '">' + state.storage[ik] + '/' + n + '</span>').join(' ＋ ');
+          (haveFor(ik) >= n ? '' : 'short') + '">' + haveFor(ik) + '/' + n + '</span>').join(' ＋ ');
         const row = document.createElement('div'); row.className = 'mrow';
         row.innerHTML = '<div class="recipe">' + ins + ' → ' + iconImg(pr.key) + '<span>' + pr.name + ' ×' + pr.qty +
           '<small>加工 ' + fmtDur(r.ms) + (adj ? '→' + fmtDur(shorten(r.ms)) + '（隣接 −10%）' : '') + ' ／ 単価 ' + pr.price + 'G ／ 経験値 ' + pr.orderExp + '</small></span></div>';
@@ -2993,7 +3268,8 @@
   function renderDex() {
     const g = state.gacha, total = GA.ITEMS.length, have = GA.dexCount(g), body = $('dexBody');
     body.innerHTML = '<div class="dexhead"><span class="dexrate">収集率 ' + have + '/' + total + '（' + Math.floor(100 * have / total) + '%）</span>' +
-      '<span class="dexbar"><i style="width:' + (100 * have / total).toFixed(1) + '%"></i></span><span>肥料 ' + ownedCount(GA.FERT_ID) + '個</span></div>';
+      '<span class="dexbar"><i style="width:' + (100 * have / total).toFixed(1) + '%"></i></span><span>肥料 ' + ownedCount(GA.FERT_ID) + '個</span></div>' +
+      '<div class="dexbuff" id="dexBuffs">予約中：肥料 ' + state.buffs.fert + '・肥料・改 ' + state.buffs.fertPlus + '・ダブル収穫 ' + state.buffs.double + '・注文ブースト ' + state.buffs.boost + '</div>';
     const tabs = document.createElement('div'); tabs.className = 'dextabs';
     for (const c of GA.CAT_ORDER) {
       const its = GA.ITEMS.filter(i => i.cat === c), n = its.filter(i => g.dex[i.id]).length;
@@ -3017,14 +3293,15 @@
         if (full) ub.textContent = '満タン';
         ub.onclick = () => {
           const r = useConsumable(it.id);
-          if (r) { hudSig = ''; toast(it.name + 'を使いました：' + (r.sec ? '時短ストック +' + fmtStock(r.sec) : '即完了チケット +' + r.ticket + '枚')); renderDex(); }
+          const RES = { fert: '次の収穫が+1個', fertPlus: '次の収穫が+2個', double: '次の収穫1区画が2倍', boost: '次の納品の町経験値+50%' };
+          if (r) { hudSig = ''; toast(it.name + 'を使いました：' + (r.reserve ? RES[r.reserve] + '（予約 ' + r.count + '回分）' : r.allSand ? '進行中の' + r.allSand.length + '件を進めました（25%の境界まで）' : r.sec ? '時短ストック +' + fmtStock(r.sec) : '即完了チケット +' + r.ticket + '枚')); renderDex(); }
         };
         card.appendChild(ub);
       }
       grid.appendChild(card);
     }
     body.appendChild(grid);
-    body.insertAdjacentHTML('beforeend', '<div class="dexfoot">未入手は「？？？」とレア度だけ表示。効果の発動は段階5で対応します（注文リロール券は注文パネルで使えます）</div>');
+    body.insertAdjacentHTML('beforeend', '<div class="dexfoot">未入手は「？？？」とレア度だけ表示。変種の種・お手伝いは入手すると常に効果が出ます（肥料・ダブル収穫・注文ブーストは「使う」で予約。注文リロール券は注文パネルで使えます）</div>');
   }
   function openDex() { $('drillPanel').style.display = 'none'; ds = null; renderDex(); $('dexPanel').style.display = 'flex'; }
   $('dexClose').onclick = () => { $('dexPanel').style.display = 'none'; };
@@ -3033,7 +3310,7 @@
   // ---------- 時短の適用パネル（進行中のタイマーの一覧） ----------
   let skipSig = '', skipRows = {}, skipTickAt = 0;
   const skipOpen = () => $('skipPanel').style.display === 'flex';
-  const listSig = list => list.map(x => x.id).join() + '|' + state.drill.tickets;
+  const listSig = list => list.map(x => x.id).join() + '|' + state.drill.tickets + '|' + ownsHelper('hp11');
   function openSkip() {
     $('drillPanel').style.display = 'none'; ds = null;
     renderSkip(); $('skipPanel').style.display = 'flex';
@@ -3057,6 +3334,7 @@
         bmax: mk('最大まで', () => { const r = applySkip(tm.id, 'max'); done(r, r && ('−' + fmtTime(r.ms) + '（ストック ' + fmtStock(r.cost) + ' 消費）' + (r.done ? ' 完了！' : ''))); }),
         btk: mk('チケット', () => { const r = useTicket(tm.id); done(r, 'チケットで即完了！'); }),
       };
+      if (ownsHelper('hp11')) { skipRows[tm.id].bkp = mk('時の番人の即完了（1日1回）', () => { const r = useKeeper(tm.id); done(r, '時の番人が即完了してくれました！'); }); skipRows[tm.id].bkp.classList.add('keeper'); }
       row.appendChild(bx); box.appendChild(row);
     }
     tickSkip(true);
@@ -3085,6 +3363,7 @@
       r.b10.style.display = R > 60000 ? '' : 'none';
       r.bmax.disabled = mx < 1000; r.bmax.lastChild.textContent = mx >= 1000 ? 'ストック' + fmtStock(mxCost) : '';
       r.btk.disabled = D.tickets < 1; r.btk.lastChild.textContent = '即完了';
+      if (r.bkp) { r.bkp.disabled = !keeperReady(); r.bkp.lastChild.textContent = keeperReady() ? '無料' : '今日は使用済み'; }
     }
   }
   $('skipClose').onclick = () => { $('skipPanel').style.display = 'none'; };
@@ -3131,8 +3410,8 @@
     if (i < 0 || touched.has(i)) return;
     touched.add(i);
     const p = state.plots[i];
-    if (mode === 'plant' && !p && selected) plant(i, selected);
-    else if (mode === 'harvest' && p) harvest(i);
+    if (mode === 'plant' && !p && selected) plant(i, selected, selectedV);
+    else if (mode === 'harvest' && p) { const r = harvest(i); if (r && r.fx.length) toast(ITEMS[r.key].name + ' ×' + r.n + '（' + r.fx.join('・') + '）'); }
   }
   const ptrs = new Map();
   let gesture = null;          // 'farm' | 'pan' | 'pinch'

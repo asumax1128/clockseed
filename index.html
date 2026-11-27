@@ -155,6 +155,37 @@
   .intg{display:inline-flex;align-items:center;font-size:1.3em;margin-right:2px}
   .intg .lim{display:inline-flex;flex-direction:column;font-size:.5em;line-height:1.1;margin-left:1px}
   .intg sup,.intg sub{vertical-align:baseline;font-size:1em}
+  .fxf{position:fixed;inset:0;z-index:60;flex-direction:column;background:radial-gradient(120% 90% at 50% 0%,#2c3a6e 0%,#141a33 70%);color:#f4f1ff;touch-action:none;user-select:none;-webkit-user-select:none;font-family:inherit}
+  .fxf-top{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:#0e1328;border-bottom:2px solid #3b4a8a}
+  .fxf-title{font-weight:bold;font-size:17px;letter-spacing:.04em}.fxf-title small{font-size:12px;opacity:.75;margin-left:4px}
+  .fxf-x{background:#3b4a8a;color:#fff;border:0;border-radius:8px;width:40px;height:40px;font-size:22px;cursor:pointer}
+  .fxf-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:12px 16px 14px;gap:10px;min-height:0;max-width:860px;width:100%;margin:0 auto;box-sizing:border-box}
+  .fxf-intro,.fxf-result{margin:auto;text-align:center;max-width:620px}.fxf-intro h2,.fxf-result h2{font-size:24px;margin:0 0 10px}
+  .fxf-intro p{font-size:15px}.fxf-intro ul{text-align:left;font-size:14px;line-height:1.7;margin:8px 0 16px;padding-left:20px}
+  .fxf-start{font-size:22px;padding:10px 40px}
+  .fxf-count{margin:auto;font-size:96px;font-weight:bold;color:#ffd54a;text-shadow:0 4px 0 #6b4a10}
+  .fxf-hud{width:100%;display:flex;flex-direction:column;gap:6px}
+  .fxf-hp{display:flex;align-items:center;gap:10px}.fxf-hp b{min-width:92px;text-align:right;font-size:15px}
+  .fxf-hpbar{flex:1;height:14px;background:#0b0f22;border:2px solid #4a5aa0;border-radius:8px;overflow:hidden}
+  .fxf-hpbar i{display:block;height:100%;background:linear-gradient(90deg,#43c97b,#9be36b);transition:width .1s linear}.fxf-hpbar i.low{background:linear-gradient(90deg,#e63946,#ff7b5c)}
+  .fxf-stats{display:flex;gap:18px;justify-content:center;font-size:14px;opacity:.95}.fxf-stats b{font-size:17px;color:#ffd54a}
+  .fxf-q{position:relative;width:100%;text-align:center;background:#0e1328cc;border:2px solid #3b4a8a;border-radius:14px;padding:8px 12px 10px}
+  .fxf-lv{font-size:12px;background:#52B788;color:#fff;border-radius:10px;padding:1px 10px}
+  .fxf-target{font-size:40px;font-weight:bold;margin:6px 0 6px;letter-spacing:.02em}
+  .fxf-qbar{height:6px;background:#0b0f22;border-radius:4px;overflow:hidden}.fxf-qbar i{display:block;height:100%;background:#6bd4e8}.fxf-qbar i.warn{background:#ff5c5c}
+  .fxf-pop{position:absolute;right:12px;top:8px;display:none;flex-direction:column;align-items:flex-end;font-size:13px}
+  .fxf-pop.show{display:flex}.fxf-pop b{font-size:24px;text-shadow:0 2px 0 #000}.fxf-pop span{font-size:18px;color:#ffd54a;font-weight:bold}
+  .fxf-grid{flex:1;width:100%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:14px;min-height:0;touch-action:none}
+  .fxf-tile{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#fdfbff,#dcd6f5);color:#1d1640;border-radius:16px;
+    border:3px solid #8a7fe0;box-shadow:0 5px 0 #4b3fa0;font-size:34px;font-weight:bold;cursor:grab;touch-action:none;position:relative;transition:box-shadow .1s}
+  .fxf-tile.drag{z-index:5;cursor:grabbing;box-shadow:0 12px 18px #0008;opacity:.8}
+  .fxf-tile.over{border-color:#ffd54a;box-shadow:0 0 0 4px #ffd54a,0 5px 0 #4b3fa0}
+  .fxf-tile.ok{background:linear-gradient(180deg,#d9ffd9,#9be36b);border-color:#43c97b}.fxf-tile.ng{background:linear-gradient(180deg,#ffe0e0,#ff9a8a);border-color:#e63946}
+  .fxf-foot{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:13px;opacity:.9}.fxf-foot img{width:16px;height:16px;vertical-align:-3px}
+  .fxf-big{font-size:56px;font-weight:bold;color:#ffd54a}.fxf-big small{font-size:20px;margin-left:4px}
+  .fxf-rows{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center;font-size:15px;margin:6px 0 10px}
+  .fxf-earn{font-size:15px;background:#0e1328;border:2px solid #3b4a8a;border-radius:10px;padding:8px 12px;margin-bottom:12px}.fxf-earn img{width:18px;height:18px;vertical-align:-3px}
+  .spbtns .fxf-entry{background:#e8e4ff}.spbtns .fxf-entry b{font-size:12px;line-height:1.25}
   .roletag{font-size:12px;padding:1px 7px;margin-left:6px;border-radius:3px;color:#fff}
   .roletag.review{background:#3f86bd}.roletag.challenge{background:#c0702a}.roletag.special{background:#7c62d8}
   .spbox{margin:10px 4px 4px;padding:8px 10px;border:2px dashed #b89a6a;background:#fbf2dc}
@@ -270,6 +301,7 @@
     </button>
   </div>
 </div>
+<div id="fxfPanel" class="fxf" style="display:none"><div class="fxf-top"><span class="fxf-title">FACTOR×FACTOR ソロ・イージー<small>（移植版）</small></span><button class="fxf-x" id="fxfClose" aria-label="閉じる">×</button></div><div id="fxfBody" class="fxf-body"></div></div>
 <div id="popup" class="overlay"><div class="box pix">
   <div class="q">なにを植える？</div>
   <div class="row" id="popupRow"></div>
@@ -1093,7 +1125,7 @@
     C: { label: '数学I・A', ready: true, types: ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8'] },
     D: { label: '数学II・B', ready: true, types: ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8'] },
     E: { label: '数学III・C', ready: true, types: ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8'] },
-    S: { label: '特殊ドリル', ready: true, special: true, types: ['S1', 'S2', 'S3'] },
+    S: { label: '特殊ドリル', ready: true, special: true, types: ['S2', 'S3'] },   // S1（選択式の因数分解）は段階5.7bで FACTOR×FACTOR 移植版（S4・別モジュール）に置き換え
   };
   // 挑戦問題：1つ上の難度の易しいタイプ（E は E の中で最も基本のタイプ＝E6。E6 を復習に出すときは E4）
   const CHALLENGE = { A: ['B2', 'B4', 'B6'], B: ['C5', 'C7', 'C1'], C: ['D1', 'D2', 'D7'], D: ['E4', 'E6', 'E1'], E: ['E6', 'E4'] };
@@ -1263,6 +1295,187 @@
 
   root.ClockseedGacha = { ITEMS, byId, byRarity, RARITIES, RARITY_LABEL, RATES, COST, PITY, FIRST_ID, FERT_ID, DUP_FERT, DUP_SHARDS,
                           CATS, CAT_ORDER, freshState, sanitize, drawRarity, pityNeed, pullOnce, dexCount };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script id="fxf-engine">
+/* ===================================================================
+   ときの種：FACTOR×FACTOR ソロ・イージー（移植版）のエンジン
+   - 本家 asumax1128/factorfactor（commit 2af9777f6188f70817e25a69ea9a25df1212c848）の index.html から、
+     ソロ・イージーに必要な部分だけを移植した（出題生成 genL1〜5・盤面 buildBoard・判定 multiply/polyEqual・
+     判定の6段階 JUDGE_TIERS・体力と得点の計算・1ゲームの流れ）。
+   - DOM・ゲーム状態に触れない純粋な関数（乱数 rng と時刻 now は引数で受け取る）。window.ClockseedFxF を公開するだけ。
+   - 本家との違い：乱数を引数にしたこと、タイルIDを連番にしたこと、時間を実時刻の差で数えること（本家は10msごとの加算）。
+     数式・範囲・得点の式は本家と同じ。
+   =================================================================== */
+(function (root) {
+  'use strict';
+  const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a; };
+  const randInt = (rng, min, max) => Math.floor(rng() * (max - min + 1)) + min;
+  const randSign = rng => (rng() < 0.5 ? 1 : -1);
+  const randNonZero = (rng, min, max) => { let v = 0; while (v === 0) v = randInt(rng, min, max); return v; };
+  const coprime = (a, b) => gcd(Math.abs(a), Math.abs(b)) === 1;
+
+  // ---- 因数と多項式（本家：factorKey / toCoeffs / multiply / polyEqual） ----
+  const factorKey = f => (f.type === 'linear' ? 'L' + f.a + '_' + f.b : 'C' + f.k);
+  const toCoeffs = f => (f.type === 'linear' ? [f.a, f.b] : [f.k]);
+  function multiply(f1, f2) {
+    const c1 = toCoeffs(f1), c2 = toCoeffs(f2), raw = new Array(c1.length + c2.length - 1).fill(0);
+    for (let i = 0; i < c1.length; i++) for (let j = 0; j < c2.length; j++) raw[i + j] += c1[i] * c2[j];
+    const p = [0, 0, 0, 0, 0];
+    for (let i = 0; i < raw.length; i++) { const d = raw.length - 1 - i; if (d <= 4) p[4 - d] = raw[i]; }
+    return { x4: p[0], x3: p[1], x2: p[2], x1: p[3], x0: p[4] };
+  }
+  const polyEqual = (p, q) => p.x4 === q.x4 && p.x3 === q.x3 && p.x2 === q.x2 && p.x1 === q.x1 && p.x0 === q.x0;
+  // ---- 表示（本家：formatLinear / formatFactorTile / formatPoly。マイナスは全角の − で表示） ----
+  const M = s => s.replace(/-/g, '−');
+  function formatFactor(f) {
+    if (f.type === 'const') return M(String(f.k));
+    const coef = f.a === 1 ? 'x' : f.a === -1 ? '-x' : f.a + 'x', cst = f.b > 0 ? '+' + f.b : f.b < 0 ? String(f.b) : '';
+    return M('(' + coef + cst + ')');
+  }
+  const POW = { 4: 'x⁴', 3: 'x³', 2: 'x²', 1: 'x', 0: '' };
+  function formatPoly(poly) {
+    const t = [4, 3, 2, 1, 0].filter(p => poly['x' + p] !== 0).map(p => ({ p, c: poly['x' + p] }));
+    if (!t.length) return '0';
+    return M(t.map((x, i) => { const sg = x.c < 0 ? '-' : (i === 0 ? '' : '+'), a = Math.abs(x.c), cs = x.p !== 0 && a === 1 ? '' : String(a);
+      return i === 0 ? sg + cs + POW[x.p] : ' ' + sg + ' ' + cs + POW[x.p]; }).join(''));
+  }
+
+  // ---- レベル別の出題生成（本家 genL1〜genL5。イージーの15問は Lv1〜Lv5 だけを使う） ----
+  const GEN = {
+    1(rng) { let b, c; do { b = randInt(rng, 1, 9); c = randInt(rng, 1, 9); } while (!coprime(b, c));        // abx ± ac = a(bx ± c)
+      const a = randInt(rng, 2, 9), s = randSign(rng), f1 = { type: 'const', k: a }, f2 = { type: 'linear', a: b, b: s * c };
+      return { factors: [f1, f2], poly: multiply(f1, f2) }; },
+    2(rng) { let b, c; do { b = randInt(rng, 1, 9); c = randInt(rng, 1, 9); } while (!coprime(b, c));        // abx² ± acx = ax(bx ± c)
+      const a = randInt(rng, 1, 9), s = randSign(rng), f1 = { type: 'linear', a, b: 0 }, f2 = { type: 'linear', a: b, b: s * c };
+      return { factors: [f1, f2], poly: multiply(f1, f2) }; },
+    3(rng) { let a, b; do { a = randNonZero(rng, -9, 9); b = randNonZero(rng, -9, 9); } while (a === -b);      // (x+a)(x+b)
+      const f1 = { type: 'linear', a: 1, b: a }, f2 = { type: 'linear', a: 1, b };
+      return { factors: [f1, f2], poly: multiply(f1, f2) }; },
+    4(rng) { let a, b; do { a = randInt(rng, 1, 9); b = randInt(rng, 1, 9); } while (!coprime(a, b));          // a²x² − b² = (ax+b)(ax−b)
+      const f1 = { type: 'linear', a, b }, f2 = { type: 'linear', a, b: -b };
+      return { factors: [f1, f2], poly: multiply(f1, f2) }; },
+    5(rng) { let c, b, d; do { c = randInt(rng, 2, 9); b = randNonZero(rng, -5, 5); d = randNonZero(rng, -5, 5); } while (!coprime(c, d));   // (x+b)(cx+d)
+      const f1 = { type: 'linear', a: 1, b }, f2 = { type: 'linear', a: c, b: d };
+      return { factors: [f1, f2], poly: multiply(f1, f2) }; },
+  };
+  const LEVEL_POINTS = { 1: 10, 2: 12, 3: 14, 4: 16, 5: 18 };
+  const LEVEL_NAME = { 1: '共通因数（数）', 2: '共通因数（x を含む）', 3: '基本の因数分解', 4: '2乗の差', 5: 'たすきがけ' };
+  // 本家 pickLevelForQuestion の固定区間（1〜27問目は3問ごとに Lv が上がる）。イージーは15問なので Lv1〜5
+  const levelFor = n => Math.min(9, Math.floor((n - 1) / 3) + 1);
+
+  // ---- 誤答タイル（本家 flipSign / shiftConst / foreignFactor / genDummies） ----
+  const flipSign = f => (f.type === 'const' ? { type: 'const', k: -f.k } : { type: 'linear', a: f.a, b: -f.b });
+  const shiftConst = (f, rng) => { const d = randSign(rng); return f.type === 'const' ? { type: 'const', k: f.k + d } : { type: 'linear', a: f.a, b: f.b + d }; };
+  const foreignFactor = (level, rng) => GEN[level](rng).factors[randInt(rng, 0, 1)];
+  function genDummies(level, correct, rng) {
+    const out = [], push = f => { const k = factorKey(f); if (!correct.some(c => factorKey(c) === k) && !out.some(d => factorKey(d) === k)) out.push(f); };
+    for (let i = 0; i < randInt(rng, 1, 2); i++) push(flipSign(correct[randInt(rng, 0, 1)]));
+    for (let i = 0; i < randInt(rng, 1, 2); i++) push(shiftConst(correct[randInt(rng, 0, 1)], rng));
+    for (let i = 0; i < randInt(rng, 1, 2); i++) push(foreignFactor(level, rng));
+    return out.slice(0, 5);
+  }
+  // ---- 盤面（本家 buildBoard：正解の2枚＋誤答。正しい組がちょうど1組になるまで作り直す（最大40回）） ----
+  let tileSeq = 0;
+  function buildBoard(level, seen, tileCount, rng) {
+    let factors, poly, sig, outer = 0;
+    do { ({ factors, poly } = GEN[level](rng)); sig = level + ':' + [poly.x4, poly.x3, poly.x2, poly.x1, poly.x0].join(','); outer++; }
+    while (seen && seen.has(sig) && outer < 60);
+    if (seen) seen.add(sig);
+    let tiles = [], attempt = 0;
+    for (;;) {
+      attempt++;
+      let pool = factors.concat(genDummies(level, factors, rng)), guard = 0;
+      while (pool.length < tileCount && guard < 200) { guard++; const f = foreignFactor(level, rng), k = factorKey(f); if (!pool.some(p => factorKey(p) === k)) pool.push(f); }
+      pool = pool.slice(0, tileCount);
+      tiles = pool.map(f => ({ id: 't' + (++tileSeq), factor: f, label: formatFactor(f) }));
+      for (let i = tiles.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [tiles[i], tiles[j]] = [tiles[j], tiles[i]]; }
+      let match = 0;
+      for (let i = 0; i < tiles.length && match <= 1; i++) for (let j = i + 1; j < tiles.length; j++) if (polyEqual(multiply(tiles[i].factor, tiles[j].factor), poly)) { match++; if (match > 1) break; }
+      if (match === 1 || attempt > 40) break;
+    }
+    return { tiles, poly, factors, level, target: formatPoly(poly) };
+  }
+
+  // ---- 判定の6段階と体力（本家 JUDGE_TIERS / DIFFICULTY_MISS_PENALTY / DIFFICULTY_TIMEOUT_EXTRA のイージー分） ----
+  const JUDGE_TIERS = [
+    { max: 2000, label: 'Perfect', recover: 25, color: '#FFD54A' }, { max: 3000, label: 'Excellent', recover: 20, color: '#8BE38F' },
+    { max: 5000, label: 'Great', recover: 15, color: '#6BD4E8' }, { max: 10000, label: 'Good', recover: 10, color: '#8FB8FF' },
+    { max: 15000, label: 'OK', recover: 5, color: '#C9C9C9' }, { max: 20000, label: 'Fair', recover: 2, color: '#FF9F1C' },
+  ];
+  const JUDGE_BAD = { label: 'Bad', recover: 0, color: '#FF5C5C' };
+  const judgeOf = ms => JUDGE_TIERS.find(t => ms <= t.max) || JUDGE_BAD;
+  const CONFIG = { label: 'イージー', clearCount: 15, tileCount: 6, missPenalty: 20, timeoutExtra: 0, timeoutMs: 20000, drainPerSec: 1, clearSecPerQ: 15, resolveMs: 420 };
+  const r2 = v => Math.round(v * 100) / 100;
+
+  // ---- 1ゲームの流れ（状態は普通のオブジェクト。UI は now を渡して進める） ----
+  // phase: 'playing'（出題中）→ 'resolving'（正誤の表示 420ms。体力の自然減少は続く）→ 'playing' … → 'over'（クリア または 体力0）
+  function newGame(rng, now) {
+    const g = { hp: 100, score: 0, combo: 0, maxCombo: 0, caught: 0, attempts: 0, misses: 0, timeouts: 0, playMs: 0, lastTick: now, phase: 'playing',
+                cleared: false, clearBonus: 0, seen: new Set(), q: null, qStart: now, pendingAt: 0, last: null };
+    g.q = buildBoard(levelFor(1), g.seen, CONFIG.tileCount, rng);
+    return g;
+  }
+  // 時間を進める：体力は1秒に1%ずつ減る（resolving 中も減る＝本家と同じ）。出題から20秒で時間切れ（イージーは追加の減少なし）
+  function tick(g, now) {
+    if (g.phase === 'over') return null;
+    const dt = Math.max(0, now - g.lastTick); g.lastTick = now; g.playMs += dt;
+    g.hp = Math.max(0, r2(g.hp - dt / 1000 * CONFIG.drainPerSec));
+    if (g.hp <= 0) { g.phase = 'over'; g.cleared = false; return { type: 'ko' }; }
+    if (g.phase === 'playing' && now - g.qStart >= CONFIG.timeoutMs) {
+      g.hp = Math.max(0, r2(g.hp - CONFIG.timeoutExtra)); g.combo = 0; g.timeouts++; g.attempts++;
+      g.phase = 'resolving'; g.pendingAt = now + CONFIG.resolveMs; g.last = { ok: false, timeout: true, judge: JUDGE_BAD };
+      return { type: 'timeout', ok: false };
+    }
+    return null;
+  }
+  // 2枚のタイルを結ぶ：積が問題の式と係数ごとに等しければ正解
+  function answer(g, id1, id2, now) {
+    if (g.phase !== 'playing' || id1 === id2) return null;
+    tick(g, now); if (g.phase !== 'playing') return null;
+    const t1 = g.q.tiles.find(t => t.id === id1), t2 = g.q.tiles.find(t => t.id === id2);
+    if (!t1 || !t2) return null;
+    const ok = polyEqual(multiply(t1.factor, t2.factor), g.q.poly), ms = now - g.qStart;
+    g.attempts++;
+    if (ok) {
+      const judge = judgeOf(ms), gain = Math.round(LEVEL_POINTS[g.q.level] * (1 + g.combo * 0.1));   // コンボ倍率は正解前のコンボで計算
+      const raw = g.hp + judge.recover, overflow = Math.max(0, Math.round(raw - 100));                 // 100%を超えた回復は1%=1点
+      g.hp = Math.min(100, r2(raw)); g.combo++; g.maxCombo = Math.max(g.maxCombo, g.combo); g.caught++;
+      g.score += gain + overflow;
+      g.last = { ok: true, judge, gain, overflow, ms, ids: [id1, id2] };
+      if (g.caught >= CONFIG.clearCount) {                                       // クリア：解いた数×15秒 − 経過秒 をボーナスに（本家どおり負もありうる）
+        g.clearBonus = Math.round(g.caught * CONFIG.clearSecPerQ - g.playMs / 1000); g.score += g.clearBonus;
+        g.cleared = true; g.phase = 'over';
+        return { type: 'clear', ok: true, judge, gain, overflow, clearBonus: g.clearBonus };
+      }
+    } else {
+      g.hp = Math.max(0, r2(g.hp - CONFIG.missPenalty)); g.combo = 0; g.misses++;
+      g.last = { ok: false, judge: JUDGE_BAD, ms, ids: [id1, id2] };
+      if (g.hp <= 0) { g.phase = 'over'; return { type: 'ko', ok: false }; }
+    }
+    g.phase = 'resolving'; g.pendingAt = now + CONFIG.resolveMs;
+    return { type: ok ? 'correct' : 'miss', ok, judge: g.last.judge, gain: g.last.gain || 0, overflow: g.last.overflow || 0 };
+  }
+  // 正誤の表示が終わったら次の問題（ミス・時間切れは同じ問題番号＝正解数+1 の別の問題）
+  function advance(g, now, rng) {
+    if (g.phase !== 'resolving' || now < g.pendingAt) return false;
+    g.q = buildBoard(levelFor(g.caught + 1), g.seen, CONFIG.tileCount, rng);
+    g.qStart = now; g.phase = 'playing'; return true;
+  }
+  // ドロップ先（本家 boardDropTarget）：タイルの枠の中ならそのタイル、盤面のすき間なら中心が最も近いタイル、自分自身と盤面の外は不成立
+  function dropTarget(grid, tiles, x, y, selfId) {
+    if (x < grid.left || x > grid.right || y < grid.top || y > grid.bottom) return null;
+    let best = null, bestD = Infinity, direct = null;
+    for (const t of tiles) {
+      if (x >= t.left && x <= t.left + t.width && y >= t.top && y <= t.top + t.height) direct = t.id;
+      const d = Math.hypot(x - (t.left + t.width / 2), y - (t.top + t.height / 2));
+      if (d < bestD) { bestD = d; best = t.id; }
+    }
+    const id = direct || best;
+    return id && id !== selfId ? id : null;
+  }
+  root.ClockseedFxF = { CONFIG, GEN, LEVEL_POINTS, LEVEL_NAME, JUDGE_TIERS, JUDGE_BAD, levelFor, multiply, polyEqual, formatFactor, formatPoly, factorKey,
+    flipSign, buildBoard, judgeOf, newGame, tick, answer, advance, dropTarget, SOURCE: 'asumax1128/factorfactor@2af9777f6188f70817e25a69ea9a25df1212c848' };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 
@@ -3951,6 +4164,9 @@
     const left = Math.max(0, SPECIAL_REWARD.perDay - spToday()), H = SPECIAL_REWARD.hi, Lo = SPECIAL_REWARD.lo;
     box.innerHTML = '<div class="sphead"><span>特殊ドリル</span><small>1問 +' + H.sec + '秒・カケラ' + H.shards + '（1日' + SPECIAL_REWARD.perDay + '問まで。今日あと' + left + '問）／それ以降は +' + Lo.sec + '秒・カケラ' + Lo.shards + '</small></div>';
     const g = document.createElement('div'); g.className = 'spbtns';
+    { const r = state.drill.stats[FXF_TYPE] || { ok: 0, n: 0 }, b = document.createElement('button');   // FACTOR×FACTOR ソロ・イージー（移植版）
+      b.className = 'tool pix fxf-entry'; b.dataset.sp = 'FXF'; b.innerHTML = '<b>FACTOR×FACTOR<br>ソロ・イージー（移植版）</b><small>正解 ' + r.ok + ' / ' + r.n + '</small>';
+      b.onclick = openFxf; g.appendChild(b); }
     for (const id of DRILL.LEVELS.S.types) {
       const r = state.drill.stats[id] || { ok: 0, n: 0 }, b = document.createElement('button');
       b.className = 'tool pix'; b.dataset.sp = id; b.innerHTML = '<b>' + DRILL.TYPES[id].name + '</b><small>正解 ' + r.ok + ' / ' + r.n + '</small>';
@@ -4063,6 +4279,140 @@
   function openDrill() { renderDrillMenu(); $('drillPanel').style.display = 'flex'; }
   $('drillClose').onclick = () => { $('drillPanel').style.display = 'none'; ds = null; };
   $('drillHud').onclick = openDrill;
+  // ---------- FACTOR×FACTOR ソロ・イージー（移植版）：ドリルメニューから開く全画面のモジュール ----------
+  // 町の Canvas・セーブ構造には触らない。報酬だけ drillAnswer('S', 'S4', 正誤) で特殊ドリルと同じに払う（1問ごとにすぐ保存）
+  const FXF = window.ClockseedFxF, FXF_TYPE = 'S4', FXF_NAME = 'FACTOR×FACTOR ソロ・イージー（移植版）';
+  let fxf = null;                                   // { stage:'intro'|'count'|'play'|'result', g, count, earned, raf, drag }
+  const fxfEl = () => $('fxfPanel');
+  const fxfOpen = () => fxfEl().style.display === 'flex';
+  function openFxf() {
+    $('drillPanel').style.display = 'none'; ds = null;
+    fxf = { stage: 'intro', g: null, earned: { sec: 0, shards: 0, ok: 0, n: 0, tickets: 0 } };
+    fxfEl().style.display = 'flex'; renderFxf();
+  }
+  function closeFxf() {
+    if (fxf && fxf.raf) cancelAnimationFrame(fxf.raf);
+    fxfEndDrag(true);
+    fxf = null; fxfEl().style.display = 'none'; hudSig = '';
+    openDrill();                                    // ドリルのメニューへ戻る（今日の残り問題数も更新される）
+  }
+  function startFxf() {
+    fxf.stage = 'count'; fxf.count = 3; fxf.countAt = now(); fxf.earned = { sec: 0, shards: 0, ok: 0, n: 0, tickets: 0 }; fxf.g = null;
+    renderFxf(); fxfLoop();
+  }
+  const fxfRewardNote = () => { const left = Math.max(0, SPECIAL_REWARD.perDay - spToday());
+    return left ? '今日あと' + left + '問は 1問 +' + SPECIAL_REWARD.hi.sec + '秒・カケラ' + SPECIAL_REWARD.hi.shards : '今日の高効率は終了（1問 +' + SPECIAL_REWARD.lo.sec + '秒・カケラ' + SPECIAL_REWARD.lo.shards + '）'; };
+  function renderFxf() {
+    const el = $('fxfBody'), C = FXF.CONFIG;
+    if (fxf.stage === 'intro') {
+      el.innerHTML = '<div class="fxf-intro"><h2>' + FXF_NAME + '</h2>' +
+        '<p>お題の式になる2枚のタイルを、<b>ドラッグしてつなげよう</b>（タイルを押さえたまま、もう1枚の上で離す）。</p>' +
+        '<ul><li>正解 ' + C.clearCount + '問でクリア。問題は3問ごとに Lv1→Lv5 と上がる</li><li>体力100%から1秒に1%ずつ減る。ミスで−' + C.missPenalty + '%、1問' + (C.timeoutMs / 1000) + '秒で時間切れ</li>' +
+        '<li>はやく解くほど体力が回復（Perfect 2秒以内 +25% …）。連続正解でコンボ倍率</li><li>1問ごとに特殊ドリルのごほうび：' + fxfRewardNote() + '</li></ul>' +
+        '<button class="tool pix act fxf-start" id="fxfStart">スタート</button></div>';
+      $('fxfStart').onclick = startFxf; return;
+    }
+    if (fxf.stage === 'count') { el.innerHTML = '<div class="fxf-count" id="fxfCount">' + (fxf.count > 0 ? fxf.count : 'スタート！') + '</div>'; return; }
+    if (fxf.stage === 'result') {
+      const g = fxf.g, E = fxf.earned, sec = Math.floor(g.playMs / 1000);
+      el.innerHTML = '<div class="fxf-result"><h2>' + (g.cleared ? C.clearCount + '問クリア！' : '体力切れ…') + '</h2>' +
+        '<div class="fxf-big">' + g.score + '<small>点</small></div>' +
+        '<div class="fxf-rows"><span>正解 ' + g.caught + ' / ' + C.clearCount + '</span><span>ミス ' + g.misses + '・時間切れ ' + g.timeouts + '</span><span>最大コンボ ' + g.maxCombo + '</span>' +
+        '<span>タイム ' + Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0') + '</span>' + (g.cleared ? '<span>クリアボーナス ' + g.clearBonus + '点</span>' : '') + '</div>' +
+        '<div class="fxf-earn" id="fxfEarned">ごほうび（このゲーム）：' + icon('ic_hourglass') + '時短 +' + fmtStock(E.sec) + '　' + icon('ic_shard') + 'カケラ +' + fmtShard(E.shards) +
+        (E.tickets ? '　' + icon('ic_ticket') + 'チケット +' + E.tickets : '') + '</div>' +
+        '<div class="dacts"><button class="tool pix act" id="fxfAgain">もう一度</button><button class="tool pix act" id="fxfBack">ドリルへ戻る</button></div></div>';
+      $('fxfAgain').onclick = startFxf; $('fxfBack').onclick = closeFxf; return;
+    }
+    const g = fxf.g, q = g.q;
+    el.innerHTML = '<div class="fxf-hud">' +
+      '<div class="fxf-hp"><div class="fxf-hpbar"><i id="fxfHpFill"></i></div><b id="fxfHp"></b></div>' +
+      '<div class="fxf-stats"><span>スコア <b id="fxfScore"></b></span><span>コンボ <b id="fxfCombo"></b></span><span>問 <b id="fxfQ"></b> / ' + C.clearCount + '</span><span id="fxfTime"></span></div></div>' +
+      '<div class="fxf-q"><span class="fxf-lv">Lv' + q.level + ' ' + FXF.LEVEL_NAME[q.level] + '</span><div class="fxf-target" id="fxfTarget">' + fmtMath(q.target) + '</div>' +
+      '<div class="fxf-qbar"><i id="fxfQbar"></i></div><div class="fxf-pop" id="fxfPop"></div></div>' +
+      '<div class="fxf-grid" id="fxfGrid">' + q.tiles.map(t => '<div class="fxf-tile" data-tile-id="' + t.id + '"><span>' + fmtMath(t.label) + '</span></div>').join('') + '</div>' +
+      '<div class="fxf-foot"><span id="fxfEarn"></span><small>' + fxfRewardNote() + '</small></div>';
+    $('fxfGrid').querySelectorAll('.fxf-tile').forEach(tEl => tEl.addEventListener('pointerdown', e => fxfDown(e, tEl)));
+    fxfHud();
+  }
+  function fxfHud() {
+    if (!fxf || fxf.stage !== 'play' || !$('fxfHp')) return;
+    const g = fxf.g, t = now(), qms = g.phase === 'playing' ? t - g.qStart : 0, warn = qms >= FXF.CONFIG.timeoutMs - 5000;
+    $('fxfHp').textContent = 'HP ' + g.hp.toFixed(1) + '%'; $('fxfHpFill').style.width = g.hp + '%'; $('fxfHpFill').classList.toggle('low', g.hp < 30);
+    $('fxfScore').textContent = g.score; $('fxfCombo').textContent = g.combo; $('fxfQ').textContent = Math.min(g.caught + 1, FXF.CONFIG.clearCount);
+    const s = Math.floor(g.playMs / 1000); $('fxfTime').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    $('fxfQbar').style.width = (100 * Math.max(0, 1 - qms / FXF.CONFIG.timeoutMs)).toFixed(1) + '%'; $('fxfQbar').classList.toggle('warn', warn);
+    const E = fxf.earned; $('fxfEarn').innerHTML = icon('ic_hourglass') + '+' + fmtStock(E.sec) + ' ' + icon('ic_shard') + '+' + fmtShard(E.shards);
+  }
+  function fxfPay(ok) {                              // 1問ごとの報酬（特殊ドリルと同じ数え方。保存もここで行う）
+    const r = drillAnswer('S', FXF_TYPE, ok), E = fxf.earned;
+    E.n++; if (ok) E.ok++; E.sec += r.sec; E.shards += r.shards; if (r.ticket) { E.tickets++; toast('10問連続正解！ 即完了チケットを1枚手に入れました'); }
+    hudSig = ''; return r;
+  }
+  function fxfShow(ev, r) {
+    const pop = $('fxfPop'); if (!pop) return;
+    const j = ev.judge || FXF.JUDGE_BAD;
+    pop.innerHTML = '<b style="color:' + j.color + '">' + (ev.type === 'timeout' ? '時間切れ' : j.label) + '</b>' +
+      (ev.ok ? '<span>+' + (ev.gain + ev.overflow) + '点</span>' : '') + (r && r.sec ? '<small>+' + r.sec + '秒・カケラ+' + fmtShard(r.shards) + '</small>' : '');
+    pop.className = 'fxf-pop show ' + (ev.ok ? 'ok' : 'ng');
+    const last = fxf.g.last;
+    if (last && last.ids) last.ids.forEach(id => { const tl = $('fxfGrid').querySelector('[data-tile-id="' + id + '"]'); if (tl) tl.classList.add(ev.ok ? 'ok' : 'ng'); });
+  }
+  function fxfFinish() { fxfEndDrag(true); fxf.stage = 'result'; renderFxf(); }
+  function fxfLoop() {
+    if (!fxf) return;
+    const t = now();
+    if (fxf.stage === 'count') {                     // カウントダウン：3・2・1（各0.6秒）→ スタート！（0.4秒）
+      const step = fxf.count > 0 ? 600 : 400;
+      if (t - fxf.countAt >= step) {
+        if (fxf.count > 0) { fxf.count--; fxf.countAt = t; renderFxf(); }
+        else { fxf.g = FXF.newGame(Math.random, t); fxf.stage = 'play'; renderFxf(); }
+      }
+    } else if (fxf.stage === 'play') {
+      const g = fxf.g, ev = FXF.tick(g, t);
+      if (ev && ev.type === 'timeout') { const r = fxfPay(false); fxfEndDrag(true); fxfShow(ev, r); }
+      if (g.phase === 'over') { fxfFinish(); }
+      else if (FXF.advance(g, t, Math.random)) renderFxf();
+      else fxfHud();
+    }
+    if (fxf && fxf.stage !== 'result' && fxf.stage !== 'intro') fxf.raf = requestAnimationFrame(fxfLoop);
+  }
+  // ドラッグ（本家と同じ：タイルを押さえて動かし、別のタイルの上で離すと判定。すき間で離したら中心が近いタイル、盤面の外は取り消し）
+  function fxfDown(e, tEl) {
+    if (!fxf || fxf.stage !== 'play' || fxf.g.phase !== 'playing' || fxf.drag) return;
+    e.preventDefault();
+    const grid = $('fxfGrid'), rects = [...grid.querySelectorAll('.fxf-tile')].map(el => { const r = el.getBoundingClientRect(); return { id: el.dataset.tileId, left: r.left, top: r.top, width: r.width, height: r.height }; });
+    fxf.drag = { id: tEl.dataset.tileId, el: tEl, sx: e.clientX, sy: e.clientY, rects, grid: grid.getBoundingClientRect(), pid: e.pointerId, target: null };
+    tEl.classList.add('drag');
+    window.addEventListener('pointermove', fxfMove); window.addEventListener('pointerup', fxfUp); window.addEventListener('pointercancel', fxfCancel);
+  }
+  function fxfMove(e) {
+    const d = fxf && fxf.drag; if (!d || e.pointerId !== d.pid) return;
+    if (e.cancelable) e.preventDefault();
+    d.el.style.transform = 'translate(' + (e.clientX - d.sx) + 'px,' + (e.clientY - d.sy) + 'px) scale(0.86)';
+    const tg = FXF.dropTarget(d.grid, d.rects, e.clientX, e.clientY, d.id);
+    if (tg !== d.target) { $('fxfGrid').querySelectorAll('.fxf-tile.over').forEach(x => x.classList.remove('over')); if (tg) $('fxfGrid').querySelector('[data-tile-id="' + tg + '"]').classList.add('over'); d.target = tg; }
+  }
+  function fxfUp(e) {
+    const d = fxf && fxf.drag; if (!d || e.pointerId !== d.pid) return;
+    const tg = FXF.dropTarget(d.grid, d.rects, e.clientX, e.clientY, d.id);
+    fxfEndDrag(false);
+    if (!tg) return;
+    const ev = FXF.answer(fxf.g, d.id, tg, now());
+    if (!ev) return;
+    const r = fxfPay(ev.ok);
+    fxfShow(ev, r); fxfHud();
+    if (fxf.g.phase === 'over') setTimeout(() => { if (fxf && fxf.stage === 'play') fxfFinish(); }, FXF.CONFIG.resolveMs);
+  }
+  function fxfCancel(e) { const d = fxf && fxf.drag; if (d && e.pointerId === d.pid) fxfEndDrag(false); }
+  function fxfEndDrag(all) {
+    window.removeEventListener('pointermove', fxfMove); window.removeEventListener('pointerup', fxfUp); window.removeEventListener('pointercancel', fxfCancel);
+    const d = fxf && fxf.drag; if (!d) return;
+    d.el.style.transform = ''; d.el.classList.remove('drag');
+    const gr = $('fxfGrid'); if (gr) gr.querySelectorAll('.fxf-tile.over').forEach(x => x.classList.remove('over'));
+    fxf.drag = null;
+  }
+  $('fxfClose').onclick = closeFxf;
 
   // ---------- ガチャ（時計塔のパネル） ----------
   const CAT_ICON = { seed: 'ic_seed', decor: 'ic_decor', helper: 'ic_helper', cons: 'ic_potion' };
@@ -4388,6 +4738,11 @@
     facPos: k => ({ x: FAC[k].x, y: FAC[k].y, top: FAC[k].top }),
     plotRectW: i => plotRect(i),
     drillAnswerIndex: () => (ds && ds.set[ds.i] ? ds.set[ds.i].answer : -1),
+    fxf: () => { if (!fxf) return null; const g = fxf.g; if (!g) return { stage: fxf.stage, count: fxf.count };
+      const pair = []; g.q.tiles.forEach((a, i) => g.q.tiles.forEach((b, j) => { if (i < j && FXF.polyEqual(FXF.multiply(a.factor, b.factor), g.q.poly)) pair.push([a.id, b.id]); }));
+      return { stage: fxf.stage, phase: g.phase, hp: g.hp, score: g.score, combo: g.combo, caught: g.caught, misses: g.misses, timeouts: g.timeouts, level: g.q.level, target: g.q.target,
+        tiles: g.q.tiles.map(t => ({ id: t.id, label: t.label })), pairs: pair, cleared: g.cleared, clearBonus: g.clearBonus, playMs: g.playMs, earned: Object.assign({}, fxf.earned) }; },
+    fxfTileCenter: id => { const el = document.querySelector('#fxfGrid [data-tile-id="' + id + '"]'); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; },
     drillSetInfo: () => (ds ? { kind: ds.kind || 'set', level: ds.level, i: ds.i, set: ds.set.map(p => ({ type: p.type, level: p.level, role: p.role })) } : null),
     timers: () => timers().map(x => ({ id: x.id, remaining: x.ready - now(), dur: origDur(x) })),
     viewport: () => { const b = curBounds(); return { w: VW, h: VH, mapX0: b.x0, mapY0: b.y0, mapW: b.x1, mapH: b.y1, zoomMin: zoomMin() }; },

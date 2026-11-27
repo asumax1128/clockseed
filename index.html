@@ -6,306 +6,62 @@
 <title>ときの種</title>
 <style>
   :root{
-    --ink:#5a4030; --ink-soft:#8a6c55;
-    --panel:#fbf3e0; --panel-edge:#b48c64; --panel-shadow:#9c7a5833;
-    --accent:#e7b864; --accent-soft:#f6e2b4;
-    --grass:#a7cb86;
+    --ink:#4a3322; --ink-soft:#8a6a4c;
+    --frame:#5a3a22; --panel:#f6ead0; --panel-hi:#fffaf0; --panel-lo:#dcc59c;
+    --sel:#ffe3a0;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-  html,body{margin:0;height:100%;overflow:hidden;background:#cfe3df;color:var(--ink);
-    font-family:"Hiragino Maru Gothic ProN","Yu Gothic","Rounded Mplus 1c",system-ui,sans-serif;touch-action:none}
-  #defs{position:absolute;width:0;height:0;overflow:hidden}
-  #scene{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-  #app{position:fixed;inset:0;display:flex;flex-direction:column;z-index:1}
+  html,body{margin:0;height:100%;overflow:hidden;background:#2f4a2c;color:var(--ink);
+    font-family:"DotGothic16","Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif;touch-action:none}
+  #world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+  #world.grabbing{cursor:grabbing}
+  img.px{image-rendering:pixelated;image-rendering:crisp-edges}
 
-  header{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 4px;gap:12px}
-  h1{margin:0;font-size:22px;letter-spacing:.12em;display:flex;align-items:center;gap:8px;
-    color:#6b4a33;text-shadow:0 2px 0 #fff8}
-  h1 svg{width:26px;height:26px}
-  #fastBadge{background:#c9705a;color:#fff6ea;border-radius:8px;padding:2px 8px;font-size:11px;
-    letter-spacing:.05em;display:none}
-  .panel{background:var(--panel);border:3px solid var(--panel-edge);border-radius:16px;
-    box-shadow:0 4px 0 var(--panel-shadow),inset 0 0 0 2px #fffaf0}
-  #warehouse{display:flex;align-items:center;gap:14px;padding:5px 14px;font-weight:bold;font-size:18px}
-  #warehouse .ttl{font-size:13px;color:var(--ink-soft);letter-spacing:.1em}
+  /* ドット絵風の枠（角を欠いた4px線） */
+  .pix{background:var(--panel);margin:4px;
+    box-shadow:0 -4px 0 0 var(--frame),0 4px 0 0 var(--frame),-4px 0 0 0 var(--frame),4px 0 0 0 var(--frame),
+      inset 0 4px 0 0 var(--panel-hi),inset 0 -4px 0 0 var(--panel-lo),0 8px 0 0 #0003}
+
+  .hud{position:fixed;z-index:2;pointer-events:none}
+  .hud > *{pointer-events:auto}
+  #title{top:10px;left:12px;padding:4px 12px;font-size:20px;font-weight:bold;letter-spacing:.14em;
+    display:flex;align-items:center;gap:8px}
+  #title img{width:24px;height:24px}
+  #fastBadge{background:#b8503c;color:#fff4e4;padding:1px 6px;font-size:11px;letter-spacing:.05em;display:none}
+  #warehouse{top:10px;right:12px;display:flex;align-items:center;gap:14px;padding:4px 14px;font-weight:bold;font-size:20px}
+  #warehouse .ttl{font-size:13px;color:var(--ink-soft);letter-spacing:.12em}
   .stock{display:flex;align-items:center;gap:4px}
-  .stock svg{width:26px;height:26px}
+  .stock img{width:28px;height:28px}
 
-  main{flex:1;display:flex;min-height:0;padding:0 18px 4px;gap:10px}
-  #towerBox{flex:0 0 24%;display:flex;align-items:flex-end;justify-content:center;min-width:0}
-  #tower{height:100%;width:100%;max-width:240px}
-  #farm{flex:1;position:relative;padding:22px;min-height:0}
-  #fence{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-  #field{position:relative;height:100%;display:grid;grid-template-columns:repeat(3,1fr);
-    grid-template-rows:repeat(2,1fr);gap:10px}
-  .plot{position:relative;min-width:0;min-height:0;cursor:pointer;touch-action:none}
-  .plot > svg{position:absolute;inset:0;width:100%;height:100%;display:block}
-  .plot.ready > svg{animation:glow 1.6s ease-in-out infinite}
-  @keyframes glow{0%,100%{filter:drop-shadow(0 0 2px #fff3c0)}50%{filter:drop-shadow(0 0 9px #ffe9a0)}}
-  .plot.empty:hover .plus{opacity:.95}
-  .plus{opacity:.75;transition:opacity .2s}
-
-  footer{display:flex;justify-content:center;gap:14px;padding:4px 16px 12px}
-  .tool{font-family:inherit;color:var(--ink);cursor:pointer;touch-action:manipulation;
-    padding:6px 18px 6px 10px;font-size:18px;font-weight:bold;display:flex;align-items:center;gap:8px;
-    transition:transform .15s,background .15s}
-  .tool svg{width:34px;height:34px}
+  #palette{bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:16px}
+  .tool{font-family:inherit;color:var(--ink);cursor:pointer;touch-action:manipulation;border:0;
+    padding:6px 16px 6px 10px;font-size:18px;font-weight:bold;display:flex;align-items:center;gap:8px;
+    transition:transform .12s}
+  .tool img{width:36px;height:36px}
   .tool small{display:block;font-size:11px;font-weight:normal;color:var(--ink-soft);text-align:left}
-  .tool.sel{border-color:#d49a45;background:var(--accent-soft);transform:translateY(-4px);
-    box-shadow:0 6px 0 #c48a3a44,inset 0 0 0 2px #fff6dc}
+  .tool.sel{background:var(--sel);transform:translateY(-5px)}
 
-  #popup{position:fixed;inset:0;background:#4a36262e;display:none;align-items:center;justify-content:center;z-index:10}
-  #popup .box{padding:16px 22px;text-align:center}
-  #popup .q{font-weight:bold;letter-spacing:.08em}
-  #popup .row{display:flex;gap:14px;margin:12px 0 6px}
+  #popup{position:fixed;inset:0;background:#2a1a1040;display:none;align-items:center;justify-content:center;z-index:10}
+  #popup .box{padding:14px 22px;text-align:center}
+  #popup .q{font-weight:bold;letter-spacing:.1em}
+  #popup .row{display:flex;gap:16px;margin:14px 0 8px}
   #popup .cancel{background:none;border:none;font-size:14px;color:var(--ink-soft);
     text-decoration:underline;cursor:pointer;font-family:inherit}
 </style>
 </head>
 <body>
+<canvas id="world" aria-label="ときの種の町（畑と時計塔）"></canvas>
 
-<!-- 共有の絵（グラデーション・模様・作物の株） -->
-<svg id="defs" aria-hidden="true">
-  <defs>
-    <linearGradient id="g-sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#a6cfe0"/><stop offset=".65" stop-color="#d8e9e0"/>
-      <stop offset="1" stop-color="#f4ecd4"/>
-    </linearGradient>
-    <linearGradient id="g-grass" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#b3d38f"/><stop offset="1" stop-color="#93bf74"/>
-    </linearGradient>
-    <pattern id="p-grass" width="34" height="30" patternUnits="userSpaceOnUse">
-      <g stroke="#7fab62" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".55">
-        <path d="M5 12 l-1 -5 M7 12 l1 -6 M9 12 l2 -4"/>
-        <path d="M23 27 l-1 -4 M25 27 l1 -5"/>
-      </g>
-      <circle cx="18" cy="8" r="1.2" fill="#c8e0a6" opacity=".8"/>
-      <circle cx="30" cy="17" r="1" fill="#7fab62" opacity=".5"/>
-    </pattern>
-    <linearGradient id="g-path" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#eadbb6"/><stop offset="1" stop-color="#dcc79a"/>
-    </linearGradient>
-
-    <!-- 塔 -->
-    <pattern id="p-stone" width="28" height="16" patternUnits="userSpaceOnUse">
-      <rect width="28" height="16" fill="#dccfb4"/>
-      <rect x="1" y="1" width="12" height="6" rx="1.5" fill="#e4d8bf"/>
-      <rect x="15" y="1" width="12" height="6" rx="1.5" fill="#d6c7aa"/>
-      <rect x="-6" y="9" width="12" height="6" rx="1.5" fill="#d3c4a6"/>
-      <rect x="8" y="9" width="12" height="6" rx="1.5" fill="#e1d4ba"/>
-      <rect x="22" y="9" width="12" height="6" rx="1.5" fill="#d3c4a6"/>
-    </pattern>
-    <linearGradient id="g-shade" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/>
-      <stop offset="1" stop-color="#6b5236" stop-opacity=".28"/>
-    </linearGradient>
-    <linearGradient id="g-roof" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#cf8468"/><stop offset=".5" stop-color="#bd6d55"/>
-      <stop offset="1" stop-color="#9c5545"/>
-    </linearGradient>
-    <linearGradient id="g-door" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#9a6a44"/><stop offset="1" stop-color="#7a5134"/>
-    </linearGradient>
-    <radialGradient id="g-face" cx=".45" cy=".4" r=".7">
-      <stop offset="0" stop-color="#fffbef"/><stop offset="1" stop-color="#f1e5c8"/>
-    </radialGradient>
-
-    <!-- 畑 -->
-    <radialGradient id="g-soil" cx=".5" cy=".45" r=".7">
-      <stop offset="0" stop-color="#9c6d49"/><stop offset="1" stop-color="#7f5538"/>
-    </radialGradient>
-    <radialGradient id="g-soil-dry" cx=".5" cy=".45" r=".7">
-      <stop offset="0" stop-color="#c39a74"/><stop offset="1" stop-color="#a98060"/>
-    </radialGradient>
-    <linearGradient id="g-ridge" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#b68660"/><stop offset=".45" stop-color="#9d6c48"/>
-      <stop offset="1" stop-color="#835a3c"/>
-    </linearGradient>
-    <linearGradient id="g-ridge-dry" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#d7b892"/><stop offset=".45" stop-color="#c49f7a"/>
-      <stop offset="1" stop-color="#ad8664"/>
-    </linearGradient>
-    <linearGradient id="g-carrot" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#f2a35c"/><stop offset="1" stop-color="#d9763a"/>
-    </linearGradient>
-    <linearGradient id="g-ear" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#f2d17c"/><stop offset="1" stop-color="#d6a84a"/>
-    </linearGradient>
-
-    <!-- 株（土台 y=0、幅30×高40） -->
-    <symbol id="wheat-1" viewBox="-15 -36 30 40" overflow="visible">
-      <ellipse cx="0" cy="1" rx="6" ry="1.8" fill="#4f321f" opacity=".3"/>
-      <path d="M0 1 V-8" stroke="#6e9a45" stroke-width="1.6" stroke-linecap="round"/>
-      <path d="M0 -7 C-2 -12 -8 -13 -10 -9 C-7 -6 -3 -6 0 -7Z" fill="#94c45c"/>
-      <path d="M0 -7 C2 -12 8 -13 10 -9 C7 -6 3 -6 0 -7Z" fill="#83b74f"/>
-    </symbol>
-    <symbol id="wheat-2" viewBox="-15 -36 30 40" overflow="visible">
-      <ellipse cx="0" cy="1" rx="8" ry="2.2" fill="#4f321f" opacity=".3"/>
-      <path d="M-1 1 Q-5 -12 -10 -22 Q-3 -13 1 1Z" fill="#76a748"/>
-      <path d="M-1 1 Q-2 -16 -3 -29 Q1 -16 1 1Z" fill="#8fbd58"/>
-      <path d="M-1 1 Q2 -15 6 -27 Q3 -14 1 1Z" fill="#6e9d42"/>
-      <path d="M-1 1 Q5 -10 11 -18 Q4 -8 1 1Z" fill="#84b44f"/>
-    </symbol>
-    <symbol id="wheat-3" viewBox="-15 -36 30 40" overflow="visible">
-      <ellipse cx="0" cy="1" rx="9" ry="2.4" fill="#4f321f" opacity=".3"/>
-      <g stroke="#c9a456" stroke-width="1.3" stroke-linecap="round" fill="none">
-        <path d="M0 1 Q-3 -12 -8 -21"/><path d="M0 1 Q0 -14 0 -25"/><path d="M0 1 Q3 -12 8 -21"/>
-      </g>
-      <path d="M0 0 Q-4 -6 -9 -9 Q-3 -4 0 0Z" fill="#c6a95a"/>
-      <path d="M0 0 Q4 -6 9 -8 Q3 -3 0 0Z" fill="#bb9d50"/>
-      <g fill="url(#g-ear)" stroke="#b98a35" stroke-width=".5">
-        <g transform="translate(-8.5 -25) rotate(-24)">
-          <ellipse cx="0" cy="0" rx="2.6" ry="6"/><path d="M-2.2 -2 H2.2 M-2.4 1.2 H2.4" fill="none"/>
-        </g>
-        <g transform="translate(0 -30)">
-          <ellipse cx="0" cy="0" rx="2.8" ry="6.5"/><path d="M-2.4 -2 H2.4 M-2.6 1.4 H2.6" fill="none"/>
-        </g>
-        <g transform="translate(8.5 -25) rotate(24)">
-          <ellipse cx="0" cy="0" rx="2.6" ry="6"/><path d="M-2.2 -2 H2.2 M-2.4 1.2 H2.4" fill="none"/>
-        </g>
-      </g>
-      <g stroke="#e3c272" stroke-width=".7" stroke-linecap="round">
-        <path d="M-11 -30 l-2 -5 M0 -36 v-4 M11 -30 l2 -5"/>
-      </g>
-    </symbol>
-    <symbol id="carrot-1" viewBox="-15 -36 30 40" overflow="visible">
-      <ellipse cx="0" cy="1" rx="6" ry="1.8" fill="#4f321f" opacity=".3"/>
-      <g stroke="#6f9f45" stroke-width="1.1" stroke-linecap="round" fill="none">
-        <path d="M0 1 Q-2 -4 -4 -7"/><path d="M0 1 V-9"/><path d="M0 1 Q2 -4 4 -7"/>
-      </g>
-      <g fill="#8cc25a">
-        <circle cx="-4.5" cy="-8" r="2.2"/><circle cx="0" cy="-10" r="2.4"/><circle cx="4.5" cy="-8" r="2.2"/>
-      </g>
-    </symbol>
-    <symbol id="carrot-2" viewBox="-15 -36 30 40" overflow="visible">
-      <ellipse cx="0" cy="1" rx="9" ry="2.4" fill="#4f321f" opacity=".3"/>
-      <g stroke="#5e8f3c" stroke-width="1.2" stroke-linecap="round" fill="none">
-        <path d="M0 1 Q-4 -8 -9 -14"/><path d="M0 1 Q-2 -10 -4 -20"/><path d="M0 1 V-23"/>
-        <path d="M0 1 Q2 -10 5 -20"/><path d="M0 1 Q4 -8 10 -13"/>
-      </g>
-      <g fill="#6aa646">
-        <circle cx="-9" cy="-15" r="3.4"/><circle cx="-11" cy="-12" r="2.4"/><circle cx="-4" cy="-21" r="3.4"/>
-        <circle cx="0" cy="-24" r="3.6"/><circle cx="5" cy="-21" r="3.4"/><circle cx="10" cy="-14" r="3.4"/>
-      </g>
-      <g fill="#82bb57">
-        <circle cx="-6" cy="-19" r="2.2"/><circle cx="2" cy="-26" r="2.2"/><circle cx="8" cy="-17" r="2.2"/>
-        <circle cx="12" cy="-11" r="2"/><circle cx="-2" cy="-17" r="2"/>
-      </g>
-    </symbol>
-    <symbol id="carrot-3" viewBox="-15 -36 30 40" overflow="visible">
-      <ellipse cx="0" cy="1.5" rx="9" ry="2.4" fill="#4f321f" opacity=".3"/>
-      <g stroke="#5e8f3c" stroke-width="1.2" stroke-linecap="round" fill="none">
-        <path d="M0 -4 Q-4 -12 -9 -18"/><path d="M0 -4 Q-2 -14 -4 -24"/><path d="M0 -4 V-27"/>
-        <path d="M0 -4 Q2 -14 5 -24"/><path d="M0 -4 Q4 -12 10 -17"/>
-      </g>
-      <g fill="#6aa646">
-        <circle cx="-9" cy="-19" r="3.4"/><circle cx="-4" cy="-25" r="3.4"/><circle cx="0" cy="-28" r="3.6"/>
-        <circle cx="5" cy="-25" r="3.4"/><circle cx="10" cy="-18" r="3.4"/>
-      </g>
-      <g fill="#82bb57"><circle cx="-6" cy="-23" r="2.2"/><circle cx="2" cy="-30" r="2.2"/><circle cx="8" cy="-21" r="2.2"/></g>
-      <path d="M-7.5 2 Q-8 -6 0 -6.5 Q8 -6 7.5 2 Z" fill="url(#g-carrot)" stroke="#bf6530" stroke-width=".6"/>
-      <path d="M-6 -2 q3 1 5 0 M2 -3.5 q2 1 4 0" stroke="#c4672f" stroke-width=".7" fill="none" stroke-linecap="round"/>
-      <path d="M-5 -4 q2 -1.6 5 -1.6" stroke="#ffd2a0" stroke-width="1" fill="none" stroke-linecap="round" opacity=".8"/>
-    </symbol>
-
-    <!-- UI用アイコン -->
-    <symbol id="ic-wheat" viewBox="0 0 32 32">
-      <g stroke="#c49c4c" stroke-width="1.4" stroke-linecap="round" fill="none">
-        <path d="M16 30 Q13 20 8 12"/><path d="M16 30 V9"/><path d="M16 30 Q19 20 24 12"/>
-      </g>
-      <g fill="url(#g-ear)" stroke="#b98a35" stroke-width=".6">
-        <ellipse cx="8" cy="9" rx="3" ry="6.5" transform="rotate(-24 8 9)"/>
-        <ellipse cx="16" cy="6" rx="3.2" ry="7"/>
-        <ellipse cx="24" cy="9" rx="3" ry="6.5" transform="rotate(24 24 9)"/>
-      </g>
-      <path d="M11 23 Q16 21 21 23" stroke="#a7764a" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-    </symbol>
-    <symbol id="ic-carrot" viewBox="0 0 32 32">
-      <g fill="#6aa646"><circle cx="21" cy="7" r="3.4"/><circle cx="25.5" cy="9" r="3"/><circle cx="24" cy="4.5" r="2.6"/></g>
-      <path d="M21 9 Q11 14 5 27 Q4.5 29 6.5 28 Q18 21 23 12 Z" fill="url(#g-carrot)" stroke="#bf6530" stroke-width=".7"/>
-      <path d="M12 17 l3 1.5 M9 21 l3 1.5 M16 13 l2.5 1.2" stroke="#c4672f" stroke-width=".9" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="ic-sprout" viewBox="0 0 32 32">
-      <path d="M16 29 V15" stroke="#6e9a45" stroke-width="2.4" stroke-linecap="round"/>
-      <path d="M16 16 C13 8 5 7 3 11 C7 16 12 17 16 16Z" fill="#94c45c"/>
-      <path d="M16 14 C18 5 27 4 29 8 C26 14 20 15 16 14Z" fill="#7fb34a"/>
-      <ellipse cx="16" cy="29" rx="9" ry="2.4" fill="#a7764a"/>
-    </symbol>
-  </defs>
-</svg>
-
-<!-- 背景：空・丘・草地・小道（JSで画面サイズに合わせて描く） -->
-<svg id="scene" aria-hidden="true"></svg>
-
-<div id="app">
-  <header>
-    <h1><svg><use href="#ic-sprout"/></svg>ときの種<span id="fastBadge"></span></h1>
-    <div id="warehouse" class="panel" aria-label="倉庫">
-      <span class="ttl">倉庫</span>
-      <span class="stock" title="小麦"><svg><use href="#ic-wheat"/></svg><span id="sWheat">0</span></span>
-      <span class="stock" title="にんじん"><svg><use href="#ic-carrot"/></svg><span id="sCarrot">0</span></span>
-    </div>
-  </header>
-  <main>
-    <div id="towerBox">
-      <!-- 時計塔（絵のみ・機能なし。針は現在時刻） -->
-      <svg id="tower" viewBox="0 0 200 470" preserveAspectRatio="xMidYMax meet" aria-label="時計塔">
-        <!-- 足もとの植え込み -->
-        <ellipse cx="100" cy="458" rx="92" ry="9" fill="#6f9a55" opacity=".35"/>
-        <!-- 本体 -->
-        <rect x="46" y="150" width="108" height="300" fill="url(#p-stone)"/>
-        <rect x="46" y="150" width="108" height="300" fill="url(#g-shade)"/>
-        <rect x="46" y="150" width="108" height="300" fill="none" stroke="#a8977a" stroke-width="2.5"/>
-        <!-- 台座 -->
-        <rect x="36" y="440" width="128" height="18" rx="3" fill="#c9bb9e" stroke="#a8977a" stroke-width="2"/>
-        <rect x="36" y="440" width="128" height="5" rx="2" fill="#ddd1b8"/>
-        <!-- 中段の帯 -->
-        <rect x="42" y="262" width="116" height="9" rx="2" fill="#cfc1a4" stroke="#a8977a" stroke-width="1.5"/>
-        <!-- 軒（屋根が載る台） -->
-        <rect x="38" y="140" width="124" height="14" rx="3" fill="#cfc1a4" stroke="#a8977a" stroke-width="2"/>
-        <!-- 屋根 -->
-        <path d="M26 142 L100 36 L174 142 Z" fill="url(#g-roof)" stroke="#8c4c3d" stroke-width="2.5" stroke-linejoin="round"/>
-        <g stroke="#a55b48" stroke-width="1.3" opacity=".7" fill="none">
-          <path d="M55 101 H145"/><path d="M71 78 H129"/><path d="M41 122 H159"/><path d="M86 57 H114"/>
-        </g>
-        <path d="M100 36 V16" stroke="#8a6a46" stroke-width="3" stroke-linecap="round"/>
-        <circle cx="100" cy="14" r="5" fill="#e2bd62" stroke="#b58e3c" stroke-width="1.5"/>
-        <!-- 屋根の小窓 -->
-        <path d="M90 124 V110 a10 10 0 0 1 20 0 V124 Z" fill="#5f4a3c" stroke="#efe2c2" stroke-width="3"/>
-        <!-- 時計盤 -->
-        <circle cx="100" cy="206" r="44" fill="#cfc1a4" stroke="#a8977a" stroke-width="2"/>
-        <circle cx="100" cy="206" r="37" fill="url(#g-face)" stroke="#8a6f4a" stroke-width="3"/>
-        <g id="ticks" stroke="#6b5240" stroke-linecap="round"></g>
-        <line id="hHour" x1="100" y1="206" x2="100" y2="185" stroke="#4e3a2b" stroke-width="5" stroke-linecap="round"/>
-        <line id="hMin" x1="100" y1="210" x2="100" y2="176" stroke="#4e3a2b" stroke-width="3" stroke-linecap="round"/>
-        <circle cx="100" cy="206" r="4.5" fill="#d9ae55" stroke="#8a6f4a" stroke-width="1.2"/>
-        <!-- 小窓 -->
-        <g fill="#5f4a3c" stroke="#efe2c2" stroke-width="3">
-          <path d="M66 330 V312 a8 8 0 0 1 16 0 V330 Z"/>
-          <path d="M118 330 V312 a8 8 0 0 1 16 0 V330 Z"/>
-        </g>
-        <path d="M74 304 V330 M126 304 V330" stroke="#efe2c2" stroke-width="1.6"/>
-        <!-- 扉 -->
-        <path d="M74 442 V388 a26 26 0 0 1 52 0 V442 Z" fill="#c6b597" stroke="#a8977a" stroke-width="2"/>
-        <path d="M80 442 V390 a20 20 0 0 1 40 0 V442 Z" fill="url(#g-door)" stroke="#5f3f28" stroke-width="2"/>
-        <path d="M93 372 V442 M107 372 V442" stroke="#6a4630" stroke-width="1.4" opacity=".8"/>
-        <circle cx="113" cy="414" r="2.6" fill="#e2bd62"/>
-        <!-- 植え込み -->
-        <g fill="#86b465">
-          <circle cx="40" cy="452" r="11"/><circle cx="28" cy="456" r="8"/>
-          <circle cx="160" cy="452" r="11"/><circle cx="172" cy="456" r="8"/>
-        </g>
-        <g fill="#e9a7a0"><circle cx="38" cy="447" r="2"/><circle cx="164" cy="449" r="2"/><circle cx="28" cy="453" r="1.6"/></g>
-      </svg>
-    </div>
-    <div id="farm">
-      <svg id="fence" aria-hidden="true"></svg>
-      <div id="field"></div>
-    </div>
-  </main>
-  <footer id="palette"></footer>
+<div class="hud" style="inset:0">
+  <div id="title" class="pix" style="position:absolute"><img class="px" data-icon="ic_sprout" alt="">ときの種<span id="fastBadge"></span></div>
+  <div id="warehouse" class="pix" style="position:absolute" aria-label="倉庫">
+    <span class="ttl">倉庫</span>
+    <span class="stock" title="小麦"><img class="px" data-icon="ic_wheat" alt="小麦"><span id="sWheat">0</span></span>
+    <span class="stock" title="にんじん"><img class="px" data-icon="ic_carrot" alt="にんじん"><span id="sCarrot">0</span></span>
+  </div>
+  <div id="palette" style="position:absolute"></div>
 </div>
-<div id="popup"><div class="box panel">
+<div id="popup"><div class="box pix">
   <div class="q">なにを植える？</div>
   <div class="row" id="popupRow"></div>
   <button class="cancel" id="popupCancel">やめる</button>
@@ -317,7 +73,6 @@
   const SAVE_KEY = 'clockseed.save';
   const SAVE_VERSION = 1;
   const PLOT_COUNT = 6;
-  const SVGNS = 'http://www.w3.org/2000/svg';
 
   // デバッグ：?fast=N で育成時間をN分の1に
   const FAST = (() => {
@@ -327,8 +82,8 @@
 
   // 作物データ（チェーン表 v0.1）
   const CROPS = {
-    wheat:  { name: '小麦',   icon: 'ic-wheat',  growMs: 2 * 60 * 1000, yield: 3 },
-    carrot: { name: 'にんじん', icon: 'ic-carrot', growMs: 4 * 60 * 1000, yield: 3 },
+    wheat:  { name: '小麦',   icon: 'ic_wheat',  growMs: 2 * 60 * 1000, yield: 3 },
+    carrot: { name: 'にんじん', icon: 'ic_carrot', growMs: 4 * 60 * 1000, yield: 3 },
   };
 
   // ---------- セーブ ----------
@@ -382,207 +137,740 @@
     state.plots[i] = null;
     save(); return true;
   }
+  const stageOf = (p, t) => !p ? 0 : t >= p.readyAt ? 3 : progress(p, t) >= 0.5 ? 2 : 1;
 
-  // ---------- 画面：区画 ----------
+  /* =====================================================================
+     描画エンジン（Canvas・タイル制・ドット絵スプライト）
+     ここから下は見た目と操作だけ。ゲーム状態は上のロジックだけが変更する。
+     ===================================================================== */
   const $ = id => document.getElementById(id);
-  const field = $('field');
-  // 2本の畝 × 3株
-  const RIDGES = [40, 76];
-  const COLS = [30, 60, 90];
-  const SPOTS = [];
-  RIDGES.forEach((ry, r) => COLS.forEach((cx, c) =>
-    SPOTS.push({ x: cx + (r ? 3 : -3) + (c - 1) * 0.5, y: ry + 2 })));
 
-  function bedSvg() {
-    // 草の縁取り
-    let s = '<rect x="1" y="1" width="118" height="98" rx="16" fill="#a3c983"/>' +
-      '<rect x="1" y="1" width="118" height="98" rx="16" fill="none" stroke="#88b169" stroke-width="2"/>' +
-      '<g stroke="#7ea65f" stroke-width="1.1" stroke-linecap="round">' +
-      '<path d="M10 4 l-1 -3 M12 4 l1 -3 M58 3 l-1 -2.5 M60 3 l1 -2.5 M104 4 l-1 -3 M106 4 l1 -3' +
-      ' M3 50 l-2 -1 M117 30 l2 -1 M117 70 l2 -1 M40 98 l-1 2 M80 98 l1 2"/></g>';
-    // 土
-    s += '<rect class="soil" x="8" y="8" width="104" height="84" rx="12" fill="url(#g-soil)"/>' +
-      '<rect x="8" y="8" width="104" height="84" rx="12" fill="none" stroke="#6b4a30" stroke-opacity=".35" stroke-width="2"/>';
-    // 畝（ふんわり盛り上がり）
-    for (const y of RIDGES) {
-      s += `<ellipse cx="60" cy="${y + 8}" rx="47" ry="7" fill="#5a3b26" opacity=".28"/>` +
-        `<rect class="ridge" x="13" y="${y - 10}" width="94" height="20" rx="10" fill="url(#g-ridge)"/>` +
-        `<path d="M22 ${y - 6} Q60 ${y - 11} 98 ${y - 6}" stroke="#fff" stroke-opacity=".18" stroke-width="2.4" fill="none" stroke-linecap="round"/>` +
-        `<g fill="#6e4a32" opacity=".45"><circle cx="20" cy="${y + 3}" r="1"/><circle cx="47" cy="${y + 5}" r=".9"/>` +
-        `<circle cx="74" cy="${y + 4}" r="1.1"/><circle cx="101" cy="${y + 2}" r=".9"/></g>`;
-    }
-    // 空き：種まき目印
-    s += '<g class="plus"><circle cx="60" cy="58" r="10" fill="#fbf3e0" fill-opacity=".55" stroke="#fbf3e0" stroke-width="1.5" stroke-dasharray="3 2.4"/>' +
-      '<path d="M60 53 V63 M55 58 H65" stroke="#8a6449" stroke-width="2.2" stroke-linecap="round"/></g>';
-    s += '<g class="plants"></g>';
-    // 残り時間ゲージ
-    s += '<g class="gauge"><rect x="30" y="91" width="60" height="6" rx="3" fill="#5a3b26" fill-opacity=".55"/>' +
-      '<rect class="bar" x="31" y="92" width="0" height="4" rx="2" fill="#f0d27a"/></g>';
-    return '<svg viewBox="0 0 120 100" preserveAspectRatio="xMidYMid meet">' + s + '</svg>';
-  }
+  // ---------- 設定値（将来の町レベルで拡張） ----------
+  const T = 16;                       // 1タイル = 16ドット
+  const MAP = { w: 20, h: 14 };       // タイル数
+  const WORLD_SEED = 20261127;        // 自然物の配置シード（セーブには含めない）
+  const ZOOM_MIN = 0.7, ZOOM_MAX = 1.5;
+  const LAYOUT = {
+    plaza: { x: 1, y: 5, w: 5, h: 4 },                 // 広場（タイル）
+    path:  [{ x: 6, y: 7, w: 3, h: 1 }],               // 石畳の道
+    aisle: { x: 9, y: 7, w: 8, h: 1 },                 // 畑の中の土の通路
+    tower: { x: 56, y: 118 },                          // 時計塔の足元（ドット座標）
+    fence: { x0: 136, x1: 280, y0: 76, y1: 172, gateFrom: 108, gateTo: 140 },
+    plots: [[9, 5], [12, 5], [15, 5], [9, 8], [12, 8], [15, 8]], // 区画左上（タイル）、2×2
+    keepClear: [{ x: 0, y: 4, w: 7, h: 6 }, { x: 6, y: 6, w: 3, h: 3 }, { x: 7, y: 4, w: 12, h: 8 }],
+  };
+  const PLOT_PX = 2 * T;
+  const plotRect = i => ({ x: LAYOUT.plots[i][0] * T, y: LAYOUT.plots[i][1] * T, w: PLOT_PX, h: PLOT_PX });
 
-  const plotEls = [];
-  for (let i = 0; i < PLOT_COUNT; i++) {
-    const el = document.createElement('div');
-    el.className = 'plot empty'; el.dataset.i = i;
-    el.innerHTML = bedSvg();
-    const svg = el.firstElementChild;
-    el._ui = {
-      key: null,
-      soil: svg.querySelector('.soil'),
-      ridges: svg.querySelectorAll('.ridge'),
-      plus: svg.querySelector('.plus'),
-      plants: svg.querySelector('.plants'),
-      gauge: svg.querySelector('.gauge'),
-      bar: svg.querySelector('.bar'),
+  // ---------- 疑似乱数（固定シード） ----------
+  function rngFrom(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6D2B79F5) >>> 0; let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
-    field.appendChild(el); plotEls.push(el);
   }
-  if (FAST !== 1) { const b = $('fastBadge'); b.style.display = 'inline'; b.textContent = '×' + FAST + ' DEBUG'; }
+  const hash2 = (x, y, s = 0) => rngFrom(WORLD_SEED ^ Math.imul(x + 1, 73856093) ^ Math.imul(y + 1, 19349663) ^ s);
 
-  function setPlants(ui, sym) {
-    ui.plants.textContent = '';
-    if (!sym) return;
-    for (const p of SPOTS) {
-      const u = document.createElementNS(SVGNS, 'use');
-      u.setAttribute('href', '#' + sym);
-      u.setAttribute('x', p.x - 15); u.setAttribute('y', p.y - 36);
-      u.setAttribute('width', 30); u.setAttribute('height', 40);
-      ui.plants.appendChild(u);
+  // ---------- パレット（1文字 = 1色、'.' は透明） ----------
+  const PAL = {
+    k: '#34552a', g: '#5c8c3a', G: '#7fb04a', h: '#a6cf5e',
+    y: '#f0cf68', Y: '#d4a443', o: '#a5782c', w: '#fff2b8',
+    c: '#ef8a3c', C: '#c25e25', q: '#ffc48c',
+    s: '#8a5a36', S: '#5e3c24', d: '#a8744a',
+    a: '#f1e6cc', b: '#dccaa6', B: '#b9a37f', n: '#8e7a5b', m: '#584a38',
+    r: '#d9785a', R: '#b0573f', x: '#743629', l: '#f3a882',
+    u: '#93603a', U: '#5d3a22', v: '#3b3346', i: '#a9cfe0',
+    f: '#fff8e4', F: '#cdb68a', z: '#e9c055',
+    t: '#7c5333', T: '#4f3420',
+    e: '#4e8a3c', E: '#2e5c2b', j: '#78b04e', J: '#b2da72',
+    p: '#3f7448', P: '#24483a',
+    W: '#cf9b60', V: '#8f6238', X: '#4f321c',
+    1: '#f6a9bd', 2: '#fff6e2', 3: '#f6d55c', 4: '#b9a7f0',
+  };
+
+  // ---------- スプライト（文字列マップ） ----------
+  const SPR_SRC = {
+    wheat1: [
+      '.......',
+      'hh...hh',
+      'hGh.hGh',
+      '..GgG..',
+      '...g...',
+      '...g...',
+    ],
+    wheat2: [
+      '....h....',
+      '.h..G..h.',
+      '.G..G..G.',
+      '.G.hG..G.',
+      '..GhG.G..',
+      '..GgGhG..',
+      'h.GgG.G.h',
+      'G.gGg.g.G',
+      '.GgGgGgG.',
+      '..gGgGg..',
+      '...ggg...',
+      '...kgk...',
+    ],
+    wheat3: [
+      '.w...w...w.',
+      '.y..wy..wy.',
+      'yYy.yYy.yYy',
+      'wYy.wYy.wYy',
+      'yYo.yYo.yYo',
+      'yYy.yYy.yYy',
+      '.yo.yYo.yo.',
+      '..o..o..o..',
+      '..o..o..o..',
+      '...o.o.o...',
+      '...o.o.o...',
+      '..Y.ooo.Y..',
+      '...YoooY...',
+      '....ooo....',
+      '....ooo....',
+    ],
+    carrot1: [
+      '.j...j.',
+      'jJj.jJj',
+      '.j.j.j.',
+      '..jgj..',
+      '...g...',
+      '...g...',
+    ],
+    carrot2: [
+      '...j...j...',
+      '..jJj.jJj..',
+      '.j.jJjJj.j.',
+      'jJj.jgj.jJj',
+      '.jJj.g.jJj.',
+      '..j.ege.j..',
+      '.jJ.egE.Jj.',
+      'jJjegEgejJj',
+      '.j.e.g.e.j.',
+      '...eEgEe...',
+      '....egE....',
+      '.....g.....',
+    ],
+    carrot3: [
+      '...j...j...',
+      '..jJj.jJj..',
+      '.j.jJjJj.j.',
+      'jJj.jgj.jJj',
+      '.jJj.g.jJj.',
+      '..j.ege.j..',
+      '.jJ.egE.Jj.',
+      'jJjegEgejJj',
+      '.j..eEe..j.',
+      '...qcccC...',
+      '..qccccCC..',
+      '..cqcccCC..',
+      '..cccccCC..',
+      '...CccCC...',
+      '...SSSSS...',
+    ],
+    oak: [
+      '.......EEEEEE.......',
+      '.....EEjjjjjjEE.....',
+      '....EjjJJJjjjjeE....',
+      '...EjjJJjjjjjjjeE...',
+      '..EjjJJjjjjjejjjeE..',
+      '..EjjJjjjjjeeejjeE..',
+      '.EejjjjjjeeejjjjjeE.',
+      '.EejjjjjjjjjjJjjjeE.',
+      '.EeejjjJJjjjjJJjjeE.',
+      '.EeejjjJjjjjjjjjeeE.',
+      'EeeejjjjjjjeeejjjeeE',
+      'EeeeejjjjjeeeeejjeeE',
+      '.EeeeeejjeeeeeeeeeE.',
+      '.EEeeeeeeeeeeeeeeEE.',
+      '..EEeeeeeeeeeeeeEE..',
+      '...EEEeeeeeeeeEEE...',
+      '.....EEEEttEEEE.....',
+      '........tTtT........',
+      '........ttTT........',
+      '........ttTT........',
+      '.......tttTTT.......',
+      '......tt.TT.TT......',
+    ],
+    pine: [
+      '......PP......',
+      '.....PjpP.....',
+      '.....ppP......',
+      '....PjppP.....',
+      '....pjppPP....',
+      '...PjjpppP....',
+      '....PpppP.....',
+      '...PjjppppP...',
+      '..PpjjppppPP..',
+      '...PpppppPP...',
+      '..PjjpppppppP.',
+      '.PpjjpppppppPP',
+      '..PppppppppPP.',
+      '.PjjppppppppPP',
+      'PpjppppppppppP',
+      '.PPpppppppPPP.',
+      '...PPPPPPPP...',
+      '......tT......',
+      '......tT......',
+      '.....ttTT.....',
+    ],
+    bush: [
+      '..EjjE....',
+      '.EjJjjE.E.',
+      'EjjjjjeEjE',
+      'EejjjeeejE',
+      '.EeeeeeeE.',
+      '..EEEEEE..',
+    ],
+    bushB: [
+      '...EjE....',
+      '.EjJjjEEE.',
+      'EjjJ1jejjE',
+      'Eejjjej1jE',
+      '.EeeeeeeE.',
+      '..EEEEEE..',
+    ],
+    fl1: ['.1.', '131', '.g.'],
+    fl2: ['.2.', '232', '.g.'],
+    fl3: ['.4.', '434', '.g.'],
+    tuft: ['g.h.g', '.gGg.'],
+    post: [
+      '.XX.',
+      'XWWX',
+      'XWVX',
+      'XWVX',
+      'XWVX',
+      'XWVX',
+      'XWVX',
+      'XWVX',
+      'XVVX',
+      '.XX.',
+    ],
+    railH: [
+      'XXXXXXXXXXXXXXXX',
+      'WWWWWWWWWWWWWWWW',
+      'VVVVVVVVVVVVVVVV',
+      '................',
+      'XXXXXXXXXXXXXXXX',
+      'WWWWWWWWWWWWWWWW',
+      'VVVVVVVVVVVVVVVV',
+    ],
+    railV: Array(10).fill('XWVX').map((r, k) => k % 5 === 4 ? 'XVVX' : r),
+    // UI アイコン
+    ic_wheat: [
+      '..w...w..w..',
+      '.yYy.wYy.yY.',
+      '.yYy.yYy.yY.',
+      '.yYo.yYo.yo.',
+      '..o..o..o...',
+      '...o.o.o....',
+      '....ooo.....',
+      '...YoooY....',
+      '....ooo.....',
+      '....ooo.....',
+      '...o.o.o....',
+      '..o..o..o...',
+    ],
+    ic_carrot: [
+      '........jJ..',
+      '.......jJj.j',
+      '......JjgjJ.',
+      '.......ggj..',
+      '......Cgg...',
+      '.....qccC...',
+      '....qccCC...',
+      '...qccCC....',
+      '...ccCC.....',
+      '..cccC......',
+      '..cCC.......',
+      '.CC.........',
+    ],
+    ic_sprout: [
+      '............',
+      '.hh.....JJ..',
+      'hGGh...JjjJ.',
+      'hGGGh.Jjjj..',
+      '.hGGGgjjJ...',
+      '...hGgJ.....',
+      '.....g......',
+      '.....g......',
+      '.....g......',
+      '...sssss....',
+      '..sdddds....',
+      '...SSSS.....',
+    ],
+  };
+
+  // 時計塔：屋根・壁の陰影つき縦長スプライト（文字列マップを行単位で組み立てる）
+  const TOWER = (() => {
+    const TW = 30, rows = [];
+    const pad = s => { const l = Math.floor((TW - s.length) / 2); return '.'.repeat(l) + s + '.'.repeat(TW - l - s.length); };
+    const body = (front, side) => '...m' + front + side + 'm...';   // 正面18 + 側面4（暗い面）
+    const overlay = (base, top, at) => {
+      const a = base.split('');
+      for (let k = 0; k < top.length; k++) if (top[k] !== '.') a[at + k] = top[k];
+      return a.join('');
+    };
+    let course = 0;
+    const brick = () => {
+      const r = course++, c = Math.floor(r / 3);
+      if (r % 3 === 2) return body('B'.repeat(18), 'mmmm');
+      let f = '';
+      for (let k = 0; k < 18; k++) f += (k + (c % 2) * 3) % 6 === 5 ? 'B' : k < 6 ? 'a' : k < 14 ? 'b' : 'B';
+      const sd = (c % 2) ? 'nmnn' : 'nnnm';
+      return body(f, sd);
+    };
+    // 尖塔の飾り
+    rows.push(pad('zz'), pad('zwzz'), pad('zzzz'), pad('zz'), pad('nn'), pad('nn'));
+    // 屋根（左が光、右が影。瓦の段）
+    const RH = 18;
+    for (let k = 0; k < RH; k++) {
+      const wd = 2 + 2 * Math.round(k * 14 / (RH - 1)), half = wd / 2, sh = k % 4 === 3;
+      let s = '';
+      for (let q = 0; q < wd; q++) {
+        if (q === 0 || q === wd - 1) { s += 'x'; continue; }
+        if (q < half) s += sh ? 'R' : (q === 1 || q === 2) ? 'l' : 'r';
+        else s += sh ? 'x' : 'R';
+      }
+      // 屋根窓
+      if (k >= 10 && k <= 13) {
+        const win = ['.xx.', 'xvvx', 'xvix', 'xvvx'][k - 10];
+        s = overlay(s, win, half - 2);
+      }
+      rows.push(pad(s));
+    }
+    rows.push('x'.repeat(TW));
+    rows.push(pad('m' + 'n'.repeat(22) + 'Bm'));
+    // 軒下の帯
+    rows.push(pad('m' + 'a'.repeat(19) + 'B'.repeat(6) + 'm'));
+    rows.push(pad('m' + 'b'.repeat(19) + 'n'.repeat(6) + 'm'));
+    rows.push(brick(), brick());
+    // 時計盤（針は実時刻で別描画）
+    const FACE = [
+      '.....mmmmm.....',
+      '...mmFFFFFmm...',
+      '..mFFfffffFFm..',
+      '.mFfffffffffFm.',
+      '.mFfffffffffFm.',
+      'mFfffffffffffFm',
+      'mFfffffffffffFm',
+      'mFfffffffffffFm',
+      'mFfffffffffffFm',
+      'mFfffffffffffFm',
+      '.mFfffffffffFm.',
+      '.mFfffffffffFm.',
+      '..mFFfffffFFm..',
+      '...mmFFFFFmm...',
+      '.....mmmmm.....',
+    ];
+    const faceTop = rows.length;
+    for (const fr of FACE) rows.push(overlay(brick(), fr, 4 + 1));
+    rows.push(brick(), brick());
+    // 中段の帯
+    rows.push(body('a'.repeat(18), 'BBBB'), body('B'.repeat(18), 'nnnn'));
+    rows.push(brick(), brick(), brick());
+    // 小窓2つ
+    const WIN = ['.mmm.', 'mvivm', 'mvvvm', 'mivvm', 'mvvvm', 'mmmmm', 'BaaaB'];
+    for (const wr of WIN) rows.push(overlay(overlay(brick(), wr, 4 + 2), wr, 4 + 11));
+    rows.push(brick(), brick(), brick());
+    // 扉
+    const DOOR = [
+      '..mmmm..', '.muuuUm.', 'muuuuuUm', 'muUuuuUm', 'muUuuuUm', 'muuuuuUm',
+      'muUuuzUm', 'muUuuuUm', 'muUuuuUm', 'muuuuuUm', 'muUuuuUm', 'muUuuuUm',
+    ];
+    for (const dr of DOOR) rows.push(overlay(brick(), dr, 4 + 5));
+    // 台座
+    rows.push('m' + 'a'.repeat(21) + 'B'.repeat(7) + 'm');
+    rows.push('m' + 'b'.repeat(21) + 'n'.repeat(7) + 'm');
+    rows.push('m'.repeat(TW));
+    return { rows, faceCx: 4 + 1 + 7, faceCy: faceTop + 7 };
+  })();
+  SPR_SRC.tower = TOWER.rows;
+
+  function buildSprite(rows) {
+    const w = Math.max(...rows.map(r => r.length)), h = rows.length;
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const cx = cv.getContext('2d');
+    rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) {
+      const col = PAL[r[x]]; if (!col) continue;
+      cx.fillStyle = col; cx.fillRect(x, y, 1, 1);
+    } });
+    return cv;
+  }
+  const SPR = {};
+  for (const k in SPR_SRC) SPR[k] = buildSprite(SPR_SRC[k]);
+
+  // UIアイコン（ドット絵をそのまま拡大表示）
+  const iconURL = k => SPR[k].toDataURL();
+  document.querySelectorAll('img[data-icon]').forEach(im => { im.src = iconURL(im.dataset.icon); });
+
+  // ---------- 地面タイル ----------
+  const TILE = { GRASS: 0, PLAZA: 1, STONE: 2, DIRT: 3, FIELD: 4 };
+  const ground = [];
+  for (let y = 0; y < MAP.h; y++) { ground.push(new Array(MAP.w).fill(TILE.GRASS)); }
+  const fillT = (r, v) => { for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) ground[y][x] = v; };
+  fillT(LAYOUT.plaza, TILE.PLAZA);
+  LAYOUT.path.forEach(r => fillT(r, TILE.STONE));
+  fillT(LAYOUT.aisle, TILE.DIRT);
+  LAYOUT.plots.forEach(([x, y]) => fillT({ x, y, w: 2, h: 2 }, TILE.FIELD));
+
+  const px = (c, x, y, col, w = 1, h = 1) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+  function paintGrass(c, ox, oy, r) {
+    const v = Math.floor(r() * 3);                   // 3種のバリエーション
+    px(c, ox, oy, '#86b552', T, T);
+    for (let k = 0; k < 16; k++) px(c, ox + Math.floor(r() * T), oy + Math.floor(r() * T), '#76a547');
+    for (let k = 0; k < 9; k++) px(c, ox + Math.floor(r() * T), oy + Math.floor(r() * T), '#9cc862');
+    if (v === 1) for (let k = 0; k < 2; k++) {        // 草の房
+      const x = ox + 2 + Math.floor(r() * 11), y = oy + 3 + Math.floor(r() * 10);
+      px(c, x, y, '#5f8d3c'); px(c, x + 2, y, '#5f8d3c'); px(c, x + 1, y + 1, '#5f8d3c'); px(c, x + 1, y - 1, '#b3d874');
+    }
+    if (v === 2) for (let k = 0; k < 7; k++) px(c, ox + Math.floor(r() * T), oy + Math.floor(r() * T), '#acd56e', 2, 1);
+  }
+  function paintDirt(c, ox, oy, r) {
+    px(c, ox, oy, '#b98b5c', T, T);
+    for (let k = 0; k < 14; k++) px(c, ox + Math.floor(r() * T), oy + Math.floor(r() * T), '#a37650');
+    for (let k = 0; k < 8; k++) px(c, ox + Math.floor(r() * T), oy + Math.floor(r() * T), '#cfa274');
+  }
+  function paintStone(c, ox, oy, r) {
+    px(c, ox, oy, '#988c74', T, T);
+    for (let row = 0; row < 2; row++) {
+      const off = row ? 4 : 0;
+      for (let col = -1; col < 2; col++) {
+        const x = ox + col * 8 + off, y = oy + row * 8;
+        const base = ['#cfc4aa', '#c4b89c', '#d8ceb6'][Math.floor(r() * 3)];
+        const x0 = Math.max(ox, x + 1), x1 = Math.min(ox + T, x + 8);
+        if (x1 - x0 < 2) continue;
+        px(c, x0, y + 1, base, x1 - x0, 6);
+        px(c, x0, y + 1, '#e6ddc8', x1 - x0, 1);
+        px(c, x0, y + 6, '#aa9f86', x1 - x0, 1);
+      }
     }
   }
-  const STAGE_NAME = ['', '芽', '成長中', '収穫できる'];
-
-  function render() {
-    const t = now();
-    state.plots.forEach((p, i) => {
-      const el = plotEls[i], ui = el._ui;
-      let st = 0;
-      if (p) st = t >= p.readyAt ? 3 : progress(p, t) >= 0.5 ? 2 : 1;
-      const key = p ? p.crop + st : 'empty';
-      if (ui.key !== key) {
-        ui.key = key;
-        const empty = !p;
-        el.className = 'plot ' + (empty ? 'empty' : 'st' + st + (st === 3 ? ' ready' : ''));
-        ui.soil.setAttribute('fill', empty ? 'url(#g-soil-dry)' : 'url(#g-soil)');
-        ui.ridges.forEach(r => r.setAttribute('fill', empty ? 'url(#g-ridge-dry)' : 'url(#g-ridge)'));
-        ui.plus.style.display = empty ? '' : 'none';
-        setPlants(ui, empty ? null : p.crop + '-' + st);
-        el.setAttribute('aria-label', empty ? 'あき区画（タップで植える）' : CROPS[p.crop].name + '：' + STAGE_NAME[st]);
+  function paintPlaza(c, ox, oy, r) {
+    px(c, ox, oy, '#cdbf9f', T, T);
+    for (let k = 0; k < 10; k++) px(c, ox + Math.floor(r() * T), oy + Math.floor(r() * T), r() < .5 ? '#bfb092' : '#d9ccb0');
+    px(c, ox, oy, '#a09276', T, 1); px(c, ox, oy, '#a09276', 1, T);
+    px(c, ox + 8, oy + 1, '#b2a487', 1, 7); px(c, ox + 1, oy + 8, '#b2a487', T - 1, 1);
+    px(c, ox + 1, oy + 1, '#e2d7be', 6, 1);
+  }
+  function bakeGround() {
+    const cv = document.createElement('canvas'); cv.width = MAP.w * T; cv.height = MAP.h * T;
+    const c = cv.getContext('2d');
+    for (let y = 0; y < MAP.h; y++) for (let x = 0; x < MAP.w; x++) {
+      const r = hash2(x, y), t = ground[y][x], ox = x * T, oy = y * T;
+      if (t === TILE.GRASS) paintGrass(c, ox, oy, r);
+      else if (t === TILE.PLAZA) paintPlaza(c, ox, oy, r);
+      else if (t === TILE.STONE) paintStone(c, ox, oy, r);
+      else paintDirt(c, ox, oy, r);
+      // 草との境目をギザギザにして馴染ませる
+      if (t !== TILE.GRASS && t !== TILE.FIELD) {
+        const isG = (xx, yy) => xx >= 0 && yy >= 0 && xx < MAP.w && yy < MAP.h && ground[yy][xx] === TILE.GRASS;
+        for (let k = 0; k < T; k++) {
+          const d = () => (r() < .45 ? 1 : r() < .35 ? 2 : 0);
+          if (isG(x, y - 1)) px(c, ox + k, oy, '#86b552', 1, d());
+          if (isG(x, y + 1)) { const dd = d(); px(c, ox + k, oy + T - dd, '#7aa94b', 1, dd); }
+          if (isG(x - 1, y)) px(c, ox, oy + k, '#86b552', d(), 1);
+          if (isG(x + 1, y)) { const dd = d(); px(c, ox + T - dd, oy + k, '#7aa94b', dd, 1); }
+        }
       }
-      ui.gauge.style.display = p && st < 3 ? '' : 'none';
-      if (p && st < 3) ui.bar.setAttribute('width', (58 * progress(p, t)).toFixed(2));
+    }
+    // 地面の小物（花・草）：固定シードで散らす
+    const r = rngFrom(WORLD_SEED + 7);
+    for (let k = 0; k < 70; k++) {
+      const x = Math.floor(r() * MAP.w * T), y = Math.floor(r() * MAP.h * T);
+      if (ground[Math.floor(y / T)][Math.floor(x / T)] !== TILE.GRASS || reserved(x / T, y / T, 0)) continue;
+      const s = SPR[['fl1', 'fl2', 'fl3', 'tuft', 'tuft'][Math.floor(r() * 5)]];
+      c.drawImage(s, x, y);
+    }
+    return cv;
+  }
+  function reserved(tx, ty, margin) {
+    return LAYOUT.keepClear.some(z => tx >= z.x - margin && tx < z.x + z.w + margin && ty >= z.y - margin && ty < z.y + z.h + margin);
+  }
+
+  // 区画の土（小さな土タイル4枚＋縁の草）。湿った土＝植え付け済み、乾いた土＝空き
+  function bakePlot(wet, seed) {
+    const cv = document.createElement('canvas'); cv.width = PLOT_PX; cv.height = PLOT_PX;
+    const c = cv.getContext('2d'), r = rngFrom(seed);
+    const base = wet ? '#8f6340' : '#c39b72', dk = wet ? '#6e4a2e' : '#a98159',
+      lt = wet ? '#a87a52' : '#d8b68e', seam = wet ? '#5e3c24' : '#9a7350';
+    for (let ty = 0; ty < 2; ty++) for (let tx = 0; tx < 2; tx++) {
+      const ox = tx * T, oy = ty * T;
+      px(c, ox, oy, base, T, T);
+      // 土くれ（盛り上がり＋影）
+      for (let k = 0; k < 9; k++) {
+        const x = ox + 1 + Math.floor(r() * 13), y = oy + 1 + Math.floor(r() * 13);
+        px(c, x, y, lt, 2, 1); px(c, x, y + 1, dk, 2, 1);
+      }
+      for (let k = 0; k < 10; k++) px(c, ox + Math.floor(r() * T), oy + Math.floor(r() * T), dk);
+      // タイルの継ぎ目（途切れ途切れ）
+      for (let k = 0; k < T; k++) {
+        if (r() < .6) px(c, ox + k, oy + T - 1, seam);
+        if (r() < .6) px(c, ox + T - 1, oy + k, seam);
+      }
+    }
+    // 縁の陰影：上は草の影、下は明るい土の縁
+    px(c, 0, 0, seam, PLOT_PX, 2); px(c, 0, PLOT_PX - 1, lt, PLOT_PX, 1);
+    px(c, 0, 0, seam, 1, PLOT_PX); px(c, PLOT_PX - 1, 0, seam, 1, PLOT_PX);
+    // 縁の草（はみ出す房）
+    for (let k = 0; k < PLOT_PX; k++) {
+      if (r() < .55) px(c, k, 0, r() < .5 ? '#7fb04a' : '#9cc862', 1, 1 + Math.floor(r() * 2));
+      if (r() < .35) px(c, k, PLOT_PX - 1, '#7fb04a');
+      if (r() < .45) px(c, 0, k, '#7fb04a', 1 + Math.floor(r() * 2), 1);
+      if (r() < .45) px(c, PLOT_PX - 1 - Math.floor(r() * 2), k, '#76a547', 2, 1);
+    }
+    return cv;
+  }
+  const PLOT_IMG = LAYOUT.plots.map((_, i) => ({ wet: bakePlot(true, WORLD_SEED + 100 + i), dry: bakePlot(false, WORLD_SEED + 200 + i) }));
+
+  // ---------- 立つ物（y ソート対象） ----------
+  const statics = [];
+  // 時計塔
+  {
+    const s = SPR.tower, x = LAYOUT.tower.x - (s.width >> 1), y = LAYOUT.tower.y - s.height;
+    statics.push({ y: LAYOUT.tower.y, shadow: [LAYOUT.tower.x + 3, LAYOUT.tower.y - 1, 19, 5],
+      draw: c => { c.drawImage(s, x, y); drawClockHands(c, x + TOWER.faceCx, y + TOWER.faceCy); } });
+  }
+  // 柵
+  {
+    const F = LAYOUT.fence, P = SPR.post, RH = SPR.railH, RV = SPR.railV;
+    const inGate = y => y > F.gateFrom && y < F.gateTo;
+    for (let x = F.x0; x <= F.x1; x += T) for (const yy of [F.y0, F.y1]) {
+      statics.push({ y: yy, shadow: [x, yy, 3, 1], draw: c => c.drawImage(P, x - 2, yy - 10) });
+      if (x < F.x1) statics.push({ y: yy - .1, draw: c => c.drawImage(RH, x + 2, yy - 9, T - 4, 7) });
+    }
+    for (const xx of [F.x0, F.x1]) for (let y = F.y0 + T; y < F.y1; y += T) {
+      const gate = xx === F.x0 && inGate(y);
+      if (!gate) statics.push({ y, shadow: [xx, y, 3, 1], draw: c => c.drawImage(P, xx - 2, y - 10) });
+    }
+    for (const xx of [F.x0, F.x1]) for (let y = F.y0; y < F.y1; y += T) {
+      const y2 = y + T;
+      if (xx === F.x0 && (inGate(y) || inGate(y2) || (y === F.gateFrom && y2 > F.gateFrom))) continue;
+      statics.push({ y: y2 - .2, draw: c => c.drawImage(RV, xx - 2, y - 2, 4, T - 8) });
+    }
+  }
+  // 木・草むら（固定シード）
+  {
+    const r = rngFrom(WORLD_SEED + 3), placed = [];
+    const tryPlace = (kind, n, minD) => {
+      for (let tries = 0; tries < 400 && n > 0; tries++) {
+        const tx = Math.floor(r() * MAP.w), ty = 1 + Math.floor(r() * (MAP.h - 1));
+        if (ground[ty][tx] !== TILE.GRASS || reserved(tx, ty, kind === 'bush' ? 0 : 1)) continue;
+        if (placed.some(p => Math.hypot(p[0] - tx, p[1] - ty) < minD)) continue;
+        placed.push([tx, ty]); n--;
+        const s = SPR[kind], fx = tx * T + 8 + Math.floor(r() * 5) - 2, fy = ty * T + 14;
+        const big = kind !== 'bush' && kind !== 'bushB';
+        statics.push({ y: fy, shadow: [fx + 1, fy - 1, big ? 9 : 5, big ? 3 : 2],
+          draw: c => c.drawImage(s, fx - (s.width >> 1), fy - s.height) });
+      }
+    };
+    tryPlace('oak', 9, 2.4); tryPlace('pine', 9, 2.2); tryPlace('bush', 6, 1.5); tryPlace('bushB', 5, 1.5);
+  }
+
+  // 区画の株の配置（3×3＝9株）
+  const SLOTS = [];
+  for (const by of [11, 21, 31]) for (const bx of [6, 16, 26]) SLOTS.push([bx, by]);
+  const SLOT_JIT = LAYOUT.plots.map((_, i) => SLOTS.map((_, k) => { const r = hash2(i, k, 9); return Math.floor(r() * 3) - 1; }));
+
+  // ---------- 時計の針（実時刻・ドット単位で描く） ----------
+  function pixLine(c, x0, y0, x1, y1) {
+    let dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, err = dx + dy;
+    for (;;) {
+      c.fillRect(x0, y0, 1, 1);
+      if (x0 === x1 && y0 === y1) break;
+      const e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x0 += sx; }
+      if (e2 <= dx) { err += dx; y0 += sy; }
+    }
+  }
+  function drawClockHands(c, cx, cy) {
+    const d = new Date();
+    const m = d.getMinutes() + d.getSeconds() / 60, h = (d.getHours() % 12) + m / 60;
+    c.fillStyle = PAL.F;
+    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2; c.fillRect(cx + Math.round(5 * Math.sin(a)), cy - Math.round(5 * Math.cos(a)), 1, 1); }
+    const end = (a, L) => [cx + Math.round(L * Math.sin(a)), cy - Math.round(L * Math.cos(a))];
+    c.fillStyle = PAL.m;
+    pixLine(c, cx, cy, ...end(m / 60 * 2 * Math.PI, 6));
+    c.fillStyle = PAL.U;                       // 短針は2ドット幅
+    const ha = h / 12 * 2 * Math.PI, he = end(ha, 4), vert = Math.abs(Math.cos(ha)) > .7;
+    pixLine(c, cx, cy, ...he);
+    pixLine(c, cx + (vert ? 1 : 0), cy + (vert ? 0 : 1), he[0] + (vert ? 1 : 0), he[1] + (vert ? 0 : 1));
+    c.fillStyle = PAL.z; c.fillRect(cx, cy, 1, 1);
+  }
+
+  // ---------- 漂う花びら・光の粒 ----------
+  const particles = (() => {
+    const r = rngFrom(WORLD_SEED + 11), list = [];
+    for (let k = 0; k < 44; k++) list.push({
+      x: r() * MAP.w * T, y: r() * MAP.h * T, ph: r() * 6.28,
+      kind: k < 22 ? 'petal' : 'mote', sp: .6 + r() * .8, col: r() < .7 ? '#f8b7c6' : '#fff1d6',
     });
+    return list;
+  })();
+  function stepParticles(dt, t) {
+    const W = MAP.w * T, H = MAP.h * T;
+    for (const p of particles) {
+      if (p.kind === 'petal') { p.x += (5 + 3 * Math.sin(t * .7 + p.ph)) * p.sp * dt; p.y += (2.2 + 1.5 * Math.sin(t * 1.3 + p.ph)) * p.sp * dt; }
+      else { p.x += Math.sin(t * .3 + p.ph) * 1.6 * dt; p.y -= 1.2 * p.sp * dt; }
+      if (p.x > W + 4) p.x -= W + 8; if (p.x < -4) p.x += W + 8;
+      if (p.y > H + 4) p.y -= H + 8; if (p.y < -4) p.y += H + 8;
+    }
+  }
+
+  // ---------- カメラ ----------
+  const canvas = $('world'), ctx = canvas.getContext('2d');
+  let VW = 0, VH = 0, DPR = 1, BASE = 4;
+  const cam = { x: 150, y: 85, zoom: 1 };
+  const scale = () => BASE * cam.zoom;
+  const toWorld = (sx, sy) => ({ x: (sx - VW / 2) / scale() + cam.x, y: (sy - VH / 2) / scale() + cam.y });
+  const toScreen = (wx, wy) => ({ x: (wx - cam.x) * scale() + VW / 2, y: (wy - cam.y) * scale() + VH / 2 });
+  function clampCam() {
+    cam.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, cam.zoom));
+    const S = scale(), hw = VW / 2 / S, hh = VH / 2 / S, mw = MAP.w * T, mh = MAP.h * T;
+    cam.x = hw * 2 >= mw ? mw / 2 : Math.min(mw - hw, Math.max(hw, cam.x));
+    cam.y = hh * 2 >= mh ? mh / 2 : Math.min(mh - hh, Math.max(hh, cam.y));
+  }
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    VW = innerWidth; VH = innerHeight;
+    canvas.width = Math.round(VW * DPR); canvas.height = Math.round(VH * DPR);
+    BASE = Math.max(2, Math.min(VW / (18 * T), VH / (12 * T)));
+    buildLightCache();
+    clampCam();
+  }
+  function initialCamera() {
+    // 時計塔と畑の両方が入る範囲（上下は UI の分だけ余白）
+    const x0 = 30, x1 = 290, y0 = LAYOUT.tower.y - SPR.tower.height - 4, y1 = LAYOUT.fence.y1 + 6, padTop = 64, padBot = 84;
+    const S = Math.min((VW - 32) / (x1 - x0), (VH - padTop - padBot) / (y1 - y0));
+    cam.zoom = S / BASE;
+    clampCam();
+    const s2 = scale();
+    cam.x = (x0 + x1) / 2;
+    cam.y = (y0 + y1) / 2 - (padTop - padBot) / 2 / s2;
+    clampCam();
+  }
+
+  // ---------- 光（画面全体） ----------
+  let LIGHT = null;
+  function buildLightCache() {
+    const W = VW, H = VH;
+    const warm = ctx.createLinearGradient(0, 0, W, H);
+    warm.addColorStop(0, 'rgba(255,206,140,0.55)'); warm.addColorStop(.55, 'rgba(255,190,130,0.18)');
+    warm.addColorStop(1, 'rgba(110,80,160,0.30)');
+    const sun = ctx.createRadialGradient(W * .12, -H * .15, 0, W * .12, -H * .15, Math.max(W, H) * .95);
+    sun.addColorStop(0, 'rgba(255,232,180,0.42)'); sun.addColorStop(1, 'rgba(255,232,180,0)');
+    const vig = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .38, W / 2, H / 2, Math.hypot(W, H) * .58);
+    vig.addColorStop(0, 'rgba(40,24,18,0)'); vig.addColorStop(1, 'rgba(40,24,18,0.48)');
+    const haze = ctx.createLinearGradient(0, 0, 0, H * .3);
+    haze.addColorStop(0, 'rgba(255,246,228,0.16)'); haze.addColorStop(1, 'rgba(255,246,228,0)');
+    LIGHT = { warm, sun, vig, haze };
+  }
+
+  // ---------- 描画 ----------
+  const GROUND = bakeGround();
+  const shadow = (c, x, y, rx, ry, a = .26) => {
+    c.fillStyle = `rgba(48,30,20,${a})`; c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); c.fill();
+  };
+  function setWorldTransform() {
+    const S = scale() * DPR;
+    const tx = Math.round((VW / 2 - cam.x * scale()) * DPR), ty = Math.round((VH / 2 - cam.y * scale()) * DPR);
+    ctx.setTransform(S, 0, 0, S, tx, ty);
+    ctx.imageSmoothingEnabled = false;
+  }
+  let lastT = performance.now();
+  function frame(tms) {
+    const dt = Math.min(.1, (tms - lastT) / 1000); lastT = tms;
+    const t = now(), ts = tms / 1000;
+    stepParticles(dt, ts);
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#2f4a2c'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setWorldTransform();
+    ctx.drawImage(GROUND, 0, 0);
+
+    // 区画の土
+    const objs = statics.slice();
+    state.plots.forEach((p, i) => {
+      const R = plotRect(i), st = stageOf(p, t);
+      ctx.drawImage(p ? PLOT_IMG[i].wet : PLOT_IMG[i].dry, R.x, R.y);
+      if (!p) return;
+      const s = SPR[p.crop + st];
+      SLOTS.forEach(([bx, by], k) => {
+        const fx = R.x + bx + SLOT_JIT[i][k], fy = R.y + by;
+        objs.push({ y: fy, shadow: [fx, fy, st === 1 ? 3 : 5, st === 1 ? 1 : 1.6],
+          draw: c => c.drawImage(s, fx - (s.width >> 1), fy - s.height + 1) });
+      });
+    });
+    // 足元の影 → y ソートで立つ物
+    for (const o of objs) if (o.shadow) shadow(ctx, ...o.shadow);
+    objs.sort((a, b) => a.y - b.y);
+    for (const o of objs) o.draw(ctx);
+
+    // 区画の上のしるし（空き：＋、育成中：ゲージ、収穫可：きらめき）
+    state.plots.forEach((p, i) => {
+      const R = plotRect(i), st = stageOf(p, t);
+      if (!p) {
+        ctx.globalAlpha = .55 + .25 * Math.sin(ts * 2.4 + i);
+        const cx = R.x + 16, cy = R.y + 16;
+        px(ctx, cx - 3, cy - 1, '#5e3c24', 7, 3); px(ctx, cx - 1, cy - 3, '#5e3c24', 3, 7);
+        px(ctx, cx - 2, cy, '#fff3d6', 5, 1); px(ctx, cx, cy - 2, '#fff3d6', 1, 5);
+        ctx.globalAlpha = 1;
+      } else if (st < 3) {
+        px(ctx, R.x + 3, R.y + PLOT_PX - 5, 'rgba(40,25,15,.75)', 26, 4);
+        px(ctx, R.x + 4, R.y + PLOT_PX - 4, '#7a5a3a', 24, 2);
+        px(ctx, R.x + 4, R.y + PLOT_PX - 4, '#f2d27a', Math.round(24 * progress(p, t)), 2);
+      } else {
+        for (let k = 0; k < 4; k++) {
+          const r = hash2(i, k, 5), ph = r() * 6.28;
+          if (Math.sin(ts * 3 + ph) < .55) continue;
+          const sx = R.x + 3 + Math.floor(r() * 26), sy = R.y - 4 + Math.floor(r() * 30);
+          px(ctx, sx - 1, sy, '#fff6c8', 3, 1); px(ctx, sx, sy - 1, '#fff6c8', 1, 3);
+        }
+      }
+    });
+    // 花びら
+    for (const p of particles) if (p.kind === 'petal') {
+      const flip = Math.sin(ts * 3 + p.ph) > 0;
+      px(ctx, Math.round(p.x), Math.round(p.y), p.col, flip ? 2 : 1, flip ? 1 : 2);
+    }
+
+    // 光の演出（画面空間）
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = LIGHT.warm; ctx.fillRect(0, 0, VW, VH);
+    ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = LIGHT.sun; ctx.fillRect(0, 0, VW, VH);
+    ctx.fillStyle = LIGHT.haze; ctx.fillRect(0, 0, VW, VH);
+    ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = LIGHT.vig; ctx.fillRect(0, 0, VW, VH);
+    // 光の粒（ふんわり発光）
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of particles) if (p.kind === 'mote') {
+      const s = toScreen(p.x, p.y), a = .18 + .14 * Math.sin(ts * 1.7 + p.ph), rr = 1.6 * scale();
+      const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, rr * 2.2);
+      g.addColorStop(0, `rgba(255,236,180,${a})`); g.addColorStop(1, 'rgba(255,236,180,0)');
+      ctx.fillStyle = g; ctx.fillRect(s.x - rr * 2.2, s.y - rr * 2.2, rr * 4.4, rr * 4.4);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
     $('sWheat').textContent = state.storage.wheat;
     $('sCarrot').textContent = state.storage.carrot;
-    drawClock();
+    requestAnimationFrame(frame);
   }
 
-  // ---------- 時計塔の針（現在時刻） ----------
-  (() => {
-    const g = $('ticks');
-    for (let k = 0; k < 12; k++) {
-      const a = k * Math.PI / 6, big = k % 3 === 0;
-      const r1 = big ? 27 : 30, r2 = 33;
-      const l = document.createElementNS(SVGNS, 'line');
-      l.setAttribute('x1', 100 + r1 * Math.sin(a)); l.setAttribute('y1', 206 - r1 * Math.cos(a));
-      l.setAttribute('x2', 100 + r2 * Math.sin(a)); l.setAttribute('y2', 206 - r2 * Math.cos(a));
-      l.setAttribute('stroke-width', big ? 3 : 1.6);
-      g.appendChild(l);
-    }
-  })();
-  function drawClock() {
-    const d = new Date();
-    const m = d.getMinutes() + d.getSeconds() / 60;
-    const h = (d.getHours() % 12) + m / 60;
-    $('hHour').setAttribute('transform', `rotate(${h * 30} 100 206)`);
-    $('hMin').setAttribute('transform', `rotate(${m * 6} 100 206)`);
-  }
-
-  // ---------- 背景・小道・柵（画面サイズに合わせて描く） ----------
-  function smoothHill(W, base, amp, seed) {
-    const n = 6, pts = [];
-    for (let k = 0; k <= n; k++) {
-      const x = W * k / n;
-      pts.push([x, base - amp * (0.55 + 0.45 * Math.sin(k * 1.7 + seed))]);
-    }
-    let d = `M0 ${base + 40} L0 ${pts[0][1]}`;
-    for (let k = 0; k < n; k++) {
-      const [x0, y0] = pts[k], [x1, y1] = pts[k + 1];
-      d += ` C${x0 + (x1 - x0) / 2} ${y0} ${x0 + (x1 - x0) / 2} ${y1} ${x1} ${y1}`;
-    }
-    return d + ` L${W} ${base + 40} Z`;
-  }
-  function layoutScene() {
-    const W = innerWidth, H = innerHeight, hz = Math.round(H * 0.3);
-    const scene = $('scene');
-    scene.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    // 小道：塔の扉 → 畑の入口
-    const tw = $('tower'), ctm = tw.getScreenCTM();
-    const pt = tw.createSVGPoint(); pt.x = 100; pt.y = 456;
-    const door = pt.matrixTransform(ctm);
-    const fr = $('farm').getBoundingClientRect();
-    const gate = { x: fr.left + gateX(fr.width), y: fr.bottom - 8 };
-    const pathD = `M${door.x} ${door.y - 4} C${door.x + 50} ${door.y + 14} ${gate.x - 40} ${gate.y + 30} ${gate.x} ${gate.y - 14}`;
-    scene.innerHTML =
-      `<rect width="${W}" height="${hz + 40}" fill="url(#g-sky)"/>` +
-      `<g fill="#fffaf0" opacity=".75"><ellipse cx="${W * .18}" cy="${hz * .35}" rx="46" ry="13"/>` +
-      `<ellipse cx="${W * .18 + 30}" cy="${hz * .35 - 8}" rx="26" ry="12"/>` +
-      `<ellipse cx="${W * .62}" cy="${hz * .22}" rx="60" ry="14"/><ellipse cx="${W * .62 - 28}" cy="${hz * .22 - 9}" rx="28" ry="12"/></g>` +
-      `<path d="${smoothHill(W, hz - 4, 46, 0.4)}" fill="#b9d3b0" opacity=".85"/>` +
-      `<path d="${smoothHill(W, hz + 6, 30, 2.3)}" fill="#a3c58f"/>` +
-      `<rect y="${hz + 4}" width="${W}" height="${H - hz}" fill="url(#g-grass)"/>` +
-      `<rect y="${hz + 4}" width="${W}" height="${H - hz}" fill="url(#p-grass)"/>` +
-      `<path d="${pathD}" stroke="#cbb488" stroke-width="34" fill="none" stroke-linecap="round"/>` +
-      `<path d="${pathD}" stroke="url(#g-path)" stroke-width="27" fill="none" stroke-linecap="round"/>` +
-      `<path d="${pathD}" stroke="#cdb68b" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="2 22" opacity=".9"/>`;
-    drawFence(fr.width, fr.height);
-  }
-  // 柵の入口（下辺の左寄り）
-  const gateX = w => Math.max(60, w * 0.1);
-  function drawFence(w, h) {
-    const m = 8, gate = 22, gx = gateX(w);
-    const rail = (d) => `<path d="${d}" stroke="#8c6542" stroke-width="5" fill="none" stroke-linecap="round"/>` +
-      `<path d="${d}" stroke="#c4996a" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
-    let s = '';
-    for (const o of [-3, 3]) {
-      const a = m + o, b = w - m - o, c = m + o, e = h - m - o;
-      s += rail(`M${gx + gate} ${e} H${b} V${c} H${a} V${e} H${gx - gate}`);
-    }
-    const posts = [];
-    const nx = Math.max(2, Math.round((w - 2 * m) / 46)), ny = Math.max(2, Math.round((h - 2 * m) / 46));
-    for (let k = 0; k <= nx; k++) {
-      const x = m + (w - 2 * m) * k / nx;
-      posts.push([x, m]);
-      if (Math.abs(x - gx) > gate + 10) posts.push([x, h - m]);
-    }
-    for (let k = 1; k < ny; k++) { const y = m + (h - 2 * m) * k / ny; posts.push([m, y], [w - m, y]); }
-    posts.push([gx - gate, h - m], [gx + gate, h - m]);
-    for (const [x, y] of posts) {
-      s += `<rect x="${x - 5.5}" y="${y - 5.5}" width="11" height="11" rx="2.5" fill="#b78a5c" stroke="#7a5638" stroke-width="1.6"/>` +
-        `<rect x="${x - 3.5}" y="${y - 3.5}" width="5" height="3" rx="1" fill="#d6b086"/>`;
-    }
-    const f = $('fence');
-    f.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    f.innerHTML = s;
-  }
-  window.addEventListener('resize', layoutScene);
-
-  // 表示更新専用（状態は減算しない。値は毎回 Date.now() との差分で計算）
-  setInterval(render, 200);
-  document.addEventListener('visibilitychange', render);
-  window.addEventListener('pageshow', render);
+  if (FAST !== 1) { const b = $('fastBadge'); b.style.display = 'inline'; b.textContent = '×' + FAST + ' DEBUG'; }
 
   // ---------- 作物パレット ----------
   let selected = null;
   const pal = $('palette');
-  const iconSvg = k => `<svg><use href="#${CROPS[k].icon}"/></svg>`;
+  const iconImg = k => `<img class="px" src="${iconURL(CROPS[k].icon)}" alt="">`;
   function buildPalette() {
     pal.innerHTML = '';
     for (const k of Object.keys(CROPS)) {
       const b = document.createElement('button');
-      b.className = 'tool panel' + (selected === k ? ' sel' : '');
-      b.innerHTML = iconSvg(k) + '<span>' + CROPS[k].name +
+      b.className = 'tool pix' + (selected === k ? ' sel' : '');
+      b.innerHTML = iconImg(k) + '<span>' + CROPS[k].name +
         '<small>' + (CROPS[k].growMs / 60000) + '分 / ' + CROPS[k].yield + '個</small></span>';
       b.onclick = () => { selected = selected === k ? null : k; buildPalette(); };
       pal.appendChild(b);
@@ -596,11 +884,11 @@
   const row = $('popupRow');
   for (const k of Object.keys(CROPS)) {
     const b = document.createElement('button');
-    b.className = 'tool panel'; b.innerHTML = iconSvg(k) + '<span>' + CROPS[k].name + '</span>';
+    b.className = 'tool pix'; b.innerHTML = iconImg(k) + '<span>' + CROPS[k].name + '</span>';
     b.onclick = () => {
       const i = popupPlot; closePopup();
       selected = k; buildPalette();
-      if (i >= 0 && plant(i, k)) render();
+      if (i >= 0) plant(i, k);
     };
     row.appendChild(b);
   }
@@ -609,27 +897,48 @@
   $('popupCancel').onclick = closePopup;
   popup.addEventListener('pointerdown', e => { if (e.target === popup) closePopup(); });
 
-  // ---------- なぞり操作 ----------
-  let mode = null, touched = new Set();
-  function plotAt(x, y) {
-    const el = document.elementFromPoint(x, y);
-    const pl = el && el.closest && el.closest('.plot');
-    return pl ? +pl.dataset.i : -1;
+  // ---------- 操作：区画のなぞり／カメラ移動／ズーム ----------
+  function plotAt(sx, sy) {
+    const w = toWorld(sx, sy);
+    for (let i = 0; i < PLOT_COUNT; i++) {
+      const R = plotRect(i);   // 背の高い穂も押せるよう上に少し広げる
+      if (w.x >= R.x - 1 && w.x < R.x + R.w + 1 && w.y >= R.y - 6 && w.y < R.y + R.h + 1) return i;
+    }
+    return -1;
   }
+  let mode = null, touched = new Set();
   function apply(i) {
     if (i < 0 || touched.has(i)) return;
     touched.add(i);
     const p = state.plots[i];
     if (mode === 'plant' && !p && selected) plant(i, selected);
     else if (mode === 'harvest' && p) harvest(i);
-    render();
   }
-  field.addEventListener('pointerdown', e => {
-    const i = plotAt(e.clientX, e.clientY);
-    if (i < 0) return;
+  const ptrs = new Map();
+  let gesture = null;          // 'farm' | 'pan' | 'pinch'
+  let pan = null, pinch = null;
+  const mid = () => { const a = [...ptrs.values()]; return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2, d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) }; };
+  function startPan(x, y) { gesture = 'pan'; pan = { sx: x, sy: y, cx: cam.x, cy: cam.y }; canvas.classList.add('grabbing'); }
+  function startPinch() {
+    mode = null; gesture = 'pinch';
+    const m = mid(); pinch = { d0: Math.max(10, m.d), z0: cam.zoom, w: toWorld(m.x, m.y) };
+  }
+  function zoomAround(sx, sy, w, z) {
+    cam.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+    cam.x = w.x - (sx - VW / 2) / scale(); cam.y = w.y - (sy - VH / 2) / scale();
+    clampCam();
+  }
+  canvas.addEventListener('pointerdown', e => {
     e.preventDefault();
-    const p = state.plots[i];
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 2) { startPinch(); return; }
+    if (ptrs.size > 2) return;
+    const i = plotAt(e.clientX, e.clientY);
+    if (i < 0) { startPan(e.clientX, e.clientY); return; }   // 区画の外 → カメラ
+    gesture = 'farm';                                         // 区画の上 → なぞり優先（カメラは動かさない）
     touched = new Set();
+    const p = state.plots[i];
     if (!p) {
       if (!selected) { openPopup(i); mode = null; return; }
       mode = 'plant';
@@ -637,18 +946,43 @@
     else { mode = null; return; }
     apply(i);
   });
-  field.addEventListener('pointermove', e => {
-    if (!mode) return;
-    apply(plotAt(e.clientX, e.clientY));
+  canvas.addEventListener('pointermove', e => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (gesture === 'pinch' && ptrs.size >= 2) {
+      const m = mid(); zoomAround(m.x, m.y, pinch.w, pinch.z0 * m.d / pinch.d0);
+    } else if (gesture === 'pan') {
+      cam.x = pan.cx - (e.clientX - pan.sx) / scale(); cam.y = pan.cy - (e.clientY - pan.sy) / scale(); clampCam();
+    } else if (gesture === 'farm' && mode) {
+      apply(plotAt(e.clientX, e.clientY));
+    }
   });
-  const end = () => { mode = null; touched = new Set(); };
-  window.addEventListener('pointerup', end);
-  window.addEventListener('pointercancel', end);
-  field.addEventListener('contextmenu', e => e.preventDefault());
+  const up = e => {
+    ptrs.delete(e.pointerId);
+    if (ptrs.size === 0) { gesture = null; mode = null; touched = new Set(); canvas.classList.remove('grabbing'); }
+    else if (gesture === 'pinch' && ptrs.size === 1) { const [q] = ptrs.values(); startPan(q.x, q.y); }
+  };
+  canvas.addEventListener('pointerup', up);
+  canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    zoomAround(e.clientX, e.clientY, toWorld(e.clientX, e.clientY), cam.zoom * Math.exp(-e.deltaY * .0015));
+  }, { passive: false });
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  window.addEventListener('resize', resize);
 
-  layoutScene();
-  render();
+  // 検品用（読み取り専用の座標変換。ゲーム状態は触らない）
+  window.__clockseed = {
+    plotCenter: i => { const R = plotRect(i); return toScreen(R.x + R.w / 2, R.y + R.h / 2); },
+    worldToScreen: toScreen,
+    camera: () => ({ x: cam.x, y: cam.y, zoom: cam.zoom }),
+    spriteSizes: () => Object.fromEntries(Object.entries(SPR).map(([k, v]) => [k, [v.width, v.height]])),
+  };
+
+  resize();
+  initialCamera();
   save();
+  requestAnimationFrame(frame);
 })();
 </script>
 </body>

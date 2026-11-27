@@ -1,54 +1,82 @@
-# clockseed
+# ときの種（clockseed）
 
-『ときの種』— 単一ファイル `index.html` で動くブラウザゲーム（外部ライブラリなし）。
+算数・数学のドリルで「時短」をためて、畑と町を育てるブラウザゲームです。
+単一ファイル `index.html` だけで動きます（外部ライブラリ・画像ファイル・サーバー・通信なし）。
+セーブはブラウザの localStorage に保存されます。
 
 ## 遊び方
-`index.html` をブラウザで開く。`?fast=10` を付けると育成・建設・加工の時間が10倍速になる（検品用）。
+
+1. `index.html` をブラウザで開く（GitHub Pages などに置けば、そのURLで遊べます）。タブレットのタッチ操作に対応しています。
+2. はじめて開くとチュートリアルが始まります。画面下の案内と、光る枠・矢印の目印に沿って進めてください
+   （小麦を植える → 時計塔でドリル → 時短で育てる → 収穫・納品 → ガチャ → 町Lv2 → 製粉所 → 小麦粉）。
+   いつでも「スキップ」で終われます（それまでの報酬はそのまま残ります）。
+3. その後は自由に：
+   - **畑**：作物をえらんでタップ（なぞると続けて植える・収穫できる）。区画は町Lvで増えます。
+   - **注文掲示板**：作物や加工品を納品すると、ゴールドと町経験値。町Lvが上がると作物・施設・レシピが解放されます（最大Lv8）。
+   - **施設**：製粉所・キッチン・パン屋・牧場・乳製品工房・ジャム工房・レストラン・ケーキ屋で加工します。
+   - **時計塔のドリル**：難度A（算数）〜E（数学III・C）。正解で時短ストックとカケラ。5問＝通常3問＋復習1問＋挑戦1問。
+     ためた時短は、育成・建設・加工のタイマーを早めるのに使います（残り25%を切った「追い込み」は2倍消費）。
+   - **特殊ドリル**：FACTOR×FACTOR ソロ・イージー（移植版）とテンパズル（移植版）。1日5問までは高効率のごほうび。
+   - **ガチャ**：カケラ20個で1回。変種の種・町の飾り・お手伝い・消耗品が手に入り、図鑑に記録されます。
+     チュートリアルチケットはカケラの代わりに使えます（1枚＝1回）。
+   - **交換掲示板**（町Lv8で解放）：町のコード `TOKI-TOWN-…` で友だちの町を見学（見学中は何も変わりません）、
+     変種のギフトコード `TOKI-SEED-…` で植え付けストックを贈り合えます（文字列を手で渡すだけで、通信はしません）。
+
+## 特殊ドリルの移植元
+
+| 特殊ドリル | 移植元 | 参照したコミット | 移植した範囲 |
+|---|---|---|---|
+| FACTOR×FACTOR ソロ・イージー（移植版） | [asumax1128/factorfactor](https://github.com/asumax1128/factorfactor) | `2af9777f6188f70817e25a69ea9a25df1212c848` | ソロのイージー（出題 Lv1〜5・6枚の盤面・ドラッグ・判定・体力と得点・15問の流れ） |
+| テンパズル（移植版） | [asumax1128/tenpuzzle](https://github.com/asumax1128/tenpuzzle) | `36808e0b7601c835e0fc195551ce3ab1734d1875` | ソロの核（入門・初級・中級の269組・カードの合体・操作方法A/B・判定） |
+
+本家のリポジトリは変更していません。オンライン対戦・ランキング・ログインなどは移植していません。
 
 ## テスト
-ドリルの問題生成（A〜E 40種）を、ゲーム本体とは別のテスト用コードで検証する。
+
+Node.js（18以降）で動きます。ブラウザの通しテストには [Playwright](https://playwright.dev/) が必要です。
 
 ```
-node tests/drill_engine_test.js          # 各タイプ1000問＋5問セットの構成（通常3・復習1・挑戦1）
-node tests/drill_engine_test.js 5000     # 問題数を変える
-node tests/drill_mutation_test.js        # 壊しテスト：わざと壊した出題を検査が必ず見つけるか
+# 自動テスト（ゲーム本体とは別のコードで、index.html の中のエンジンを取り出して検証）
+node tests/drill_engine_test.js          # ドリル A〜E 40種×1000問（正解がちょうど1つ・独立な再計算・重複なし・範囲・正解位置）＋5問セットの構成
+node tests/drill_mutation_test.js        # 壊しテスト：わざと壊した出題を、検査が必ず見つけるか
+node tests/gacha_engine_test.js          # ガチャ（排出率・天井・初回・被り・セーブの検証）
 node tests/fxf_engine_test.js            # FACTOR×FACTOR 移植版：出題・盤面・判定・1ゲームの流れ
-node tests/fxf_parity_test.js            # 本家 factorfactor のコードを動かして移植版と突き合わせ（参照 clone があるときだけ）
 node tests/tp_engine_test.js             # テンパズル移植版：独立な総当たりソルバーで出題・ティア、判定、盤面の操作
-node tests/tp_parity_test.js             # 本家 tenpuzzle のコードを動かして移植版と突き合わせ（参照 clone があるときだけ）
-node tests/trade_codec_test.js           # 交換掲示板のコード（TOKI-TOWN- ／ TOKI-SEED-）の往復・壊れたコード・種類違い
+node tests/trade_codec_test.js           # 交換掲示板のコードの往復・壊れたコード・種類違い
+
+# 本家との突き合わせ（clockseed の外に本家を clone してあるときだけ。無ければ省略して終わる）
+#   git clone https://github.com/asumax1128/factorfactor ../asumax1128/factorfactor
+#   git clone https://github.com/asumax1128/tenpuzzle ../asumax1128/tenpuzzle
+node tests/fxf_parity_test.js            # 本家 factorfactor のコードを動かして移植版と比べる（FXF_REF で場所を変更可）
+node tests/tp_parity_test.js             # 本家 tenpuzzle のコードを動かして移植版と比べる（TP_REF で場所を変更可）
+
+# ブラウザでの通しテスト（Playwright）
+node tests/e2e/stage55_effects_e2e.js    # 変種・価格修飾・お手伝い・消耗品
+node tests/e2e/stage56_decor_e2e.js      # 飾りの表示・世界樹・鐘・街灯・季節・魅力
+node tests/e2e/stage57_drill_e2e.js      # ドリル C〜E・セット構成・移行
+node tests/e2e/stage57b_fxf_e2e.js       # FACTOR×FACTOR 移植版をマウスとタッチのドラッグで通しで遊ぶ
+node tests/e2e/stage57c_tp_e2e.js        # テンパズル移植版をタッチで通しで遊ぶ
+node tests/e2e/stage58_trade_e2e.js      # 交換掲示板（町のコード・見学モード・変種のギフト）
+node tests/e2e/stage6_tutorial_e2e.js    # チュートリアルを通しで・途中スキップ・移行・デバッグの無効化
 ```
 
-`index.html` の `<script id="drill-engine">` だけを取り出し、DOM のない環境で実行して、
-正解がちょうど1つ・独立に再計算した答えと一致・選択肢の重複なし・生成値が範囲内・正解位置が均等、を確認する。
-C〜E は選択肢の表示（根号・分数・組・不等式・複素数・π など）をテスト側で数値に読み取って比べる。
-特殊ドリルは FACTOR×FACTOR とテンパズルの移植版の2本（選択式の S1〜S3 は削除）。
+### 検品用のデバッグ
+
+`index.html?debug=1` で開いたときだけ、検品用の `window.__clockseed`（座標や正解の位置を読む API）と
+`&fast=10`（育成・建設・加工の時間を10倍速）が有効になります。通常のアクセスでは無効です。
+通しテストはすべて `?debug=1` で開きます。
+
+### 経済シミュレーション
 
 ```
-node tests/gacha_engine_test.js          # ガチャ（天井・排出・セーブ検証）
-node tests/e2e/stage55_effects_e2e.js    # 段階5.5：変種・価格修飾・お手伝い・消耗品（Playwright）
-node tests/e2e/stage56_decor_e2e.js      # 段階5.6：飾りの表示・世界樹・鐘・街灯・季節・魅力（Playwright）
-node tests/e2e/stage57_drill_e2e.js      # 段階5.7：ドリルC〜E・特殊ドリルの報酬・セット構成・移行（Playwright）
-node tests/e2e/stage57b_fxf_e2e.js       # 段階5.7b：FACTOR×FACTOR 移植版をマウスとタッチのドラッグで通しで遊ぶ（Playwright）
-node tests/e2e/stage57c_tp_e2e.js        # 段階5.7c：テンパズル移植版をタッチで通しで遊ぶ（Playwright）
-node tests/e2e/stage58_trade_e2e.js      # 段階5.8：交換掲示板（町のコード・見学モード・変種のギフト）（Playwright）
+node tools/economy_sim.js 300            # 1日15分ドリルのプレイヤーで、町Lv8までの日数・ガチャ回数・時短ストックの傾向を出す
 ```
 
-## FACTOR×FACTOR ソロ・イージー（移植版）
-時計塔のドリル →「特殊ドリル」から開く全画面のモジュール。本家 [asumax1128/factorfactor](https://github.com/asumax1128/factorfactor)
-（commit `2af9777f6188f70817e25a69ea9a25df1212c848`）のソロ・イージーだけを移植した（`<script id="fxf-engine">`）。
-`tests/fxf_parity_test.js` は、clockseed の外に置いた参照用 clone（既定 `../asumax1128/factorfactor`、`FXF_REF` で変更可）の
-コードを読み取り専用で動かして比べる。clone は clockseed にコミットしない。
+ゲームの数値は `?debug=1` の `window.__clockseed.constants()` から読みます（数値の調整はしません。モデルはファイルの先頭に記載）。
 
-## テンパズル（移植版）
-時計塔のドリル →「特殊ドリル」から開く全画面のモジュール。本家 [asumax1128/tenpuzzle](https://github.com/asumax1128/tenpuzzle)
-（commit `36808e0b7601c835e0fc195551ce3ab1734d1875`、index.html＝v1.2）のソロプレイの核（入門・初級・中級の269組・カードの合体・
-操作方法A/B・判定）を移植した（`<script id="tp-engine">`）。`tests/tp_parity_test.js` は clockseed の外の参照用 clone
-（既定 `../asumax1128/tenpuzzle`、`TP_REF` で変更可）のコードを読み取り専用で動かして比べる。
+## ファイル
 
-## 交換掲示板（町Lv8で解放）
-サーバーや通信は使わず、コードの文字列を交換するだけ（`<script id="trade-codec">`）。
-- 町のコード `TOKI-TOWN-…`：町のLv・飾り（種類と個数）・世界樹の段階・形式の版。入力すると、その町を見学モードで表示する
-  （既存の町の描画を仮の状態で使う。見学中は操作できず、自分のセーブには一切書き込まない）。
-- ギフトコード `TOKI-SEED-…`：変種の種類・使い捨てのギフトID・発行したセーブのID。受け取ると植え付けストック+1
-  （解放済みの変種ならカケラ+10）。同じギフトは同じセーブで1回だけ。
+- `index.html` … ゲーム本体（ドリル・ガチャ・FACTOR×FACTOR・テンパズル・交換コードのエンジンは、それぞれ独立した `<script id="…">` に分けてあります）
+- `tests/` … 自動テストと通しテスト
+- `tools/economy_sim.js` … 経済シミュレーション
+- `screenshots/` … 各段階の画面

@@ -1821,7 +1821,7 @@
   const freshBuffs = () => ({ fert: 0, fertPlus: 0, double: 0, boost: 0 });     // 消耗品の予約数
   // チュートリアル：step＝いまの手順（1〜9）、done＝終了（完了またはスキップ）、sets＝チュートリアル中に終えたドリルのセット数、
   // mark＝手順8に入ったときの sets、flags＝順番に関係なく満たした条件（小麦の納品・チケットでのガチャ）、tickets＝チュートリアルチケット（終了後も残る）
-  const freshTutorial = () => ({ done: false, step: 1, sets: 0, mark: 0, flags: {}, tickets: 0, granted: false });
+  const freshTutorial = () => ({ done: false, step: 1, sets: 0, mark: 0, flags: { d1: false, pull: false }, tickets: 0, granted: false });
   const freshHelpers = () => ({ keeperDay: '', peddlerDay: '', peddler: null, crowSeen: [] });
   function freshState() {
     const st = { saveVersion: SAVE_VERSION, plots: Array(MAX_PLOTS).fill(null),

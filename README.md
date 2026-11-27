@@ -19,4 +19,5 @@ node tests/drill_engine_test.js 5000     # 問題数を変える
 ```
 node tests/gacha_engine_test.js          # ガチャ（天井・排出・セーブ検証）
 node tests/e2e/stage55_effects_e2e.js    # 段階5.5：変種・価格修飾・お手伝い・消耗品（Playwright）
+node tests/e2e/stage56_decor_e2e.js      # 段階5.6：飾りの表示・世界樹・鐘・街灯・季節・魅力（Playwright）
 ```

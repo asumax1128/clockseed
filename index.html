@@ -58,6 +58,9 @@
   .vtag{background:#7c62d8;color:#fff;font-size:10px;padding:0 4px;border-radius:4px;margin-left:4px}
   .dexbuff{font-size:12px;color:#7a5a30;margin:2px 0 6px}
   .sbtns .keeper{background:#e8dcff}
+  .charm{font-size:13px;color:#6a3e5a;background:#f8e4ee;border-radius:6px;padding:5px 10px;margin:4px 0 6px}
+  .charm small{margin-left:6px;opacity:.8}
+  .dexcard img.dico{image-rendering:pixelated;object-fit:contain}
   #palette .tool span,#warehouse .ttl,.stock{white-space:nowrap}
   #warehouse.compact{gap:6px;font-size:15px;padding:4px 10px}
   #warehouse.compact .stock{gap:2px}
@@ -709,7 +712,7 @@
 (() => {
   'use strict';
   const SAVE_KEY = 'clockseed.save';
-  const SAVE_VERSION = 8;
+  const SAVE_VERSION = 9;
   const MAX_PLOTS = 24;                // 区画の最大数（町Lv8で24）
   const ORDER_COUNT = 3;               // 同時に出る注文の数
   const ORDER_MIN = 3, ORDER_MAX = 9;  // 生の作物の注文の個数の範囲
@@ -871,7 +874,7 @@
   function freshState() {
     const st = { saveVersion: SAVE_VERSION, plots: Array(MAX_PLOTS).fill(null),
                  storage: {}, gold: 0, townExp: 0, orders: [], orderIds: [], nextOrder: null, buildings: {}, drill: freshDrill(), gacha: window.ClockseedGacha.freshState(),
-                 buffs: freshBuffs(), helpers: freshHelpers() };
+                 buffs: freshBuffs(), helpers: freshHelpers(), decor: { treeAt: 0 } };
     for (const k of ITEM_KEYS) st.storage[k] = 0;
     for (const k of BUILDING_KEYS) st.buildings[k] = null;
     while (st.orders.length < ORDER_COUNT) { st.orders.push(takeOrder(st, 1)); st.orderIds.push(newOrderId()); }
@@ -921,6 +924,9 @@
           if (/^[A-E]\d{1,2}$/.test(id) && v && nat(v.n) >= nat(v.ok)) D.stats[id] = { ok: nat(v.ok), n: nat(v.n) };
         }
       }
+      // 世界樹の苗の初回入手日時（version 8 以前には無い。すでに持っていれば移行した時刻を入手日とする）
+      if (d.decor && isFinite(d.decor.treeAt) && d.decor.treeAt > 0) s.decor.treeAt = d.decor.treeAt;
+      else if (s.gacha.items.dc14) s.decor.treeAt = Date.now();
       // 消耗品の予約・お手伝いの記録（version 7 以前には無い → 初期値）
       if (d.buffs) for (const k of Object.keys(s.buffs)) s.buffs[k] = nat(d.buffs[k]);
       const dh = d.helpers || {}, isDay = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -1061,6 +1067,7 @@
     D.shards -= cost;
     const out = [];
     for (let i = 0; i < n; i++) { const r = GA.pullOnce(state.gacha, Math.random); D.shards += r.shards; out.push(r); }
+    if (state.gacha.items.dc14 && !state.decor.treeAt) state.decor.treeAt = now();   // 世界樹の苗：初めて入手した日時
     lastGacha = out; save(); return out;
   }
   const ownedCount = id => state.gacha.items[id] || 0;
@@ -1184,6 +1191,13 @@
     if (townLevel() > before) onLevelUp(townLevel());
   }
   // 報酬ゴールド＝単価×個数×1.3（端数切り上げ）。小数誤差を避けるため整数で ceil(x*13/10) を計算
+  // 町の魅力：飾りを持っていれば種類ごとに1回だけ数える（所持状態から計算。セーブしない）
+  const CHARM_PT = { C: 1, R: 2, SR: 4, UR: 6 }, CHARM_SPECIAL = { dc07: 8 };
+  const CHARM_TIERS = [[45, 25], [30, 20], [20, 15], [12, 10], [5, 5]];   // [魅力の下限, 注文の町経験値ボーナス%]
+  const charmPoints = () => GA.ITEMS.filter(it => it.cat === 'decor' && state.gacha.items[it.id] >= 1)
+    .reduce((a, it) => a + (CHARM_SPECIAL[it.id] || CHARM_PT[it.r]), 0);
+  const charmBonus = (pt = charmPoints()) => { const t = CHARM_TIERS.find(([lo]) => pt >= lo); return t ? t[1] : 0; };
+  const charmExp = exp => Math.ceil(exp * (100 + charmBonus()) / 100 - 1e-9);   // ボーナス後は切り上げ
   // 単価（売値）＝ 基本価格 ×（1 ＋ 変種の上乗せ ＋ min(15%, 価格修飾の合計)）の切り上げ
   function priceBonus(k) {
     const it = ITEMS[k], g = state.gacha.items;
@@ -1193,7 +1207,7 @@
     return (it.vBonus || 0) + Math.min(MOD_CAP, mod);
   }
   const unitPrice = k => Math.floor((ITEMS[k].price * (100 + priceBonus(k)) + 99) / 100);
-  const orderReward = o => ({ gold: Math.floor((unitPrice(o.crop) * o.qty * 13 + 9) / 10), exp: ITEMS[o.crop].orderExp });
+  const orderReward = o => ({ gold: Math.floor((unitPrice(o.crop) * o.qty * 13 + 9) / 10), exp: charmExp(ITEMS[o.crop].orderExp) });   // 魅力 → ブーストの順
   const BOOST_RATE = 1.5;                            // 注文ブースト券：次の納品1件だけ町経験値+50%（端数切り上げ）
   function useBoost(exp) { if (state.buffs.boost > 0) { state.buffs.boost -= 1; return { exp: Math.ceil(exp * BOOST_RATE), boosted: true }; } return { exp, boosted: false }; }
   function deliver(i) {
@@ -1219,7 +1233,7 @@
     save(); return true;
   }
   const peddlerOrder = () => { const P = state.helpers.peddler; return P && P.day === localDay() ? P : null; };   // その日だけ有効
-  const peddlerReward = P => ({ gold: Math.floor((unitPrice(P.crop) * P.qty * 15 + 9) / 10), exp: ITEMS[P.crop].orderExp * 2 });
+  const peddlerReward = P => ({ gold: Math.floor((unitPrice(P.crop) * P.qty * 15 + 9) / 10), exp: charmExp(ITEMS[P.crop].orderExp * 2) });
   function deliverPeddler() {
     const P = peddlerOrder();
     if (!P || state.storage[P.crop] < P.qty) return false;
@@ -2178,6 +2192,149 @@
     SPR['v_' + sd + '_ic'] = recolor(SPR[CROPS[c].icon], L, true);
   }
 
+  // ---------- 飾り（段階5.6）：14種のドット絵。固定の表示位置に、所持数に応じて最大3か所 ----------
+  const DECOR_SPR = (() => {
+    const out = {};
+    const R = (g, x, y, w, h, c) => { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (g[j] && i >= 0 && i < g[j].length) g[j][i] = c; };
+    const P1 = (g, x, y, c) => R(g, x, y, 1, 1, c);
+    const disc = (g, cx, cy, rx, ry, c, pred) => { for (let y = 0; y < g.length; y++) for (let x = 0; x < g[0].length; x++) {
+      const d = ((x + .5 - cx) / rx) ** 2 + ((y + .5 - cy) / ry) ** 2; if (d <= 1 && (!pred || pred(x, y, d))) g[y][x] = c; } };
+    const outline = (g, c, keep = '.') => {            // 塗った形のまわりを1ドットの輪郭で囲む
+      const H = g.length, W = g[0].length, src = g.map(r => r.slice());
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (src[y][x] === keep &&
+        [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => src[y + b] && src[y + b][x + a] && src[y + b][x + a] !== '.')) g[y][x] = c;
+    };
+    const canopy = (g, cx, cy, rx, ry, cols) => {     // 葉の塊：外側から暗→明。cols=[暗, 中, 明, ハイライト]
+      disc(g, cx, cy, rx, ry, cols[0]);
+      disc(g, cx - 1, cy - 1, rx - 1.5, ry - 1.5, cols[1]);
+      disc(g, cx - rx * .3, cy - ry * .35, rx * .45, ry * .4, cols[2]);
+      for (let k = 0; k < rx * 2; k++) { const r = hash2(cx * 7 + k, cy * 3 + rx, 11), x = Math.floor(cx - rx + 2 + r() * (rx * 2 - 4)), y = Math.floor(cy - ry + 2 + r() * (ry * 2 - 4));
+        if (g[y] && g[y][x] === cols[1]) g[y][x] = r() < .5 ? cols[2] : cols[0]; }
+      if (cols[3]) for (let k = 0; k < 3; k++) P1(g, Math.round(cx - rx * .4) + k, Math.round(cy - ry * .55), cols[3]);
+    };
+    // 木のベンチ（16×10）
+    { const g = mkGrid(16, 10);
+      R(g, 1, 0, 14, 1, 'X'); R(g, 1, 1, 14, 1, 'W'); R(g, 1, 2, 14, 1, 'V'); R(g, 1, 3, 14, 1, 'W'); R(g, 1, 4, 14, 1, 'X');
+      R(g, 1, 0, 1, 6, 'X'); R(g, 14, 0, 1, 6, 'X');
+      R(g, 0, 5, 16, 1, 'X'); R(g, 0, 6, 16, 1, 'W'); R(g, 0, 7, 16, 1, 'V'); R(g, 1, 8, 2, 2, 'X'); R(g, 13, 8, 2, 2, 'X'); P1(g, 2, 8, 'V'); P1(g, 14, 8, 'V');
+      out.dc01 = gridRows(g); }
+    // 花壇（16×9）：石の縁＋土＋花5株。季節の花壇は色を替えて使う
+    const flowerBed = (c1, c2, leaf, leaf2, soil = 'S') => {
+      const g = mkGrid(16, 9);
+      for (let i = 0; i < 5; i++) { const x = 1 + i * 3;
+        R(g, x, 3, 2, 3, leaf); P1(g, x + 1, 4, leaf2); P1(g, x, 1, c1); P1(g, x + 1, 1, c2); P1(g, x, 2, c2); P1(g, x + 1, 2, c1); P1(g, x + (i % 2), 0, c1); }
+      R(g, 1, 5, 14, 1, soil); R(g, 0, 6, 16, 1, 'a'); R(g, 0, 7, 16, 1, 'b'); R(g, 0, 8, 16, 1, 'n'); P1(g, 0, 6, 'b'); P1(g, 15, 6, 'B');
+      for (let x = 3; x < 16; x += 5) P1(g, x, 7, 'B');
+      return gridRows(g);
+    };
+    out.dc02 = flowerBed('#', '@', 'g', 'G');
+    out.dc06_spring = flowerBed('1', 'Q', 'g', 'G');
+    out.dc06_summer = flowerBed('8', '%', 'e', 'j');
+    out.dc06_autumn = flowerBed('&', 'C', 'o', 'Y', 'S');
+    out.dc06_winter = flowerBed('L', '#', 'p', 'P', 'f');
+    // 小さな噴水（26×22）。水しぶきは描画時に動かす
+    { const g = mkGrid(26, 22);
+      disc(g, 13, 17.5, 12.5, 4.5, 'n'); disc(g, 13, 17, 11.5, 3.8, 'a'); disc(g, 13, 17.2, 10, 2.8, 'A'); disc(g, 12.5, 16.8, 8.5, 2, 'i');
+      R(g, 0, 18, 26, 1, 'b'); R(g, 1, 19, 24, 1, 'B'); R(g, 3, 20, 20, 1, 'n'); R(g, 6, 21, 14, 1, 'm'); R(g, 0, 17, 1, 2, 'n'); R(g, 25, 17, 1, 2, 'n');
+      R(g, 11, 8, 4, 9, 'b'); R(g, 11, 8, 1, 9, 'a'); R(g, 14, 8, 1, 9, 'B');
+      disc(g, 13, 8, 6, 2.2, 'n'); disc(g, 13, 7.6, 5, 1.6, 'a'); disc(g, 13, 7.4, 3.6, 1, 'i');
+      R(g, 12, 2, 2, 5, 'i'); R(g, 12, 2, 1, 5, 'L'); P1(g, 11, 3, 'i'); P1(g, 14, 3, 'i'); P1(g, 10, 5, 'i'); P1(g, 15, 5, 'i'); R(g, 12, 1, 2, 1, 'L');
+      out.dc03 = gridRows(g); }
+    // 風見鶏つき看板（16×28）
+    { const g = mkGrid(16, 28);
+      const cock = ['..zI......', '.zIIm.....', '.mmmm...m.', '..mmmmmmm.', '..mmmmmm..', '...m..m...'];
+      cock.forEach((r, y) => { for (let x = 0; x < r.length; x++) if (r[x] !== '.') g[y][x + 3] = r[x]; });
+      R(g, 7, 6, 2, 22, 'X'); R(g, 7, 6, 1, 22, 'V'); R(g, 4, 7, 8, 1, 'm'); P1(g, 3, 7, 'm'); P1(g, 12, 7, 'm');
+      R(g, 1, 12, 14, 9, 'X'); R(g, 2, 13, 12, 7, 'W'); R(g, 2, 19, 12, 1, 'V');
+      R(g, 4, 15, 8, 1, 'U'); R(g, 4, 17, 6, 1, 'U'); P1(g, 11, 17, 'I');
+      out.dc04 = gridRows(g); }
+    // 街灯（7×24）：消灯／点灯
+    const lamp = on => { const g = mkGrid(7, 24);
+      P1(g, 3, 0, '0'); R(g, 1, 1, 5, 1, '0'); R(g, 0, 2, 7, 1, 'm');
+      R(g, 1, 3, 5, 5, '0'); R(g, 2, 4, 3, 3, on ? 'w' : 'v'); if (on) P1(g, 3, 5, '8'); else P1(g, 2, 4, 'i');
+      R(g, 2, 8, 3, 1, '0'); R(g, 3, 9, 1, 12, '0'); R(g, 3, 9, 1, 12, 'm'); P1(g, 3, 9, '0');
+      R(g, 2, 21, 3, 1, '0'); R(g, 1, 22, 5, 2, '0'); R(g, 1, 22, 2, 1, 'm');
+      return gridRows(g); };
+    out.dc05 = lamp(false); out.dc05_on = lamp(true);
+    // 町のシンボルツリー（40×48）：大きな枝ぶりに金の飾りと赤いリボン
+    { const g = mkGrid(40, 48);
+      R(g, 17, 26, 6, 18, 't'); R(g, 20, 26, 3, 18, 'T'); R(g, 15, 42, 10, 3, 't'); R(g, 13, 44, 4, 2, 't'); R(g, 23, 44, 4, 2, 'T'); R(g, 12, 46, 16, 2, 'T');
+      R(g, 17, 34, 6, 2, 'I'); P1(g, 16, 35, 'I'); P1(g, 23, 34, '5'); P1(g, 24, 36, 'I'); P1(g, 25, 37, 'I');
+      canopy(g, 20, 17, 19, 16.5, ['E', 'e', 'j', 'J']);
+      disc(g, 9, 24, 7, 5, 'E', (x, y) => g[y][x] === '.'); disc(g, 31, 24, 7, 5, 'E', (x, y) => g[y][x] === '.');
+      for (const [x, y] of [[9, 9], [26, 7], [31, 15], [13, 19], [22, 22], [6, 16], [34, 22], [17, 11], [27, 26], [11, 27]]) { P1(g, x, y, '8'); P1(g, x, y + 1, '9'); }
+      outline(g, 'P');
+      out.dc07 = gridRows(g); }
+    // 時計塔の金の鐘（10×10）
+    out.bell = ['....99....', '...9zz9...', '..9z88z9..', '..z8w88z..', '..z8w889..', '.z888889z.', '.z8888899.', '9999999999', '....99....', '....9.....'];
+    out.bellYoke = ['X..........X', 'XXXXXXXXXXXX', 'X..........X', 'X..........X'];
+    // 石の小道（18×9）：平たい飛び石3つ（地面に描く）
+    { const g = mkGrid(18, 9);
+      for (const [cx, cy, rx, ry] of [[4, 3, 3.6, 2.4], [11, 2.5, 3.2, 2.2], [9, 6.4, 3.6, 2.4], [15.5, 6, 2.4, 1.8]]) {
+        disc(g, cx, cy + .4, rx, ry, 'n'); disc(g, cx, cy, rx - .6, ry - .5, 'b'); disc(g, cx - .6, cy - .5, rx * .45, ry * .4, 'a'); }
+      out.dc09 = gridRows(g); }
+    // 木の柵セット（18×12）
+    { const g = mkGrid(18, 12);
+      R(g, 0, 3, 18, 2, 'W'); R(g, 0, 4, 18, 1, 'V'); R(g, 0, 8, 18, 2, 'W'); R(g, 0, 9, 18, 1, 'V');
+      for (const x of [1, 8, 15]) { R(g, x, 1, 2, 11, 'X'); R(g, x, 1, 1, 10, 'W'); P1(g, x, 0, 'X'); P1(g, x + 1, 0, 'X'); }
+      P1(g, 4, 2, 'g'); P1(g, 5, 2, 'G'); P1(g, 12, 7, 'g'); P1(g, 11, 7, '1');
+      out.dc10 = gridRows(g); }
+    // ガーデンアーチ（32×34）：木のアーチにつると花
+    { const g = mkGrid(32, 34);
+      disc(g, 16, 15, 15, 14, 'X', (x, y) => y <= 15); disc(g, 16, 15, 14, 13, 'W', (x, y) => y <= 15); disc(g, 16, 15, 11, 10, '.', (x, y) => y <= 15);
+      disc(g, 16, 15, 11.7, 10.7, 'V', (x, y) => y <= 15 && g[y][x] === 'W');
+      R(g, 1, 15, 4, 19, 'X'); R(g, 2, 15, 2, 19, 'W'); R(g, 27, 15, 4, 19, 'X'); R(g, 28, 15, 2, 19, 'W'); R(g, 3, 15, 1, 19, 'V'); R(g, 29, 15, 1, 19, 'V');
+      for (let k = 0; k < 40; k++) { const r = hash2(k, 5, 31), a = Math.PI * (r() * 1.05 - .025), rr = 12.8 + r() * 1.6, x = Math.round(16 + Math.cos(a) * rr), y = Math.round(15 - Math.sin(a) * rr);
+        if (g[y] && x >= 0 && x < 32) g[y][x] = r() < .2 ? (r() < .5 ? '1' : 'Q') : r() < .5 ? 'g' : 'G'; }
+      for (let y = 16; y < 32; y += 2) for (const x of [1, 4, 27, 30]) if (hash2(x, y, 2)() < .6) P1(g, x, y, (x + y) % 6 === 0 ? 'Q' : 'g');
+      out.dc11 = gridRows(g); }
+    // ガラスドーム（26×24）：中の作物が透けて見える
+    { const g = mkGrid(26, 24);
+      R(g, 6, 15, 3, 4, 'g'); P1(g, 7, 14, '#'); P1(g, 6, 16, '#'); R(g, 12, 13, 2, 6, 'G'); P1(g, 11, 12, 'J'); P1(g, 14, 12, 'J'); R(g, 17, 15, 3, 4, 'g'); P1(g, 18, 14, '8'); P1(g, 19, 16, '8');
+      disc(g, 13, 19.5, 12, 17, 'i', (x, y) => y <= 19 && g[y][x] === '.' && (x + y) % 3 !== 0);
+      disc(g, 13, 19.5, 12, 17, 'D', (x, y) => y <= 19 && ((x + .5 - 13) / 11) ** 2 + ((y + .5 - 19.5) / 16) ** 2 > 1);
+      for (let y = 6; y < 17; y++) P1(g, 6 + Math.round((16 - y) * .25), y, 'L');
+      R(g, 0, 19, 26, 1, 'D'); R(g, 0, 20, 26, 2, 'n'); R(g, 0, 20, 26, 1, 'b'); R(g, 1, 22, 24, 2, 'm'); P1(g, 13, 2, '8');
+      out.dc12 = gridRows(g); }
+    // 四季の庭園（36×30）：真ん中の木と地面が季節で変わる
+    const garden = season => { const g = mkGrid(36, 30);
+      const ground = { spring: ['G', '1'], summer: ['G', '8'], autumn: ['o', '%'], winter: ['L', 'f'] }[season];
+      disc(g, 18, 24, 17.5, 5.5, ground[0]);
+      for (let k = 0; k < 22; k++) { const r = hash2(k, 9, 41), x = Math.floor(3 + r() * 30), y = Math.floor(20 + r() * 8); if (g[y] && g[y][x] !== '.') g[y][x] = ground[1]; }
+      if (season === 'winter') { R(g, 17, 9, 3, 15, 'T'); for (const [x, y, d] of [[18, 9, -1], [18, 12, 1], [18, 15, -1]]) for (let i = 1; i < 8; i++) P1(g, 18 + d * i, y - Math.floor(i / 2), 'T');
+        for (const [x, y] of [[11, 5], [12, 5], [25, 8], [24, 8], [17, 8], [18, 8], [19, 8], [13, 11], [24, 11]]) P1(g, x, y, 'L'); }
+      else { R(g, 16, 13, 4, 11, 't'); R(g, 18, 13, 2, 11, 'T');
+        canopy(g, 18, 10, 11, 8.5, { spring: ['Z', '1', 'Q', '2'], summer: ['E', 'e', 'j', 'J'], autumn: ['5', 'C', '%', '8'] }[season]); }
+      outline(g, season === 'winter' ? 'n' : 'P');
+      for (let x = 1; x < 35; x++) { const yb = 28; P1(g, x, yb, 'b'); P1(g, x, yb + 1, 'n'); }
+      return gridRows(g); };
+    for (const se of ['spring', 'summer', 'autumn', 'winter']) out['dc13_' + se] = garden(se);
+    // 世界樹の苗：5段階（苗／若木／中木／大木／完成形）。足元に特別な石の輪
+    const ring = (g, cx, y, rx) => { disc(g, cx, y, rx, 2.2, 'n', (x, yy) => yy >= y - 1); disc(g, cx, y - .3, rx - 1, 1.5, 'S', (x, yy) => yy >= y - 1); };
+    const wt = stage => {
+      const D = [[12, 14], [18, 24], [26, 34], [34, 44], [42, 54]][stage], W = D[0], H = D[1], g = mkGrid(W, H), cx = W / 2;
+      if (stage === 0) { R(g, 5, 5, 1, 6, 'g'); R(g, 3, 3, 2, 2, 'j'); P1(g, 2, 2, 'J'); R(g, 7, 2, 2, 2, 'j'); P1(g, 8, 1, 'J'); P1(g, 6, 4, 'G'); P1(g, 4, 5, 'G'); }
+      else {
+        const tw = [0, 2, 4, 6, 8][stage], th = [0, 10, 14, 18, 22][stage];
+        R(g, Math.round(cx - tw / 2), H - 3 - th, tw, th, 't'); R(g, Math.round(cx), H - 3 - th, Math.ceil(tw / 2), th, 'T');
+        if (stage >= 3) { R(g, Math.round(cx - tw / 2) - 2, H - 5, 2, 2, 't'); R(g, Math.round(cx + tw / 2), H - 5, 2, 2, 'T'); }
+        const rx = [0, 6.5, 11, 15, 19][stage], ry = [0, 6, 10, 13, 16][stage], cy = ry + 1;
+        canopy(g, cx, cy, rx, ry, stage === 4 ? ['p', 'e', 'h', 'w'] : ['E', 'e', 'j', 'J']);
+        if (stage === 4) for (let k = 0; k < 16; k++) { const r = hash2(k, 4, 77), x = Math.floor(cx - rx + 3 + r() * (rx * 2 - 6)), y = Math.floor(3 + r() * (ry * 2 - 6));
+          if (g[y] && g[y][x] !== '.') { P1(g, x, y, '8'); if (g[y + 1] && g[y + 1][x] !== '.') P1(g, x, y + 1, '9'); } }
+        outline(g, stage === 4 ? 'P' : 'E');
+      }
+      ring(g, cx, H - 2, Math.min(cx, [6, 8, 10, 12, 14][stage]));
+      return gridRows(g);
+    };
+    for (let k = 0; k < 5; k++) out['dc14_' + k] = wt(k);
+    // 町の人（鐘の演出）：服の色ちがい4人
+    const folk = (c1, c2, hair) => ['.' + hair + hair + hair + '.', '.qqq.', '.q0q.', c1 + c2 + c2 + c2 + c1, '.' + c2 + c2 + c2 + '.', '.' + c2 + c1 + c2 + '.', '.S.S.', '.S.S.'];
+    out.folk0 = folk('D', 'A', 'U'); out.folk1 = folk('5', '#', 'X'); out.folk2 = folk('7', '6', 'Y'); out.folk3 = folk('E', 'e', 'U');
+    return out;
+  })();
+  for (const k in DECOR_SPR) SPR['d_' + k] = buildSprite(DECOR_SPR[k]);
+
   // UIアイコン（ドット絵をそのまま拡大表示）
   const iconURL = k => SPR[k].toDataURL();
   document.querySelectorAll('img[data-icon]').forEach(im => { im.src = iconURL(im.dataset.icon); });
@@ -2401,7 +2558,7 @@
         placed.push([tx, ty]); n--;
         const s = SPR[kind], fx = tx * T + 8 + Math.floor(r() * 5) - 2, fy = ty * T + 14;
         const big = kind !== 'bush' && kind !== 'bushB';
-        statics.push({ y: fy, fx, fy, shadow: [fx + 1, fy - 1, big ? 9 : 5, big ? 3 : 2],
+        statics.push({ y: fy, fx, fy, nat: true, w: s.width, h: s.height, shadow: [fx + 1, fy - 1, big ? 9 : 5, big ? 3 : 2],
           draw: c => c.drawImage(s, fx - (s.width >> 1), fy - s.height) });
       }
     };
@@ -2627,6 +2784,106 @@
     }
   }
 
+  // ---------- 飾りの固定の表示位置（足元のドット座標）。複数似合うものは所持数に応じて最大3か所 ----------
+  const DECOR_SPOTS = {
+    dc01: [[36, 163], [118, 154], [80, 30]],           // 木のベンチ：広場の下／畑の入口の脇／時計塔の裏
+    dc02: [[86, 160], [16, 154], [100, 62]],           // 花壇・赤
+    dc03: [[92, 198]],                                 // 小さな噴水：広場の南
+    dc04: [[118, 100]],                                // 風見鶏つき看板：道沿い（畑の入口の手前）
+    dc05: [[100, 108], [100, 148], [46, 152]],         // 街灯：道の両側と広場の角
+    dc06: [[114, 184], [126, 170], [146, 62]],         // 花壇・季節の花
+    dc07: [[312, 66]],                                 // 町のシンボルツリー：北東の空き地
+    dc09: [[56, 156], [62, 170], [70, 184]],           // 石の小道：広場から噴水への飛び石（地面に描く）
+    dc10: [[96, 46], [140, 42], [96, 24]],             // 木の柵セット：北の丘へ向かう道の脇
+    dc11: [[136, 134]],                                // ガーデンアーチ：畑の西の入口
+    dc12: [[284, 56]],                                 // ガラスドーム：風車の東
+    dc13: [[166, 68]],                                 // 四季の庭園：畑の北
+    dc14: [[26, 54]],                                  // 世界樹の苗：広場の北の特別な場所
+  };
+  const DECOR_MULTI = { dc01: 1, dc02: 1, dc05: 1, dc06: 1, dc09: 1, dc10: 1 };
+  const DECOR_FLAT = { dc09: 1 };
+  const SEASONS = ['winter', 'winter', 'spring', 'spring', 'spring', 'summer', 'summer', 'summer', 'autumn', 'autumn', 'autumn', 'winter'];
+  const SEASON_JA = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' };
+  const seasonNow = (t = now()) => SEASONS[new Date(t).getMonth()];
+  const lampOn = (t = now()) => { const h = new Date(t).getHours(); return h >= 18 || h < 6; };   // 18時〜翌6時
+  const dayIndex = t => { const d = new Date(t); return Math.round(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 864e5); };
+  const treeDays = (t = now()) => state.decor.treeAt ? Math.max(0, dayIndex(t) - dayIndex(state.decor.treeAt)) : 0;
+  const TREE_STAGE_JA = ['苗', '若木', '中木', '大木', '完成形'];
+  const treeStage = (t = now()) => { const d = treeDays(t); return d >= 30 ? 4 : d >= 23 ? 3 : d >= 15 ? 2 : d >= 7 ? 1 : 0; };
+  const decorSprite = (id, t) => id === 'dc14' ? SPR['d_dc14_' + treeStage(t)] : id === 'dc06' || id === 'dc13' ? SPR['d_' + id + '_' + seasonNow(t)]
+    : id === 'dc05' ? SPR[lampOn(t) ? 'd_dc05_on' : 'd_dc05'] : SPR['d_' + id];
+  const decorShown = id => Math.min(DECOR_MULTI[id] ? 3 : 1, (state.gacha.items[id] || 0), DECOR_SPOTS[id] ? DECOR_SPOTS[id].length : 1);   // 金の鐘は時計塔に1つ
+  // 飾りの場所（最大の大きさ）に重なる木・草むらは置かない（固定シードの並びは変えない）
+  const DECOR_ZONES = Object.entries(DECOR_SPOTS).flatMap(([id, list]) => list.map(([x, y]) => {
+    const sp = id === 'dc14' ? SPR.d_dc14_4 : id === 'dc06' ? SPR.d_dc06_spring : id === 'dc13' ? SPR.d_dc13_spring : SPR['d_' + id];
+    return { x0: x - sp.width / 2 - 3, x1: x + sp.width / 2 + 3, y0: y - sp.height - 2, y1: y + 4 };
+  }));
+  const decorBlocks = o => { const ox0 = o.fx - o.w / 2, ox1 = o.fx + o.w / 2, oy0 = o.fy - o.h, oy1 = o.fy;
+    return DECOR_ZONES.some(z => ox0 < z.x1 && ox1 > z.x0 && oy0 < z.y1 && oy1 > z.y0); };
+  // 金の鐘：鳴らすと揺れて、町の人が広場に集まる（演出のみ）
+  let bell = null;
+  const FOLK_PATH = [[[-6, 150], [34, 140]], [[112, 96], [76, 112]], [[-6, 100], [22, 120]], [[116, 160], [70, 148]]];
+  const bellPos = () => ({ x: LAYOUT.tower.x, y: LAYOUT.tower.y - SPR.tower.height + 4 });
+  function ringBell() { bell = { t0: performance.now() / 1000 }; }
+  function pushDecor(objs, ts, t) {
+    for (const id of Object.keys(DECOR_SPOTS)) {
+      const n = decorShown(id); if (!n || DECOR_FLAT[id]) continue;
+      const sp = decorSprite(id, t);
+      for (const [x, y] of DECOR_SPOTS[id].slice(0, n)) {
+        const L = Math.round(x - sp.width / 2), Tp = y - sp.height;
+        const sh = { dc07: [x + 1, y - 1, 15, 4], dc14: [x, y - 1, Math.max(4, sp.width * .35), 2.5], dc03: null, dc09: null, dc11: [x, y - 1, 4, 1.2], dc13: null }[id];
+        objs.push({ y, shadow: sh === undefined ? [x, y - 1, Math.max(3, sp.width * .4), 1.6] : sh, draw: c => {
+          if (id === 'dc14' && treeStage(t) === 4) {                         // 完成形：ほのかな金色の光
+            const cx = x, cy = Tp + sp.height * .4, r = sp.width * .75 + Math.sin(ts * 1.3) * 1.5, g = c.createRadialGradient(cx, cy, 0, cx, cy, r);
+            g.addColorStop(0, 'rgba(255,236,150,.35)'); g.addColorStop(1, 'rgba(255,236,150,0)');
+            c.fillStyle = g; c.fillRect(cx - r, cy - r, r * 2, r * 2);
+          }
+          c.drawImage(sp, L, Tp);
+          if (id === 'dc03') for (let k = 0; k < 6; k++) {                     // 噴水の水しぶき
+            const ph = (ts * 1.4 + k / 6) % 1, dir = k % 2 ? 1 : -1, xx = Math.round(x + dir * (1 + ph * 7)), yy = Math.round(Tp + 3 + ph * ph * 12 - ph * 3);
+            px(c, xx, yy, k % 3 ? '#a9cfe0' : '#f8f4ea');
+          }
+          if (id === 'dc14' && treeStage(t) === 4) for (let k = 0; k < 5; k++) {   // 完成形：きらめき
+            const r = hash2(k, 1, 33), ph = r() * 6.28; if (Math.sin(ts * 2.5 + ph) < .6) continue;
+            const sx = L + 4 + Math.floor(r() * (sp.width - 8)), sy = Tp + 2 + Math.floor(r() * (sp.height * .6));
+            px(c, sx - 1, sy, '#fff6c8', 3, 1); px(c, sx, sy - 1, '#fff6c8', 1, 3);
+          }
+        } });
+      }
+    }
+    if (decorShown('dc08')) {                                         // 時計塔の屋根の金の鐘
+      const B = bellPos(), el = bell ? ts - bell.t0 : 99, ang = el < 4 ? .55 * Math.sin(el * 9) * Math.exp(-el * .9) : 0;
+      objs.push({ y: LAYOUT.tower.y + .01, draw: c => {
+        c.drawImage(SPR.d_bellYoke, B.x - 6, B.y - 1);
+        c.save(); c.translate(B.x, B.y); c.rotate(ang); c.drawImage(SPR.d_bell, -5, 0); c.restore();
+        if (el < 3) for (let k = 0; k < 3; k++) {                       // 音符
+          const ph = (el * .8 + k / 3) % 1, xx = Math.round(B.x + (k - 1) * 9 + Math.sin(el * 3 + k) * 2), yy = Math.round(B.y - 2 - ph * 14);
+          c.globalAlpha = 1 - ph; px(c, xx, yy, '#f0d45a', 2, 2); px(c, xx + 1, yy - 4, '#f0d45a', 1, 4); px(c, xx + 2, yy - 4, '#f0d45a', 1, 1); c.globalAlpha = 1;
+        }
+      } });
+      if (bell && el < 6) FOLK_PATH.forEach(([[sx, sy], [tx, ty]], k) => {   // 町の人が集まる（約6秒）
+        const u = Math.min(1, Math.max(0, (el - k * .25) / 2.2)), x = Math.round(sx + (tx - sx) * u), y = Math.round(sy + (ty - sy) * u);
+        const hop = u >= 1 ? Math.round(Math.abs(Math.sin(el * 6 + k)) * 2) : (Math.floor(el * 8) % 2), a = el > 5 ? 6 - el : 1, sp = SPR['d_folk' + k];
+        objs.push({ y, shadow: [x, y - 1, 3, 1], draw: c => { c.globalAlpha = a; c.drawImage(sp, x - 2, y - sp.height - hop); c.globalAlpha = 1; } });
+      });
+      if (bell && el >= 6) bell = null;
+    }
+  }
+  function drawFlatDecor(c, t) {                                     // 地面に描く飾り（石の小道）
+    for (const id of Object.keys(DECOR_FLAT)) { const n = decorShown(id), sp = decorSprite(id, t);
+      for (const [x, y] of DECOR_SPOTS[id].slice(0, n)) c.drawImage(sp, Math.round(x - sp.width / 2), y - sp.height); }
+  }
+  function drawLampLight(c, ts, t) {                                  // 街灯の灯り（夜だけ）
+    if (!lampOn(t)) return;
+    c.globalCompositeOperation = 'lighter';
+    for (const [x, y] of DECOR_SPOTS.dc05.slice(0, decorShown('dc05'))) {
+      const cx = x, cy = y - 18, r = 22 + Math.sin(ts * 2 + x) * 1.5, g = c.createRadialGradient(cx, cy, 0, cx, cy, r);
+      g.addColorStop(0, 'rgba(255,214,130,.55)'); g.addColorStop(.35, 'rgba(255,190,100,.22)'); g.addColorStop(1, 'rgba(255,180,90,0)');
+      c.fillStyle = g; c.fillRect(cx - r, cy - r, r * 2, r * 2);
+    }
+    c.globalCompositeOperation = 'source-over';
+  }
+
   // ---------- 描画 ----------
   let GROUND = null, builtLevel = 0, visStatics = [];
   function rebuildWorld() {            // 町レベルが変わったとき：地面・柵・見える物（木・家・屋台）を作り直す
@@ -2634,7 +2891,7 @@
     layoutGround(lv);
     GROUND = bakeGround(lv);
     fenceObjs = buildFence(lv);
-    visStatics = statics.filter(o => (o.minLv || 1) <= lv && (o.fx === undefined || (o.fx >= B.x0 - 4 && o.fx <= B.x1 + 4 && o.fy >= B.y0 + 8 && o.fy <= B.y1 + 4)));
+    visStatics = statics.filter(o => (o.minLv || 1) <= lv && (o.fx === undefined || (o.fx >= B.x0 - 4 && o.fx <= B.x1 + 4 && o.fy >= B.y0 + 8 && o.fy <= B.y1 + 4)) && !(o.nat && decorBlocks(o)));
     builtLevel = lv;
   }
   rebuildWorld();
@@ -2667,10 +2924,12 @@
     ctx.fillStyle = '#2f4a2c'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     setWorldTransform();
     ctx.drawImage(GROUND.cv, GROUND.x, GROUND.y);
+    drawFlatDecor(ctx, t);
 
     // 区画の土
     const objs = visStatics.concat(fenceObjs);
     pushFacilities(objs, t);
+    pushDecor(objs, ts, t);
     state.plots.forEach((p, i) => {
       if (i >= AP) return;
       const R = plotRect(i), st = stageOf(p, t);
@@ -2759,6 +3018,7 @@
         }
       }
     });
+    drawLampLight(ctx, ts, t);
     // 花びら
     for (const p of particles) if (p.kind === 'petal') {
       const flip = Math.sin(ts * 3 + p.ph) > 0;
@@ -2920,6 +3180,7 @@
   function renderOrders() {
     const list = $('orderList'); list.innerHTML = '';
     const B = state.buffs, P = peddlerOrder();
+    list.insertAdjacentHTML('beforeend', '<div class="onote charm" id="orderCharm">' + charmText() + '</div>');
     if (B.boost > 0) list.insertAdjacentHTML('beforeend', '<div class="onote boost">注文ブースト券 予約中 ×' + B.boost + '：次の納品の町経験値 +50%</div>');
     if (P) {                                               // 行商人の特別注文（今日だけ）
       const have = state.storage[P.crop], r = peddlerReward(P), short = P.qty - have;
@@ -3262,6 +3523,20 @@
     if (high) sparkle(body.querySelector('.gcard.r-SR, .gcard.r-UR') || body);
   }
 
+  // 飾りのアイコン：個別のスプライトを正方形に収める（世界樹は今の成長段階、季節物は今の季節）
+  const decorIconCache = {};
+  function decorIconURL(id) {
+    const sp = decorSprite(id, now()) || SPR.d_bell, key = id + ':' + sp.width + 'x' + sp.height + ':' + (id === 'dc06' || id === 'dc13' ? seasonNow() : '');
+    if (!decorIconCache[key]) {
+      const S = Math.max(sp.width, sp.height) + 2, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
+      cv.getContext('2d').drawImage(id === 'dc08' ? SPR.d_bell : sp, Math.round((S - sp.width) / 2), S - 1 - sp.height);
+      decorIconCache[key] = cv.toDataURL();
+    }
+    return decorIconCache[key];
+  }
+  const charmText = () => { const pt = charmPoints(), b = charmBonus(pt), nx = CHARM_TIERS.slice().reverse().find(([lo]) => pt < lo);
+    return '町の魅力 <b>' + pt + '</b>点　注文の町経験値 <b>+' + b + '%</b>' + (nx ? '<small>（あと' + (nx[0] - pt) + '点で+' + nx[1] + '%）</small>' : '<small>（最大）</small>'); };
+
   // ---------- 図鑑 ----------
   let dexCat = 'seed';
   const dexOpen = () => $('dexPanel').style.display === 'flex';
@@ -3278,12 +3553,13 @@
       tabs.appendChild(b);
     }
     body.appendChild(tabs);
+    if (dexCat === 'decor') body.insertAdjacentHTML('beforeend', '<div class="charm" id="dexCharm">' + charmText() + '</div>');
     const grid = document.createElement('div'); grid.className = 'dexgrid';
     for (const it of GA.ITEMS.filter(i => i.cat === dexCat)) {
       const got = !!g.dex[it.id], card = document.createElement('div');
       card.className = 'dexcard r-' + it.r + (got ? '' : ' unk'); card.dataset.id = it.id;
       const cnt = it.cat === 'decor' || it.cat === 'cons' ? '<div class="dc">所持 ×' + ownedCount(it.id) + '</div>' : (it.cat === 'seed' || it.cat === 'helper') ? '<div class="dc">解放済み</div>' : '';
-      card.innerHTML = '<img class="px" src="' + iconURL(CAT_ICON[it.cat]) + '" alt="">' +
+      card.innerHTML = '<img class="px' + (it.cat === 'decor' ? ' dico' : '') + '" src="' + (it.cat === 'decor' ? decorIconURL(it.id) : iconURL(CAT_ICON[it.cat])) + '" alt="">' +
         '<div class="dinfo"><span class="rtag ' + it.r + '">' + GA.RARITY_LABEL[it.r] + '</span> <span class="dn">' + (got ? it.name : '？？？') + '</span>' +
         (got ? '<div class="df">' + it.fx + '</div>' + cnt : '') + '</div>';
       if (got && CONS_USE[it.id]) {
@@ -3431,6 +3707,11 @@
     }
     return null;
   }
+  function hitBell(sx, sy) {         // 金の鐘（持っているときだけ。時計塔のタップより優先）
+    if (!decorShown('dc08')) return false;
+    const w = toWorld(sx, sy), B = bellPos();
+    return Math.abs(w.x - B.x) <= 9 && w.y >= B.y - 8 && w.y <= B.y + 13;
+  }
   function hitBoard(sx, sy) { const w = toWorld(sx, sy); return w.x >= BOARD.x && w.x < BOARD.x + BOARD.w && w.y >= BOARD.y && w.y < BOARD.y + BOARD.h; }
   function startPinch() {
     mode = null; gesture = 'pinch';
@@ -3448,7 +3729,7 @@
     if (ptrs.size === 2) { startPinch(); return; }
     if (ptrs.size > 2) return;
     const i = plotAt(e.clientX, e.clientY);
-    if (i < 0) { startPan(e.clientX, e.clientY, hitBoard(e.clientX, e.clientY) ? 'board' : (hitFac(e.clientX, e.clientY) ? 'fac:' + hitFac(e.clientX, e.clientY) : hitTower(e.clientX, e.clientY) ? 'tower' : false)); return; }   // 区画の外 → カメラ（掲示板の上のタップは注文パネル）
+    if (i < 0) { startPan(e.clientX, e.clientY, hitBoard(e.clientX, e.clientY) ? 'board' : hitBell(e.clientX, e.clientY) ? 'bell' : (hitFac(e.clientX, e.clientY) ? 'fac:' + hitFac(e.clientX, e.clientY) : hitTower(e.clientX, e.clientY) ? 'tower' : false)); return; }   // 区画の外 → カメラ（掲示板の上のタップは注文パネル）
     gesture = 'farm';                                         // 区画の上 → なぞり優先（カメラは動かさない）
     touched = new Set();
     const p = state.plots[i];
@@ -3476,7 +3757,7 @@
     if (ptrs.size === 0) {
       const tapped = e.type === 'pointerup' && gesture === 'pan' && pan && pan.tap && pan.moved < 8 ? pan.tap : null;
       gesture = null; mode = null; touched = new Set(); canvas.classList.remove('grabbing');
-      if (tapped === 'board') openOrders(); else if (tapped === 'tower') openDrill(); else if (tapped && tapped.startsWith('fac:')) openFac(tapped.slice(4));
+      if (tapped === 'board') openOrders(); else if (tapped === 'bell') ringBell(); else if (tapped === 'tower') openDrill(); else if (tapped && tapped.startsWith('fac:')) openFac(tapped.slice(4));
     }
     else if (gesture === 'pinch' && ptrs.size === 1) { const [q] = ptrs.values(); startPan(q.x, q.y); }
   };
@@ -3509,6 +3790,9 @@
     timers: () => timers().map(x => ({ id: x.id, remaining: x.ready - now(), dur: origDur(x) })),
     viewport: () => { const b = curBounds(); return { w: VW, h: VH, mapX0: b.x0, mapY0: b.y0, mapW: b.x1, mapH: b.y1, zoomMin: zoomMin() }; },
     camera: () => ({ x: cam.x, y: cam.y, zoom: cam.zoom }),
+    decorInfo: () => ({ shown: Object.fromEntries(Object.keys(DECOR_SPOTS).concat('dc08').map(id => [id, decorShown(id)])), charm: charmPoints(), bonus: charmBonus(),
+      treeDays: treeDays(), treeStage: treeStage(), season: seasonNow(), lampOn: lampOn(), bell: !!bell, bellPos: toScreen(bellPos().x, bellPos().y + 4),
+      spots: DECOR_SPOTS, treesHidden: statics.filter(o => o.nat && decorBlocks(o)).length }),
     spriteSizes: () => Object.fromEntries(Object.entries(SPR).map(([k, v]) => [k, [v.width, v.height]])),
   };
 

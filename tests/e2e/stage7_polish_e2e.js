@@ -31,8 +31,9 @@ await fresh();
   v12.gacha.items.sd01=1;v12.gacha.dex.sd01=1;v12.gacha.firstUsed=true;v12.gacha.pity={r:3,sr:12,ur:40};v12.gacha.total=55;v12.tutorial={done:true,step:10,sets:3,mark:2,flags:{d1:true,pull:true},tickets:1,granted:true};
   v12.trade.stock={sd02:2};v12.buildings.mill={startedAt:Date.now()-5e6,builtAt:Date.now()-4e6,job:null};
   await load(v12);const s=await st();const bk=await pg.evaluate(()=>localStorage.getItem('clockseed.save.v12.backup'));
-  const keep=k=>JSON.stringify(s[k])===JSON.stringify(v12[k]);
-  ok(s.saveVersion===13,'[移行] saveVersion 12 → 13',s.saveVersion);
+  const strip=b=>JSON.parse(JSON.stringify(b,(k,v)=>k==='lv'&&v===1?undefined:v));   // 段階8a：施設に進化Lv1（lv:1）が付く
+  const keep=k=>JSON.stringify(k==='buildings'?strip(s[k]):s[k])===JSON.stringify(v12[k]);
+  ok(s.saveVersion>=13,'[移行] saveVersion 12 → 13 以上（段階8aで14）',s.saveVersion);
   ok(s.settings&&s.settings.bgm===true&&s.settings.se===true,'[移行] 音の設定は BGM・効果音ともオン',JSON.stringify(s.settings));
   ok(['gold','townExp','storage','gacha','tutorial','trade','buildings','plots'].every(keep)&&s.drill.shards===77&&s.drill.stock===3600,'[移行] ゴールド・経験値・倉庫・ガチャ（天井）・チュートリアル・交換・施設・畑・ドリルはそのまま',['gold','townExp','storage','gacha','tutorial','trade','buildings','plots'].filter(k=>!keep(k)).map(k=>k+' '+JSON.stringify(v12[k]).slice(0,300)+' => '+JSON.stringify(s[k]).slice(0,300)).join(' | '));
   ok(!!bk&&JSON.parse(bk).saveVersion===12,'[移行] 元のセーブを clockseed.save.v12.backup に退避');
@@ -119,9 +120,9 @@ for(const lv of [2,3,4]){const s=done(clone(FRESH));s.townExp=LV[lv-1];await loa
   const m=await pg.evaluate(()=>{const e=document.querySelector('.fx-maru');if(!e)return null;const r=e.getBoundingClientRect();return {cx:r.left+r.width/2,cy:r.top+r.height/2,w:r.width};});
   ok(m&&Math.abs(m.cx-590)<4&&Math.abs(m.cy-410)<4&&m.w>150,'[〇] 正解：大きな〇が画面の中央に',JSON.stringify(m));
   await pg.screenshot({path:O+'54_drill_maru.png'});await pg.waitForTimeout(600);ok(!await pg.$('.fx-maru'),'[〇] 約0.6秒で消える');
-  await pg.waitForTimeout(400);k=await H('drillAnswerIndex');await pg.locator('.choice').nth((k+1)%4).click();await pg.waitForTimeout(80);
-  ok(!!await pg.$('.fx-batsu')&&await pg.$eval('#drillPanel .box',e=>e.classList.contains('shake')),'[✕] 不正解：小さな✕と、パネルが軽く揺れる');
-  const bx=await pg.evaluate(()=>{const r=document.querySelector('.fx-batsu').getBoundingClientRect();return r.width;});ok(bx<120,'[✕] ✕は小さめ（幅'+Math.round(bx)+'px）');
+  await pg.waitForFunction(()=>document.querySelector('.choice:not([disabled])'),null,{timeout:10000});k=await H('drillAnswerIndex');await pg.locator('.choice').nth((k+1)%4).click();await pg.waitForTimeout(80);
+  const bt=await pg.evaluate(()=>{const e=document.querySelector('.fx-batsu');return {ok:!!e,w:e?e.getBoundingClientRect().width:0,shake:document.querySelector('#drillPanel .box').classList.contains('shake')};});
+  ok(bt.ok&&bt.shake,'[✕] 不正解：小さな✕と、パネルが軽く揺れる');const bx=bt.w;ok(bx>0&&bx<120,'[✕] ✕は小さめ（幅'+Math.round(bx)+'px）');
   await pg.screenshot({path:O+'55_drill_batsu.png'});
   await pg.locator('#dqFb button',{hasText:'つぎへ'}).click();await pg.waitForTimeout(200);
   for(let q=2;q<5;q++){k=await H('drillAnswerIndex');await pg.locator('.choice').nth(k).click();await pg.waitForTimeout(1100);}
@@ -145,7 +146,9 @@ for(const lv of [2,5]){const s=done(clone(FRESH));s.townExp=LV[lv-1];for(const [
   const v=r.v,x0=w*.2,x1=w*.8,y0=r.cv.top+r.cv.h*.2,y1=r.cv.bottom-r.cv.h*.2;
   const drag=async(sx,sy,ex,ey)=>{await p2.mouse.move(sx,sy);await p2.mouse.down();for(let k=1;k<=6;k++)await p2.mouse.move(sx+(ex-sx)*k/6,sy+(ey-sy)*k/6);await p2.mouse.up();await p2.waitForTimeout(60);};
   await p2.evaluate(()=>{const C=window.__clockseed;C.lookAt(C.camera().x,C.camera().y,C.viewport().zoomMin);});
-  const pushTo=async(x,y)=>{await p2.evaluate(([x,y])=>window.__clockseed.lookAt(x,y,window.__clockseed.viewport().zoomMin),[x,y]);await p2.mouse.move(w/2,(r.cv.top+r.cv.bottom)/2);await p2.mouse.wheel(0,0.001);await p2.waitForTimeout(80);};   // カメラを地図の外へ押しやり、ホイール（ズームほぼ0）で本物のカメラ制限をかける
+  // 段階8a：最小ズームは「町全体が帯に収まる」倍率になった。ここでは町が帯を埋める倍率（その時点の地図の見かけの大きさから計算）で端を確かめる
+  const cover=await p2.evaluate(([w,top,bot])=>{const C=window.__clockseed,b=C.mapInfo().bounds,z=C.viewport().zoomMin;C.lookAt((b.x0+b.x1)/2,(b.y0+b.y1)/2,z);const a=C.worldToScreen(b.x0,b.y0),c=C.worldToScreen(b.x1,b.y1);return z*Math.max(w/(c.x-a.x),(bot-top)/(c.y-a.y));},[w,r.cv.top,r.cv.bottom]);
+  const pushTo=async(x,y)=>{await p2.evaluate(([x,y,z])=>window.__clockseed.lookAt(x,y,z),[x,y,cover*1.0001]);await p2.mouse.move(w/2,(r.cv.top+r.cv.bottom)/2);await p2.mouse.wheel(0,0.001);await p2.waitForTimeout(80);};   // カメラを地図の外へ押しやり、ホイール（ズームほぼ0）で本物のカメラ制限をかける
   await pushTo(-1e4,-1e4);const tl=await p2.evaluate(()=>{const C=window.__clockseed,b=C.mapInfo().bounds;return C.worldToScreen(b.x0,b.y0);});
   await pushTo(1e4,1e4);const br=await p2.evaluate(()=>{const C=window.__clockseed,b=C.mapInfo().bounds;return C.worldToScreen(b.x1,b.y1);});
   const fit=Math.abs(r.cv.top-r.tb.bottom)<1.5&&Math.abs(r.cv.bottom-r.bb.top)<1.5&&Math.abs(r.bb.bottom-h)<1&&r.tb.top===0&&Math.abs(v.h-r.cv.h)<1.5;

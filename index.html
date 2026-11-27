@@ -212,7 +212,20 @@
   .tp-done.ok{background:#1f5a3a;border:2px solid #43c97b}.tp-done.ng{background:#5a2a2a;border:2px solid #e66}.tp-done b{font-size:22px}.tp-done small{font-size:13px;opacity:.9}
   .tp-foot{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:13px;opacity:.9;margin-top:auto}.tp-foot img{width:16px;height:16px;vertical-align:-3px}
   .spbtns .tp-entry{background:#e0f5ea}.spbtns .tp-entry b{font-size:13px;line-height:1.25}
-  .spbtns .fxf-entry{background:#e8e4ff}.spbtns .fxf-entry b{font-size:12px;line-height:1.25}
+  .spbtns .fxf-entry{background:#e8e4ff}
+  #tradeHud{padding:6px 10px;font-size:13px}#tradeHud.locked{opacity:.6;font-size:11px}
+  .tradebox{max-width:720px;width:calc(100% - 32px)}
+  .tsec{border-top:2px dashed #d8c39a;padding:8px 2px 10px}.tsec:first-of-type{border-top:0}
+  .tsec h3{margin:2px 0 4px;font-size:16px}.tnote{font-size:12px;color:var(--ink-soft);margin:2px 0 6px}
+  .trow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .trow input{flex:1;min-width:220px;font-size:15px;padding:7px 9px;border:2px solid #b8946a;border-radius:6px;font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;background:#fffaf0}
+  .trow .tool{font-size:14px;padding:6px 12px}
+  .tseeds{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}.tseed{font-size:12px;padding:3px 8px 3px 4px;gap:4px}.tseed img{width:22px;height:22px}
+  .tmsg{font-size:13px;min-height:18px;margin-top:4px}.tmsg.ng{color:#b0402a}.tmsg.ok{color:#2f7d32;font-weight:bold}
+  #visitBar{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:12px;align-items:center;padding:8px 10px 8px 16px;font-weight:bold;font-size:15px;background:#fff6e0}
+  #visitBar small{font-weight:normal;font-size:12px;margin-left:6px;color:var(--ink-soft)}#visitBar .tool{font-size:15px;padding:6px 14px;white-space:nowrap}
+  body.visiting #gold,body.visiting #warehouse,body.visiting #palette,body.visiting #variantBar,body.visiting #subHud,body.visiting #title{display:none!important}
+  body.visiting #topbar{justify-content:flex-start}.spbtns .fxf-entry b{font-size:12px;line-height:1.25}
   .roletag{font-size:12px;padding:1px 7px;margin-left:6px;border-radius:3px;color:#fff}
   .roletag.review{background:#3f86bd}.roletag.challenge{background:#c0702a}.roletag.special{background:#7c62d8}
   .spbox{margin:10px 4px 4px;padding:8px 10px;border:2px dashed #b89a6a;background:#fbf2dc}
@@ -326,6 +339,7 @@
     <button id="dexHud" class="pix" title="図鑑（変種の種・町の飾り・お手伝い・消耗品）">
       <span><img class="px" data-icon="ic_book" alt="図鑑">図鑑 <span id="dexHudNum">0/50</span></span>
     </button>
+    <button id="tradeHud" class="pix" title="交換掲示板（町のコード・変種のギフト）"><span id="tradeHudText">交換掲示板</span></button>
   </div>
 </div>
 <div id="fxfPanel" class="fxf" style="display:none"><div class="fxf-top"><span class="fxf-title">FACTOR×FACTOR ソロ・イージー<small>（移植版）</small></span><button class="fxf-x" id="fxfClose" aria-label="閉じる">×</button></div><div id="fxfBody" class="fxf-body"></div></div>
@@ -336,6 +350,11 @@
   <div id="popupVarWrap" style="display:none"><div class="vlabel">変種（ガチャで解放した種）</div><div class="row" id="popupVar"></div></div>
   <button class="cancel" id="popupCancel">やめる</button>
 </div></div>
+<div id="tradePanel" class="overlay"><div class="box pix tradebox">
+  <div class="panelhd"><b>交換掲示板</b><button id="tradeClose" aria-label="閉じる">×</button></div>
+  <div id="tradeBody"></div>
+</div></div>
+<div id="visitBar" class="pix" style="display:none"><span id="visitText"></span><button class="tool pix act" id="visitEnd">見学を終わる</button></div>
 <div id="ordersPanel" class="overlay"><div class="box pix">
   <div class="panelhd"><b>注文掲示板</b><button id="ordersClose" aria-label="閉じる">×</button></div>
   <div id="orderList"></div>
@@ -1545,12 +1564,89 @@
     SOURCE: 'asumax1128/tenpuzzle@36808e0b7601c835e0fc195551ce3ab1734d1875' };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
+<script id="trade-codec">
+/* ===================================================================
+   ときの種：交換掲示板のコード（町のコード TOKI-TOWN- ／ ギフトコード TOKI-SEED-）
+   - 文字列の変換だけを行う純粋な関数（サーバー・通信なし）。window.ClockseedCode を公開するだけ。
+   - 本体は 0-9A-Z の36進の文字列。最後の2文字はチェック用（種類ごとに違う値を混ぜる）。
+     1文字の書き間違い・隣どうしの入れ替え・町とギフトの取り違えは必ず検出する。
+   - 読みやすいように4文字ごとに「-」で区切る。入力は小文字・空白・区切りの有無を問わない。
+   町のコード（版1）：版・町Lv（1〜8）・世界樹の段階（0〜4、なし＝0）・飾り14種の個数（各0〜35、それ以上は35）
+   ギフトコード（版1）：版・変種の番号（0〜15＝sd01〜sd16）・ギフトID（8文字）・発行したセーブのID（6文字）
+   =================================================================== */
+(function (root) {
+  'use strict';
+  const A = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', P = 1291;              // P：チェック用の素数（36² 未満）
+  const KIND = { TOWN: { prefix: 'TOKI-TOWN-', salt: 7, len: 17 }, SEED: { prefix: 'TOKI-SEED-', salt: 13, len: 16 } };
+  const val = c => A.indexOf(c);
+  function check(body, salt) {                                          // 位置の重み（1〜）×値 の和
+    let s = salt * 31;
+    for (let i = 0; i < body.length; i++) s += (i + 1) * (val(body[i]) + 1);
+    s %= P; return A[Math.floor(s / 36)] + A[s % 36];
+  }
+  const group = s => s.match(/.{1,4}/g).join('-');
+  function wrap(kind, body) { const K = KIND[kind]; return K.prefix + group(body + check(body, K.salt)); }
+  // 入力を正規化して種類を見分け、チェックを確かめる
+  function unwrap(kind, text) {
+    const t = String(text == null ? '' : text).toUpperCase().replace(/[\s　\-ー－―‐]/g, '');   // 空白と区切りは無視
+    if (!t) return { ok: false, error: 'empty' };
+    const bare = k => KIND[k].prefix.replace(/-/g, '');
+    const other = Object.keys(KIND).find(k => k !== kind && t.startsWith(bare(k)));
+    if (other) return { ok: false, error: 'kind', kind: other };
+    const K = KIND[kind];
+    if (!t.startsWith(bare(kind))) return { ok: false, error: 'prefix' };
+    const raw = t.slice(bare(kind).length);
+    if (!/^[0-9A-Z]*$/.test(raw)) return { ok: false, error: 'chars' };
+    if (raw.length !== K.len + 2) return { ok: false, error: 'length' };
+    const body = raw.slice(0, K.len);
+    if (check(body, K.salt) !== raw.slice(K.len)) return { ok: false, error: 'check' };
+    return { ok: true, body };
+  }
+  // ---- 町のコード ----
+  const DECOR = ['dc01', 'dc02', 'dc03', 'dc04', 'dc05', 'dc06', 'dc07', 'dc08', 'dc09', 'dc10', 'dc11', 'dc12', 'dc13', 'dc14'];
+  function encodeTown(t) {
+    const lv = Math.max(1, Math.min(8, t.lv | 0)), tree = Math.max(0, Math.min(4, t.tree | 0));
+    const body = '1' + A[lv] + A[tree] + DECOR.map(id => A[Math.max(0, Math.min(35, (t.decor && t.decor[id]) | 0))]).join('');
+    return wrap('TOWN', body);
+  }
+  function decodeTown(text) {
+    const u = unwrap('TOWN', text); if (!u.ok) return u;
+    const b = u.body;
+    if (b[0] !== '1') return { ok: false, error: 'version', version: b[0] };
+    const lv = val(b[1]), tree = val(b[2]);
+    if (lv < 1 || lv > 8 || tree < 0 || tree > 4) return { ok: false, error: 'range' };
+    const decor = {}; DECOR.forEach((id, i) => { decor[id] = val(b[3 + i]); });
+    if (tree > 0 && !decor.dc14) return { ok: false, error: 'range' };              // 世界樹を持っていないのに段階がある
+    return { ok: true, version: 1, lv, tree, decor };
+  }
+  // ---- ギフトコード ----
+  const SEEDS = ['sd01', 'sd02', 'sd03', 'sd04', 'sd05', 'sd06', 'sd07', 'sd08', 'sd09', 'sd10', 'sd11', 'sd12', 'sd13', 'sd14', 'sd15', 'sd16'];
+  const okId = (s, n) => typeof s === 'string' && s.length === n && /^[0-9A-Z]+$/.test(s);
+  function encodeGift(g) {
+    const i = SEEDS.indexOf(g.seed);
+    if (i < 0 || !okId(g.giftId, 8) || !okId(g.from, 6)) throw new Error('encodeGift: bad input');
+    return wrap('SEED', '1' + A[i] + g.giftId + g.from);
+  }
+  function decodeGift(text) {
+    const u = unwrap('SEED', text); if (!u.ok) return u;
+    const b = u.body;
+    if (b[0] !== '1') return { ok: false, error: 'version', version: b[0] };
+    const i = val(b[1]); if (i < 0 || i >= SEEDS.length) return { ok: false, error: 'range' };
+    return { ok: true, version: 1, seed: SEEDS[i], giftId: b.slice(2, 10), from: b.slice(10, 16) };
+  }
+  const randomId = (n, rng) => Array.from({ length: n }, () => A[Math.floor((rng || Math.random)() * 36)]).join('');
+  const ERROR_TEXT = { empty: 'コードを入力してください', prefix: 'コードの形式が違います（先頭が合いません）', chars: '使えない文字が入っています',
+    length: 'コードの長さが合いません', check: 'コードが壊れています（書き間違いがないか確かめてください）', version: 'このコードの版には対応していません',
+    range: 'コードの中身が正しくありません', kind: '種類の違うコードです' };
+  root.ClockseedCode = { KIND, DECOR, SEEDS, encodeTown, decodeTown, encodeGift, decodeGift, randomId, ERROR_TEXT, check, unwrap };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
 
 <script>
 (() => {
   'use strict';
   const SAVE_KEY = 'clockseed.save';
-  const SAVE_VERSION = 10;
+  const SAVE_VERSION = 11;
   const MAX_PLOTS = 24;                // 区画の最大数（町Lv8で24）
   const ORDER_COUNT = 3;               // 同時に出る注文の数
   const ORDER_MIN = 3, ORDER_MAX = 9;  // 生の作物の注文の個数の範囲
@@ -1714,13 +1810,15 @@
   function freshState() {
     const st = { saveVersion: SAVE_VERSION, plots: Array(MAX_PLOTS).fill(null),
                  storage: {}, gold: 0, townExp: 0, orders: [], orderIds: [], nextOrder: null, buildings: {}, drill: freshDrill(), gacha: window.ClockseedGacha.freshState(),
-                 buffs: freshBuffs(), helpers: freshHelpers(), decor: { treeAt: 0 } };
+                 buffs: freshBuffs(), helpers: freshHelpers(), decor: { treeAt: 0 },
+                 trade: { uid: window.ClockseedCode.randomId(6), stock: {}, received: [] } };
     for (const k of ITEM_KEYS) st.storage[k] = 0;
     for (const k of BUILDING_KEYS) st.buildings[k] = null;
     while (st.orders.length < ORDER_COUNT) { st.orders.push(takeOrder(st, 1)); st.orderIds.push(newOrderId()); }
     return st;
   }
   const nat = n => (Number.isInteger(n) && n >= 0 ? n : 0);
+  const GIFT_KEEP = 50;                                  // 受け取り済みギフトIDは直近50件を保持
   function load() {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
@@ -1769,6 +1867,11 @@
       // 世界樹の苗の初回入手日時（version 8 以前には無い。すでに持っていれば移行した時刻を入手日とする）
       if (d.decor && isFinite(d.decor.treeAt) && d.decor.treeAt > 0) s.decor.treeAt = d.decor.treeAt;
       else if (s.gacha.items.dc14) s.decor.treeAt = Date.now();
+      // 交換掲示板（version 10 以前には無い → 新しい発行元ID・ストック0・受け取り記録なし）
+      const dt = d.trade || {};
+      if (typeof dt.uid === 'string' && /^[0-9A-Z]{6}$/.test(dt.uid)) s.trade.uid = dt.uid;
+      if (dt.stock && typeof dt.stock === 'object') for (const sd of VARIANT_KEYS) { const n = nat(dt.stock[sd]); if (n) s.trade.stock[sd] = Math.min(999, n); }
+      s.trade.received = Array.isArray(dt.received) ? dt.received.filter(x => typeof x === 'string' && /^[0-9A-Z]{8}$/.test(x)).slice(-GIFT_KEEP) : [];
       // 消耗品の予約・お手伝いの記録（version 7 以前には無い → 初期値）
       if (d.buffs) for (const k of Object.keys(s.buffs)) s.buffs[k] = nat(d.buffs[k]);
       const dh = d.helpers || {}, isDay = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -1789,8 +1892,10 @@
       return s;
     } catch (e) { return freshState(); }
   }
+  let visit = null;                                     // 見学モード：{ real：自分の state, data：コードの中身 }
   let state = load();
   function save() {
+    if (visit) return;                                  // 見学中は仮の町なので、自分のセーブには一切書かない
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
   }
 
@@ -1806,10 +1911,14 @@
   const isReady = (p, t) => !!p && t >= p.readyAt;
   const ownsHelper = id => !!(state.gacha && state.gacha.items[id]);
   const variantsOf = crop => VARIANT_KEYS.filter(sd => VARIANTS[sd].crop === crop);
-  const unlockedVariants = crop => variantsOf(crop).filter(sd => state.gacha.items[sd]);
+  const variantStock = sd => (state.trade && state.trade.stock[sd]) || 0;
+  // 植えられる変種：解放済み（無制限）か、ギフトの植え付けストックがあるもの
+  const variantPlantable = sd => !!state.gacha.items[sd] || variantStock(sd) > 0;
+  const unlockedVariants = crop => variantsOf(crop).filter(variantPlantable);
   function plant(i, crop, v) {
     if (i < 0 || i >= activePlots() || state.plots[i] || !CROPS[crop] || CROPS[crop].unlockLv > townLevel()) return false;
-    if (v && !(VARIANTS[v] && VARIANTS[v].crop === crop && state.gacha.items[v])) return false;   // 変種は解放済みのものだけ
+    if (v && !(VARIANTS[v] && VARIANTS[v].crop === crop && variantPlantable(v))) return false;   // 変種は解放済みか、ストックがあるものだけ
+    if (v && !state.gacha.items[v]) { state.trade.stock[v] -= 1; if (!state.trade.stock[v]) delete state.trade.stock[v]; }   // 未解放ならストックを1つ使う
     const t = now();
     let dur = CROPS[crop].growMs / FAST;
     if (plotNearRiver(i, townLevel())) dur = shorten(dur);        // 隣接ルール：川沿いは育成時間10%短縮（植え付け時に readyAt へ反映）
@@ -3888,7 +3997,7 @@
     }
     ctx.globalCompositeOperation = 'source-over';
 
-    helperTick(t);
+    if (!visit) helperTick(t);                         // 見学中はお手伝い（自動の受け取り・通知）も止める
     updateHud();
     tickFac();
     tickSkip();
@@ -3920,7 +4029,7 @@
   function updateHud() {
     const lv = townLevel(), exp = state.townExp, st = state.storage;
     const D = state.drill;
-    const sig = [lv, exp, state.gold, ITEM_KEYS.map(k => st[k] + ':' + itemVisible(k)).join(), D.stock, D.shards, D.tickets, GA.dexCount(state.gacha), JSON.stringify(state.buffs)].join('|');
+    const sig = [lv, exp, state.gold, ITEM_KEYS.map(k => st[k] + ':' + itemVisible(k)).join(), D.stock, D.shards, D.tickets, GA.dexCount(state.gacha), JSON.stringify(state.buffs), !!visit].join('|');
     if (sig === hudSig) return;
     hudSig = sig;
     $('lvText').textContent = '町Lv' + lv;
@@ -3945,6 +4054,8 @@
     varChip.style.display = varVis ? '' : 'none'; varChip.lastChild.textContent = '変種 ' + varSum;
     $('warehouse').classList.toggle('compact', compact);
     $('dexHudNum').textContent = GA.dexCount(state.gacha) + '/' + GA.ITEMS.length;
+    const tOpen = townLevel() >= TRADE_LV; $('tradeHud').disabled = !tOpen; $('tradeHud').classList.toggle('locked', !tOpen);
+    $('tradeHudText').textContent = tOpen ? '交換掲示板' : '交換掲示板（町Lv' + TRADE_LV + 'で解放）';
     $('dhStock').textContent = fmtStock(D.stock); $('dhShards').textContent = D.shards; $('dhTickets').textContent = D.tickets;
   }
   let helperTickAt = 0;
@@ -3983,7 +4094,7 @@
   function variantBtn(sd, onclick, isSel) {
     const it = ITEMS['v_' + sd], b = document.createElement('button');
     b.className = 'tool pix vbtn' + (isSel ? ' sel' : ''); b.dataset.v = sd;
-    b.innerHTML = iconImg('v_' + sd) + '<span>' + it.name + '<small>変種 ' + (CROPS[it.variantOf].growMs / 60000) + '分 / ' + CROPS[it.variantOf].yield + '個</small></span>';
+    b.innerHTML = iconImg('v_' + sd) + '<span>' + it.name + '<small>' + (state.gacha.items[sd] ? '変種' : 'ストック' + variantStock(sd)) + ' ' + (CROPS[it.variantOf].growMs / 60000) + '分 / ' + CROPS[it.variantOf].yield + '個</small></span>';
     b.onclick = onclick; return b;
   }
   function buildPalette() {
@@ -4473,6 +4584,97 @@
     fxf.drag = null;
   }
   $('fxfClose').onclick = closeFxf;
+
+  // ---------- 交換掲示板（町Lv8で解放）：町のコード TOKI-TOWN- と 変種のギフト TOKI-SEED- の文字列交換だけ ----------
+  const CODE = window.ClockseedCode, TRADE_LV = 8, TREE_DAYS = [0, 7, 15, 23, 30];
+  const tradeOpen = () => $('tradePanel').style.display === 'flex';
+  let tradeUi = { townCode: '', giftSeed: null, giftCode: '', visitMsg: '', giftMsg: '', giftMsgKind: '' };
+  const codeError = r => (r.error === 'kind' ? (r.kind === 'SEED' ? 'これはギフトコード（TOKI-SEED-）です。下の「ギフトを受け取る」に入力してください' : 'これは町のコード（TOKI-TOWN-）です。上の「町を見学する」に入力してください') : CODE.ERROR_TEXT[r.error] || 'コードを読めません');
+  // いまの町をコードに：町のLv・飾りの所持（種類と個数）・世界樹の成長段階・形式の版
+  function myTownCode() {
+    const decor = {}; for (const id of CODE.DECOR) decor[id] = state.gacha.items[id] || 0;
+    return CODE.encodeTown({ lv: townLevel(), tree: state.gacha.items.dc14 ? treeStage() : 0, decor });
+  }
+  function copyText(text, inputId) {
+    try { const el = $(inputId); el.focus(); el.select(); } catch (e) {}
+    try { if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {}); else document.execCommand('copy'); } catch (e) {}
+    toast('コードをコピーしました');
+  }
+  function renderTrade() {
+    const body = $('tradeBody'), U = tradeUi, unlocked = VARIANT_KEYS.filter(sd => state.gacha.items[sd]);
+    const stocks = VARIANT_KEYS.filter(sd => variantStock(sd) > 0);
+    body.innerHTML =
+      '<section class="tsec"><h3>町のコードを発行する</h3><p class="tnote">町のLv・飾り（種類と個数）・世界樹の段階が入ります。友だちに渡すと、あなたの町を見学できます。</p>' +
+      '<div class="trow"><button class="tool pix act" id="townIssue">発行する</button><input id="townCode" readonly value="' + U.townCode + '" placeholder="TOKI-TOWN-…"><button class="tool pix" id="townCopy"' + (U.townCode ? '' : ' disabled') + '>コピー</button></div></section>' +
+      '<section class="tsec"><h3>町を見学する</h3><div class="trow"><input id="visitInput" placeholder="TOKI-TOWN- からはじまるコード"><button class="tool pix act" id="visitGo">見学する</button></div>' +
+      '<div class="tmsg ng" id="visitMsg">' + U.visitMsg + '</div></section>' +
+      '<section class="tsec"><h3>変種の種をおくる</h3><p class="tnote">解放した変種から1つえらぶと、1回だけ使えるギフトコードができます（あなたの種は減りません）。</p>' +
+      (unlocked.length ? '<div class="tseeds">' + unlocked.map(sd => '<button class="tool pix tseed' + (U.giftSeed === sd ? ' sel' : '') + '" data-seed="' + sd + '">' + iconImg('v_' + sd) + '<span>' + ITEMS['v_' + sd].name + '</span></button>').join('') + '</div>' +
+        '<div class="trow"><button class="tool pix act" id="giftIssue"' + (U.giftSeed ? '' : ' disabled') + '>ギフトを発行</button><input id="giftCode" readonly value="' + U.giftCode + '" placeholder="TOKI-SEED-…"><button class="tool pix" id="giftCopy"' + (U.giftCode ? '' : ' disabled') + '>コピー</button></div>'
+        : '<div class="tnote">まだ変種の種を解放していません（ガチャで手に入ります）</div>') + '</section>' +
+      '<section class="tsec"><h3>ギフトを受け取る</h3><div class="trow"><input id="giftInput" placeholder="TOKI-SEED- からはじまるコード"><button class="tool pix act" id="giftRecv">受け取る</button></div>' +
+      '<div class="tmsg ' + U.giftMsgKind + '" id="giftMsg">' + U.giftMsg + '</div>' +
+      '<div class="tnote" id="giftStocks">植え付けストック：' + (stocks.length ? stocks.map(sd => ITEMS['v_' + sd].name + ' ×' + variantStock(sd)).join('・') : 'なし') + '</div></section>';
+    $('townIssue').onclick = () => { U.townCode = myTownCode(); renderTrade(); };
+    $('townCopy').onclick = () => copyText(U.townCode, 'townCode');
+    $('visitGo').onclick = () => { const r = CODE.decodeTown($('visitInput').value); if (!r.ok) { U.visitMsg = codeError(r); renderTrade(); return; } U.visitMsg = ''; enterVisit(r); };
+    body.querySelectorAll('[data-seed]').forEach(b => b.onclick = () => { U.giftSeed = b.dataset.seed; U.giftCode = ''; renderTrade(); });
+    const gi = $('giftIssue'); if (gi) gi.onclick = () => { U.giftCode = issueGift(U.giftSeed); renderTrade(); };
+    const gc = $('giftCopy'); if (gc) gc.onclick = () => copyText(U.giftCode, 'giftCode');
+    $('giftRecv').onclick = () => { const r = receiveGift($('giftInput').value); U.giftMsg = r.msg; U.giftMsgKind = r.ok ? 'ok' : 'ng'; renderTrade(); if (r.ok) toast(r.msg); };
+  }
+  // ギフトの発行：変種と使い捨てのギフトID・発行したセーブのIDを入れる（自分のギフトは自分では受け取れない）
+  function issueGift(sd) {
+    if (!state.gacha.items[sd]) return '';
+    return CODE.encodeGift({ seed: sd, giftId: CODE.randomId(8), from: state.trade.uid });
+  }
+  // ギフトの受け取り：未解放なら植え付けストック+1、解放済みならカケラ+10。同じギフトIDは1回だけ
+  function receiveGift(text) {
+    const r = CODE.decodeGift(text);
+    if (!r.ok) return { ok: false, msg: codeError(r) };
+    const T = state.trade;
+    if (r.from === T.uid) return { ok: false, msg: '自分で発行したギフトは受け取れません' };
+    if (T.received.includes(r.giftId)) return { ok: false, msg: 'このギフトはもう受け取っています' };
+    T.received = T.received.concat(r.giftId).slice(-GIFT_KEEP);
+    const name = ITEMS['v_' + r.seed].name;
+    let msg;
+    if (state.gacha.items[r.seed]) { state.drill.shards += 10; msg = name + 'はもう解放済みなので、かわりにカケラ+10を受け取りました'; }
+    else { T.stock[r.seed] = (T.stock[r.seed] || 0) + 1; msg = name + 'の植え付けストックを1つ受け取りました（残り ' + T.stock[r.seed] + '）'; }
+    save(); hudSig = ''; buildPalette();
+    return { ok: true, msg, seed: r.seed };
+  }
+  function openTrade() { if (townLevel() < TRADE_LV || visit) return; renderTrade(); $('tradePanel').style.display = 'flex'; }
+  $('tradeHud').onclick = openTrade;
+  $('tradeClose').onclick = () => { $('tradePanel').style.display = 'none'; };
+
+  // ---------- 見学モード：既存の町の描画をそのまま使い、コードの町（仮の state）を表示する ----------
+  function visitState(d) {
+    const v = freshState(), t = now();
+    v.townExp = TOWN_LV_EXP[d.lv - 1];
+    for (const id of CODE.DECOR) if (d.decor[id]) { v.gacha.items[id] = d.decor[id]; v.gacha.dex[id] = 1; }
+    if (d.decor.dc14) v.decor.treeAt = t - TREE_DAYS[d.tree] * 864e5;
+    for (const k of BUILDING_KEYS) if (BUILDINGS[k].unlockLv <= d.lv) v.buildings[k] = { startedAt: t - 2e6, builtAt: t - 1e6, job: null };   // その町Lvの施設は完成した姿
+    v.orders = []; v.nextOrder = null;
+    return v;
+  }
+  function enterVisit(d) {
+    for (const id of ['tradePanel', 'popup', 'ordersPanel', 'warehousePanel', 'facPanel', 'drillPanel', 'skipPanel', 'dexPanel']) $(id).style.display = 'none';
+    ds = null; selected = null; selectedV = null; mode = null;
+    visit = { real: state, data: d, cam: Object.assign({}, cam) };
+    state = visitState(d);
+    rebuildWorld(); camTarget = null; initialCamera(); hudSig = '';
+    document.body.classList.add('visiting');
+    $('visitText').innerHTML = '見学中：町Lv' + d.lv + '・魅力' + charmPoints() + '点' + (d.decor.dc14 ? '・世界樹 ' + TREE_STAGE_JA[d.tree] : '') + '<small>（さわっても何も変わりません）</small>';
+    $('visitBar').style.display = 'flex';
+  }
+  function exitVisit() {
+    if (!visit) return;
+    state = visit.real; const c = visit.cam; visit = null;
+    rebuildWorld(); camTarget = null; Object.assign(cam, c); clampCam(); hudSig = '';
+    document.body.classList.remove('visiting'); $('visitBar').style.display = 'none';
+    buildPalette(); renderTrade(); $('tradePanel').style.display = 'flex';   // 掲示板に戻る
+  }
+  $('visitEnd').onclick = exitVisit;
   // ---------- テンパズル（移植版）：ドリルメニューから開く全画面のモジュール ----------
   // 町の Canvas・セーブ構造には触らない。報酬だけ drillAnswer('S', 'S5', 正誤) で特殊ドリルと同じに払う（1問ごとにすぐ保存）
   //   解けた → 報酬あり／ギブアップ（答えを見る）→ 報酬なし・連続正解0（問題数には数える）／
@@ -4765,7 +4967,7 @@
   }
   $('skipClose').onclick = () => { $('skipPanel').style.display = 'none'; };
 
-  for (const id of ['popup', 'ordersPanel', 'warehousePanel', 'facPanel', 'drillPanel', 'skipPanel', 'dexPanel']) {
+  for (const id of ['popup', 'ordersPanel', 'warehousePanel', 'facPanel', 'drillPanel', 'skipPanel', 'dexPanel', 'tradePanel']) {
     const el = $(id);
     el.addEventListener('pointerdown', e => { if (e.target === el) { el.style.display = 'none'; if (id === 'popup') popupPlot = -1; if (id === 'drillPanel') ds = null; } });
   }
@@ -4807,7 +5009,10 @@
     if (i < 0 || touched.has(i)) return;
     touched.add(i);
     const p = state.plots[i];
-    if (mode === 'plant' && !p && selected) plant(i, selected, selectedV);
+    if (mode === 'plant' && !p && selected) {
+      const fromStock = selectedV && !state.gacha.items[selectedV];
+      if (plant(i, selected, selectedV) && fromStock) { buildPalette(); if (!selectedV) mode = null; }   // ストックが尽きたら、このなぞりはそこで止める
+    }
     else if (mode === 'harvest' && p) { const r = harvest(i); if (r && r.fx.length) toast(ITEMS[r.key].name + ' ×' + r.n + '（' + r.fx.join('・') + '）'); }
   }
   const ptrs = new Map();
@@ -4849,6 +5054,7 @@
     ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (ptrs.size === 2) { startPinch(); return; }
     if (ptrs.size > 2) return;
+    if (visit) { startPan(e.clientX, e.clientY, false); return; }   // 見学中：町を見回すだけ（植える・収穫・注文・施設・ドリル・鐘は無効）
     const i = plotAt(e.clientX, e.clientY);
     if (i < 0) { startPan(e.clientX, e.clientY, hitBoard(e.clientX, e.clientY) ? 'board' : hitBell(e.clientX, e.clientY) ? 'bell' : (hitFac(e.clientX, e.clientY) ? 'fac:' + hitFac(e.clientX, e.clientY) : hitTower(e.clientX, e.clientY) ? 'tower' : false)); return; }   // 区画の外 → カメラ（掲示板の上のタップは注文パネル）
     gesture = 'farm';                                         // 区画の上 → なぞり優先（カメラは動かさない）
@@ -4912,6 +5118,9 @@
       const pair = []; g.q.tiles.forEach((a, i) => g.q.tiles.forEach((b, j) => { if (i < j && FXF.polyEqual(FXF.multiply(a.factor, b.factor), g.q.poly)) pair.push([a.id, b.id]); }));
       return { stage: fxf.stage, phase: g.phase, hp: g.hp, score: g.score, combo: g.combo, caught: g.caught, misses: g.misses, timeouts: g.timeouts, level: g.q.level, target: g.q.target,
         tiles: g.q.tiles.map(t => ({ id: t.id, label: t.label })), pairs: pair, cleared: g.cleared, clearBonus: g.clearBonus, playMs: g.playMs, earned: Object.assign({}, fxf.earned) }; },
+    trade: () => ({ visiting: !!visit, visit: visit ? visit.data : null, level: townLevel(), uid: state.trade.uid, stock: Object.assign({}, state.trade.stock), received: state.trade.received.slice(),
+      decor: Object.fromEntries(CODE.DECOR.map(id => [id, state.gacha.items[id] || 0])), treeStage: treeStage(), charm: charmPoints(), myCode: myTownCode(),
+      buildings: BUILDING_KEYS.filter(k => state.buildings[k]), plots: activePlots(), houses: visStatics.filter(o => o.house).length }),
     tp: () => (tpz ? { stage: tpz.stage, tier: tpz.tier, mode: tpz.mode, key: tpz.entry && tpz.entry.key, digits: tpz.entry && tpz.entry.digits, example: tpz.entry && tpz.entry.example,
       cards: tpz.board ? tpz.board.cards.map(c => TPZ.fracStr(c.v)) : null, done: tpz.done || null, msg: tpz.msg, earned: Object.assign({}, tpz.earned) } : null),
     fxfTileCenter: id => { const el = document.querySelector('#fxfGrid [data-tile-id="' + id + '"]'); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; },

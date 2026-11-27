@@ -16,6 +16,7 @@ node tests/fxf_engine_test.js            # FACTOR×FACTOR 移植版：出題・�
 node tests/fxf_parity_test.js            # 本家 factorfactor のコードを動かして移植版と突き合わせ（参照 clone があるときだけ）
 node tests/tp_engine_test.js             # テンパズル移植版：独立な総当たりソルバーで出題・ティア、判定、盤面の操作
 node tests/tp_parity_test.js             # 本家 tenpuzzle のコードを動かして移植版と突き合わせ（参照 clone があるときだけ）
+node tests/trade_codec_test.js           # 交換掲示板のコード（TOKI-TOWN- ／ TOKI-SEED-）の往復・壊れたコード・種類違い
 ```
 
 `index.html` の `<script id="drill-engine">` だけを取り出し、DOM のない環境で実行して、
@@ -30,6 +31,7 @@ node tests/e2e/stage56_decor_e2e.js      # 段階5.6：飾りの表示・世界�
 node tests/e2e/stage57_drill_e2e.js      # 段階5.7：ドリルC〜E・特殊ドリルの報酬・セット構成・移行（Playwright）
 node tests/e2e/stage57b_fxf_e2e.js       # 段階5.7b：FACTOR×FACTOR 移植版をマウスとタッチのドラッグで通しで遊ぶ（Playwright）
 node tests/e2e/stage57c_tp_e2e.js        # 段階5.7c：テンパズル移植版をタッチで通しで遊ぶ（Playwright）
+node tests/e2e/stage58_trade_e2e.js      # 段階5.8：交換掲示板（町のコード・見学モード・変種のギフト）（Playwright）
 ```
 
 ## FACTOR×FACTOR ソロ・イージー（移植版）
@@ -43,3 +45,10 @@ node tests/e2e/stage57c_tp_e2e.js        # 段階5.7c：テンパズル移植版
 （commit `36808e0b7601c835e0fc195551ce3ab1734d1875`、index.html＝v1.2）のソロプレイの核（入門・初級・中級の269組・カードの合体・
 操作方法A/B・判定）を移植した（`<script id="tp-engine">`）。`tests/tp_parity_test.js` は clockseed の外の参照用 clone
 （既定 `../asumax1128/tenpuzzle`、`TP_REF` で変更可）のコードを読み取り専用で動かして比べる。
+
+## 交換掲示板（町Lv8で解放）
+サーバーや通信は使わず、コードの文字列を交換するだけ（`<script id="trade-codec">`）。
+- 町のコード `TOKI-TOWN-…`：町のLv・飾り（種類と個数）・世界樹の段階・形式の版。入力すると、その町を見学モードで表示する
+  （既存の町の描画を仮の状態で使う。見学中は操作できず、自分のセーブには一切書き込まない）。
+- ギフトコード `TOKI-SEED-…`：変種の種類・使い捨てのギフトID・発行したセーブのID。受け取ると植え付けストック+1
+  （解放済みの変種ならカケラ+10）。同じギフトは同じセーブで1回だけ。

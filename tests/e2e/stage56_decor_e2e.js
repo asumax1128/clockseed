@@ -67,7 +67,7 @@ log('[charm] 同じ飾りを3つ（種類ごとに1回）',await charmOf({dc01:3
 log('[charm] コモン4つ',await charmOf({dc01:1,dc02:1,dc03:1,dc05:1}),'(4点 +0%)');
 log('[charm] シンボルツリー＋看板＋季節の花壇',await charmOf({dc07:1,dc04:1,dc06:1}),'(8+2+2=12点 +10%)');
 log('[charm] 四季の庭園＋激レア2つ＋レア2つ',await charmOf({dc13:1,dc08:1,dc14:1,dc11:1,dc12:1}),'(4+6+6+2+2=20点 +15%)');
-log('[charm] 全14種',await charmOf(Object.fromEntries(DC.map(k=>[k,1]))),'(6+8+4+8+12=38点 +20%)');
+log('[charm] 全14種',await charmOf(Object.fromEntries(DC.map(k=>[k,1]))),'(6+8+4+8+12=38点 +25%：段階5.7で+25%の下限を36点に変更)');
 log('[charm] 0',await charmOf({cs01:3,sd01:1,hp02:1}),'(飾り以外は数えない 0点 +0%)');
 // 注文経験値：小麦粉（20）＋魅力+10% → 22、ブースト併用 → 33
 for(const [boost,want] of [[0,22],[1,33]]){

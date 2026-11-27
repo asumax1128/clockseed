@@ -15,3 +15,8 @@ node tests/drill_engine_test.js 5000     # 問題数を変える
 
 `index.html` の `<script id="drill-engine">` だけを取り出し、DOM のない環境で実行して、
 正解がちょうど1つ・独立に再計算した答えと一致・選択肢の重複なし・生成値が範囲内、を確認する。
+
+```
+node tests/gacha_engine_test.js          # ガチャ（天井・排出・セーブ検証）
+node tests/e2e/stage55_effects_e2e.js    # 段階5.5：変種・価格修飾・お手伝い・消耗品（Playwright）
+```

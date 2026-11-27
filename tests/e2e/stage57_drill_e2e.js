@@ -65,13 +65,13 @@ await pg.locator('.dacts button',{hasText:'もう一度'}).click();await pg.wait
 const kind=(await info());for(const c of [true,true]){const r=await answer(c);sp.push((c?'○':'×')+'+'+r.sec+'/'+r.sh);}
 s=await st();log('[special S2] 1〜5問目',sp.slice(0,5).join(' '),'| 6・7問目',sp.slice(5).join(' '),'| again kind',kind.kind,kind.set[0].type,'| spCount',s.drill.spCount,'streak',s.drill.streak);
 await pg.locator('#drillClose').click();await openDrill();log('[special menu after]',(await pg.locator('#specialBox .sphead small').innerText()));
-await pg.locator('[data-sp="S1"]').click();await pg.waitForTimeout(150);await pg.screenshot({path:O+'19_special_factor.png'});
-await pg.locator('#drillClose').click();await openDrill();await pg.locator('[data-sp="S3"]').click();await pg.waitForTimeout(150);await pg.screenshot({path:O+'20_special_ten_search.png'});await pg.locator('#drillClose').click();
+// 段階5.7b：選択式の因数分解ドリル（S1）は FACTOR×FACTOR 移植版に置き換えたので、19_special_factor.png は撮り直さない
+await pg.locator('[data-sp="S3"]').click();await pg.waitForTimeout(150);await pg.screenshot({path:O+'20_special_ten_search.png'});await pg.locator('#drillClose').click();
 await pg.clock.setFixedTime(T+86400000);await pg.reload();await pg.waitForTimeout(300);await openDrill();await pg.locator('[data-sp="S3"]').click();await pg.waitForTimeout(150);
 {const r=await answer(true);log('[special next day] first correct +'+r.sec+'/'+r.sh,'(180/5)');}
 await pg.locator('#drillClose').click();await pg.clock.setFixedTime(T);
 // 連続正解10でチケット（特殊ドリルでも同じ）
-await load(base({drill:drill({streak:9,tickets:0})}));await openDrill();await pg.locator('[data-sp="S1"]').click();await pg.waitForTimeout(150);await answer(true);s=await st();
+await load(base({drill:drill({streak:9,tickets:0})}));await openDrill();await pg.locator('[data-sp="S2"]').click();await pg.waitForTimeout(150);await answer(true);s=await st();
 log('[special streak] streak 9→',s.drill.streak,'tickets',s.drill.tickets,'(1)');await pg.locator('#drillClose').click();
 
 // ===== 5. セット構成 =====

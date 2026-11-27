@@ -12,6 +12,8 @@
 node tests/drill_engine_test.js          # 各タイプ1000問＋5問セットの構成（通常3・復習1・挑戦1）
 node tests/drill_engine_test.js 5000     # 問題数を変える
 node tests/drill_mutation_test.js        # 壊しテスト：わざと壊した出題を検査が必ず見つけるか
+node tests/fxf_engine_test.js            # FACTOR×FACTOR 移植版：出題・盤面・判定・1ゲームの流れ
+node tests/fxf_parity_test.js            # 本家 factorfactor のコードを動かして移植版と突き合わせ（参照 clone があるときだけ）
 ```
 
 `index.html` の `<script id="drill-engine">` だけを取り出し、DOM のない環境で実行して、
@@ -24,4 +26,11 @@ node tests/gacha_engine_test.js          # ガチャ（天井・排出・セー�
 node tests/e2e/stage55_effects_e2e.js    # 段階5.5：変種・価格修飾・お手伝い・消耗品（Playwright）
 node tests/e2e/stage56_decor_e2e.js      # 段階5.6：飾りの表示・世界樹・鐘・街灯・季節・魅力（Playwright）
 node tests/e2e/stage57_drill_e2e.js      # 段階5.7：ドリルC〜E・特殊ドリルの報酬・セット構成・移行（Playwright）
+node tests/e2e/stage57b_fxf_e2e.js       # 段階5.7b：FACTOR×FACTOR 移植版をマウスとタッチのドラッグで通しで遊ぶ（Playwright）
 ```
+
+## FACTOR×FACTOR ソロ・イージー（移植版）
+時計塔のドリル →「特殊ドリル」から開く全画面のモジュール。本家 [asumax1128/factorfactor](https://github.com/asumax1128/factorfactor)
+（commit `2af9777f6188f70817e25a69ea9a25df1212c848`）のソロ・イージーだけを移植した（`<script id="fxf-engine">`）。
+`tests/fxf_parity_test.js` は、clockseed の外に置いた参照用 clone（既定 `../asumax1128/factorfactor`、`FXF_REF` で変更可）の
+コードを読み取り専用で動かして比べる。clone は clockseed にコミットしない。

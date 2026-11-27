@@ -56,24 +56,7 @@ for(const L of ['C','D','E']){
   log('[reward '+L+'] button',lab,'| correct +'+r1.sec+'秒 カケラ+'+r1.sh,'| wrong +'+r2.sec+'/'+r2.sh,'| correct +'+r3.sec+'/'+r3.sh);
   await pg.locator('#drillClose').click();
 }
-// ===== 4. 特殊ドリル：5問目までと6問目以降 =====
-await load(base({drill:drill({stock:0,shards:0,streak:0})}));await openDrill();
-log('[special menu]',(await pg.locator('#specialBox .sphead').innerText()).replace(/\s+/g,' '));
-await pg.locator('[data-sp="S2"]').click();await pg.waitForTimeout(200);await pg.screenshot({path:O+'18_special_tenpuzzle.png'});
-const sp=[];for(const c of [true,true,false,true,true]){const r=await answer(c);sp.push((c?'○':'×')+'+'+r.sec+'/'+r.sh);}
-await pg.locator('.dacts button',{hasText:'もう一度'}).click();await pg.waitForTimeout(150);
-const kind=(await info());for(const c of [true,true]){const r=await answer(c);sp.push((c?'○':'×')+'+'+r.sec+'/'+r.sh);}
-s=await st();log('[special S2] 1〜5問目',sp.slice(0,5).join(' '),'| 6・7問目',sp.slice(5).join(' '),'| again kind',kind.kind,kind.set[0].type,'| spCount',s.drill.spCount,'streak',s.drill.streak);
-await pg.locator('#drillClose').click();await openDrill();log('[special menu after]',(await pg.locator('#specialBox .sphead small').innerText()));
-// 段階5.7b：選択式の因数分解ドリル（S1）は FACTOR×FACTOR 移植版に置き換えたので、19_special_factor.png は撮り直さない
-await pg.locator('[data-sp="S3"]').click();await pg.waitForTimeout(150);await pg.screenshot({path:O+'20_special_ten_search.png'});await pg.locator('#drillClose').click();
-await pg.clock.setFixedTime(T+86400000);await pg.reload();await pg.waitForTimeout(300);await openDrill();await pg.locator('[data-sp="S3"]').click();await pg.waitForTimeout(150);
-{const r=await answer(true);log('[special next day] first correct +'+r.sec+'/'+r.sh,'(180/5)');}
-await pg.locator('#drillClose').click();await pg.clock.setFixedTime(T);
-// 連続正解10でチケット（特殊ドリルでも同じ）
-await load(base({drill:drill({streak:9,tickets:0})}));await openDrill();await pg.locator('[data-sp="S2"]').click();await pg.waitForTimeout(150);await answer(true);s=await st();
-log('[special streak] streak 9→',s.drill.streak,'tickets',s.drill.tickets,'(1)');await pg.locator('#drillClose').click();
-
+// ===== 4. 特殊ドリル：段階5.7b・5.7c で選択式（S1〜S3）を移植版に置き換えたので、報酬の確認は tests/e2e/stage57b_fxf_e2e.js・stage57c_tp_e2e.js で行う =====
 // ===== 5. セット構成 =====
 await load(base({drill:drill({stats:{C3:{ok:1,n:5},C6:{ok:2,n:3},C1:{ok:4,n:4}}})}));await openDrill();await pg.locator('.lvbtn',{hasText:'C'}).first().click();
 const tally={review:{},chal:{},normalsOk:0};

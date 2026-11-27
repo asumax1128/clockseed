@@ -19,7 +19,19 @@
   #botBand{bottom:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding-bottom:6px;box-shadow:inset 0 3px 0 #5a3e26,0 -3px 0 #2a1a0e}
   .sndbtn{font-family:inherit;color:var(--ink);border:0;cursor:pointer;touch-action:manipulation;padding:3px 9px;font-size:13px;font-weight:bold;white-space:nowrap}
   .sndbtn[aria-pressed="false"]{opacity:.55;text-decoration:line-through}
+  #zoomBtns{position:fixed;right:10px;z-index:2;display:flex;flex-direction:column;gap:6px}   /* 町の右下（top は resize() で設定） */
+  #zoomBtns button{width:38px;height:38px;margin:0;padding:0;border:0;font-family:inherit;font-size:22px;font-weight:bold;line-height:1;color:var(--ink);cursor:pointer;touch-action:manipulation;opacity:.9}
+  #zoomBtns button:disabled{opacity:.4;cursor:default}
   #sndBtns{display:flex;gap:2px;margin-left:auto}
+  #logLine{flex:1 1 220px;min-width:160px;max-width:520px;display:flex;align-items:center;gap:6px;padding:3px 10px;border:0;font-family:inherit;color:var(--ink);font-size:13px;font-weight:bold;cursor:pointer;overflow:hidden;text-align:left}
+  #logLine .lgi{font-size:12px;flex-shrink:0}#logLine.away{background:#fff0c8}
+  #logText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  #logText.flow{animation:logflow .5s ease-out}
+  @keyframes logflow{from{transform:translateX(60%);opacity:0}to{transform:none;opacity:1}}
+  .logbox{width:min(520px,94vw);text-align:left}#logList{max-height:60vh;overflow:auto}
+  .logrow{display:flex;gap:8px;align-items:baseline;padding:5px 4px;border-bottom:1px dashed #d8c39a;font-size:14px}
+  .logrow .lt{font-size:12px;color:var(--ink-soft);flex-shrink:0;font-variant-numeric:tabular-nums}
+  .logrow .lw{font-size:11px;background:#e8a040;color:#fff;border-radius:3px;padding:0 5px;flex-shrink:0}
   @media (max-width:600px){#title{display:none}#tradeHud{font-size:11px;padding:4px 8px}}
   @media (max-height:520px){#title{display:none}#topBand .pix{margin:3px}#town,#gold,#warehouse{font-size:14px;padding:2px 8px}#gold img,.stock img{width:20px;height:20px}
     #drillHud,#dexHud{font-size:13px;padding:1px 8px}#palette .tool{font-size:13px;padding:2px 8px 2px 4px}#palette .tool img{width:22px;height:22px}#palette .tool small{display:none}
@@ -264,6 +276,10 @@
   .spbox .sphead{display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:14px;margin-bottom:6px;gap:8px;flex-wrap:wrap}
   .spbox .sphead small{font-weight:normal;font-size:12px;color:var(--ink-soft)}
   .spbtns{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .evobox{margin:4px 0 8px;padding:6px 10px;border:2px dashed #c8a870;background:#fbf2dc;text-align:left}
+  .evohd{font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.evohd small{color:var(--ink-soft);font-size:12px}
+  .evolv{font-weight:bold;color:#fff;padding:1px 8px;border-radius:4px;background:#8a7a66}.evolv.lv2{background:#3f86bd}.evolv.lv3{background:#c8961e}
+  .evobox .tool{margin-top:6px;font-size:14px;padding:5px 12px}
   .spbtns .tool.locked{background:#e4ddd0;color:#8a7a66;cursor:not-allowed;filter:grayscale(.6)}.spbtns .tool.locked small{font-weight:bold;color:#8a5a30}
   .spbtns .tool{flex-direction:column;font-size:14px;padding:6px 4px}
   .spbtns small{font-size:11px;color:var(--ink-soft)}
@@ -383,11 +399,13 @@
       <span><img class="px" data-icon="ic_book" alt="図鑑">図鑑 <span id="dexHudNum">0/50</span></span>
     </button>
     <button id="tradeHud" class="pix" title="交換掲示板（町のコード・変種のギフト）"><span id="tradeHudText">交換掲示板</span></button>
+    <button id="logLine" class="pix" title="最近の出来事（タップで履歴）"><span class="lgi">▸</span><span id="logText">出来事がここに流れます</span></button>
     <span id="sndBtns"><button id="bgmBtn" class="pix sndbtn" aria-pressed="true" title="BGM（音楽）のオン・オフ">♪ BGM</button><button id="seBtn" class="pix sndbtn" aria-pressed="true" title="効果音のオン・オフ">♬ 効果音</button></span>
   </div>
 <div id="visitBar" class="pix" style="display:none"><span id="visitText"></span><button class="tool pix act" id="visitEnd">見学を終わる</button></div>
 </div>
 <canvas id="world" aria-label="ときの種の町（畑と時計塔）"></canvas>
+<div id="zoomBtns"><button id="zoomIn" class="pix" aria-label="拡大">＋</button><button id="zoomOut" class="pix" aria-label="縮小">−</button></div>
 <div id="botBand" class="band">
 <div id="tutBar" class="pix" style="display:none"><span id="tutStep"></span><span id="tutText"></span><button id="tutSkip">スキップ</button></div>
   <div id="variantBar"></div>
@@ -440,6 +458,11 @@
 </div></div>
 <div id="gachaFx" style="display:none" aria-live="polite"><canvas id="gachaCv" aria-label="カプセルマシンの演出"></canvas><div id="gachaCard"></div><div id="gachaFlash"></div>
   <div id="gachaCount"></div><div id="gachaHint"></div><button id="gachaAll" class="tool pix">まとめて見る</button></div>
+<div id="logPanel" class="overlay"><div class="box pix logbox">
+  <div class="panelhd"><b>出来事の履歴 <small id="logCount"></small></b><button id="logClose" aria-label="閉じる">×</button></div>
+  <div id="logList"></div>
+  <div class="hint">直近30件まで（新しい順）。履歴はセーブしません</div>
+</div></div>
 <div id="toast" class="pix"></div>
 
 <script id="drill-engine">
@@ -1703,7 +1726,7 @@
 (() => {
   'use strict';
   const SAVE_KEY = 'clockseed.save';
-  const SAVE_VERSION = 13;
+  const SAVE_VERSION = 14;
   const MAX_PLOTS = 24;                // 区画の最大数（町Lv8で24）
   const ORDER_COUNT = 3;               // 同時に出る注文の数
   const ORDER_MIN = 3, ORDER_MAX = 9;  // 生の作物の注文の個数の範囲
@@ -1742,6 +1765,9 @@
     restaurant: { name: 'レストラン', unlockLv: 6, cost: 1500, buildMs: 60 * 60 * 1000,  buildText: 'テーブルを並べています…' },
     cake:       { name: 'ケーキ屋',   unlockLv: 7, cost: 2500, buildMs: 120 * 60 * 1000, buildText: 'ショーケースを磨いています…' },
   };
+  // 施設の進化（段階8a）：最大Lv3。加工時間の割合（%）と、進化の費用（建設費×2／×4、10G単位に切り上げ）
+  const EVO_MAX = 3, EVO_PCT = { 1: 100, 2: 85, 3: 70 };
+  const evoCost = (k, to) => Math.ceil(BUILDINGS[k].cost * (to === 2 ? 2 : 4) / 10) * 10;
   // レシピデータ（材料・個数・加工時間・製品・単価）。UIはこの定義から生成する
   const RECIPES = {
     flour: { building: 'mill', inputs: { wheat: 2 }, ms: 2 * 60 * 1000,
@@ -1834,6 +1860,12 @@
                       [15, 19], [18, 19],                        // Lv7：川沿い
                       [3, 19], [6, 19], [21, 19], [24, 19]];     // Lv8：川沿い
   const RIVER = { y: 21, h: 2, lv: 5 };                         // 川（Lv5〜）：タイル行21〜22の全幅
+  // 畑の区画の名前（位置から）：本畑は列 A・B・C・D（西→東）と行 1〜4（北→南）で「A1」、川沿いの列（タイル行19）は西から「川1」「川2」…
+  const RIVER_ROW = 19, MAIN_XS = [...new Set(PLOT_TILES.filter(p => p[1] !== RIVER_ROW).map(p => p[0]))].sort((a, b) => a - b),
+        MAIN_YS = [...new Set(PLOT_TILES.filter(p => p[1] !== RIVER_ROW).map(p => p[1]))].sort((a, b) => a - b),
+        RIVER_XS = PLOT_TILES.filter(p => p[1] === RIVER_ROW).map(p => p[0]).sort((a, b) => a - b);
+  const PLOT_NAMES = PLOT_TILES.map(([x, y]) => y === RIVER_ROW ? '川' + (RIVER_XS.indexOf(x) + 1) : 'ABCDEFGH'[MAIN_XS.indexOf(x)] + (MAIN_YS.indexOf(y) + 1));
+  const plotName = i => PLOT_NAMES[i];
   // 施設の敷地（2×2タイルの左上）
   const FACILITY_TILES = { mill: { tx: 15, ty: 2 }, kitchen: { tx: 12, ty: 2 }, bakery: { tx: 22, ty: 4 }, jam: { tx: 24, ty: 4 },
                            restaurant: { tx: 22, ty: 9 }, cake: { tx: 27, ty: 9 }, ranch: { tx: 9, ty: -5 }, dairy: { tx: 13, ty: -5 } };
@@ -1875,7 +1907,7 @@
                  storage: {}, gold: 0, townExp: 0, orders: [], orderIds: [], nextOrder: null, buildings: {}, drill: freshDrill(), gacha: window.ClockseedGacha.freshState(),
                  buffs: freshBuffs(), helpers: freshHelpers(), decor: { treeAt: 0 },
                  trade: { uid: window.ClockseedCode.randomId(6), stock: {}, received: [] },
-                 tutorial: freshTutorial(), settings: { bgm: true, se: true } };
+                 tutorial: freshTutorial(), settings: { bgm: true, se: true }, seenAt: Date.now() };
     for (const k of ITEM_KEYS) st.storage[k] = 0;
     for (const k of BUILDING_KEYS) st.buildings[k] = null;
     // 新しいセーブ：チュートリアル用に最初の2件を固定（小麦×3・にんじん×3）。3件目はふつうの注文
@@ -1915,6 +1947,13 @@
                              job: okJob ? { recipe: j.recipe, startedAt: j.startedAt, readyAt: j.readyAt } : null };
           if (isFinite(b.buildSkipMs) && b.buildSkipMs > 0) s.buildings[k].buildSkipMs = b.buildSkipMs;
           if (okJob && isFinite(j.skipMs) && j.skipMs > 0) s.buildings[k].job.skipMs = j.skipMs;
+          // 進化（version 13 以前には無い → Lv1）。進化の工事 up＝{ lv：進化先, startedAt, readyAt, skipMs }
+          const L = Math.min(EVO_MAX, Math.max(1, nat(b.lv) || 1)), u = b.up;
+          s.buildings[k].lv = L;
+          if (u && u.lv === L + 1 && u.lv <= EVO_MAX && isFinite(u.startedAt) && isFinite(u.readyAt)) {
+            s.buildings[k].up = { lv: u.lv, startedAt: u.startedAt, readyAt: u.readyAt };
+            if (isFinite(u.skipMs) && u.skipMs > 0) s.buildings[k].up.skipMs = u.skipMs;
+          }
         }
       }
       s.gacha = window.ClockseedGacha.sanitize(d.gacha);   // ガチャ（version 5 以前には無い → 初期状態）
@@ -1939,6 +1978,8 @@
         s.tutorial = { done: !!tu.done, step: Math.min(10, Math.max(1, nat(tu.step) || 1)), sets: nat(tu.sets), mark: nat(tu.mark),
           flags: { d1: !!(tu.flags && tu.flags.d1), pull: !!(tu.flags && tu.flags.pull) }, tickets: Math.min(99, nat(tu.tickets)), granted: !!tu.granted };
       } else s.tutorial = Object.assign(freshTutorial(), { done: true, step: 10 });
+      // 最後に開いていた時刻（version 13 以前には無い → 0：起動時に、できあがっているものを全て「留守中」として知らせる）
+      s.seenAt = isFinite(d.seenAt) && d.seenAt > 0 ? d.seenAt : 0;
       // 音の設定（version 12 以前には無い → BGM・効果音ともにオン）
       const dz = d.settings || {};
       s.settings = { bgm: dz.bgm !== false, se: dz.se !== false };
@@ -2024,7 +2065,7 @@
     if (!B || townLevel() < B.unlockLv || state.buildings[key] || state.gold < B.cost) return false;
     const t = now();
     state.gold -= B.cost;
-    state.buildings[key] = { startedAt: t, builtAt: t + B.buildMs / FAST, job: null };
+    state.buildings[key] = { startedAt: t, builtAt: t + B.buildMs / FAST, job: null, lv: 1 };
     save(); return true;
   }
   // 材料の所持数：作物は変種も数える（製品は通常品）
@@ -2034,13 +2075,46 @@
     const a = Math.min(n, state.storage[k]); state.storage[k] -= a; n -= a;
     if (CROPS[k]) for (const sd of variantsOf(k)) { if (!n) break; const b = Math.min(n, state.storage['v_' + sd]); state.storage['v_' + sd] -= b; n -= b; }
   }
+  // ---------- 施設の進化（Lv1〜3） ----------
+  // 費用：建設費×2（Lv2）／×4（Lv3）、10G単位に切り上げ。工事時間は建設時間と同じ。工事中は加工できず、加工の途中は進化を始められない。
+  // 効果：加工時間 Lv2 ×0.85、Lv3 ×0.70（隣接の10%短縮とは掛け算。ジョブを始めた時点の Lv で確定）
+  const evoMs = k => BUILDINGS[k].buildMs / FAST;
+  function facLv(k, t = now(), bs = state.buildings) {        // いまの進化Lv（建っていなければ0）
+    const b = bs[k];
+    if (!b || t < b.builtAt) return 0;
+    return b.up && t >= b.up.readyAt ? b.up.lv : (b.lv || 1);
+  }
+  const evolving = (k, t = now()) => { const b = state.buildings[k]; return !!(b && b.up && t < b.up.readyAt); };
+  const jobRunning = (k, t = now()) => { const b = state.buildings[k]; return !!(b && b.job && t < b.job.readyAt); };
+  function evoBlock(k, t = now()) {                           // 進化できない理由（できるなら ''）
+    const L = facLv(k, t);
+    if (!L) return '建設が終わってから';
+    if (evolving(k, t)) return '進化の工事中';
+    if (L >= EVO_MAX) return '最大Lv';
+    if (jobRunning(k, t)) return '加工が終わるまで進化できません';
+    if (state.gold < evoCost(k, L + 1)) return 'あと' + (evoCost(k, L + 1) - state.gold) + 'G 必要';
+    return '';
+  }
+  function startEvo(k) {
+    const t = now(), b = state.buildings[k];
+    if (evoBlock(k, t)) return false;
+    const to = facLv(k, t) + 1;
+    if (b.up) { b.lv = b.up.lv; delete b.up; }                   // 前の進化（完成済み）を確定
+    state.gold -= evoCost(k, to);
+    b.up = { lv: to, startedAt: t, readyAt: t + evoMs(k) };
+    save(); return true;
+  }
+  // 加工の所要時間（ミリ秒）：基本 ×進化 → 隣接 −10%
+  function jobMs(key, rk, t = now()) {
+    let ms = RECIPES[rk].ms / FAST * EVO_PCT[facLv(key, t) || 1] / 100;
+    if (facNeighbors(key, state.buildings, t).length) ms = shorten(ms);   // 隣接ルール：他の施設と隣り合うと加工時間10%短縮（建設には効かない）
+    return ms;
+  }
   function startJob(key, rk) {                       // 加工は1施設につき同時に1件。材料は開始時に消費
     const r = RECIPES[rk], b = state.buildings[key];
-    if (!r || r.building !== key || bState(key) !== 'built' || b.job || (r.unlockLv || 1) > townLevel() || !canCraft(rk)) return false;
+    if (!r || r.building !== key || bState(key) !== 'built' || b.job || evolving(key) || (r.unlockLv || 1) > townLevel() || !canCraft(rk)) return false;
+    const t = now(), ms = jobMs(key, rk, t);
     for (const [k, n] of Object.entries(r.inputs)) consumeInput(k, n);
-    const t = now();
-    let ms = r.ms / FAST;
-    if (facNeighbors(key, state.buildings, t).length) ms = shorten(ms);   // 隣接ルール：他の施設と隣り合うと加工時間10%短縮（建設には効かない）
     b.job = { recipe: rk, startedAt: t, readyAt: t + ms };
     save(); return true;
   }
@@ -2154,13 +2228,15 @@
     for (let i = 0; i < activePlots(); i++) {
       const p = state.plots[i];
       if (p && t < p.readyAt) out.push({ id: 'plot:' + i, kind: 'plot', ref: p, start: p.plantedAt, ready: p.readyAt, skip: p.skipMs || 0,
-        label: '区画' + (i + 1) + '：' + CROPS[p.crop].name, icon: CROPS[p.crop].icon });
+        label: plotName(i) + 'の畑：' + CROPS[p.crop].name, icon: CROPS[p.crop].icon });
     }
     for (const k of BUILDING_KEYS) {
       const b = state.buildings[k];
       if (!b) continue;
       if (t < b.builtAt) out.push({ id: 'build:' + k, kind: 'build', ref: b, start: b.startedAt, ready: b.builtAt, skip: b.buildSkipMs || 0,
         label: BUILDINGS[k].name + 'の建設', icon: k + '_wip' });
+      else if (b.up && t < b.up.readyAt) out.push({ id: 'evo:' + k, kind: 'evo', ref: b.up, start: b.up.startedAt, ready: b.up.readyAt, skip: b.up.skipMs || 0,
+        label: BUILDINGS[k].name + 'の進化（Lv' + b.up.lv + '）', icon: k + '_wip' });
       else if (b.job && t < b.job.readyAt) {
         const pr = RECIPES[b.job.recipe].product;
         const eff = (k === 'bakery' && ownsHelper('hp03')) || (k === 'ranch' && ownsHelper('hp05')) ? HELPER_SKIP_EFF : 1;
@@ -2375,6 +2451,7 @@
       rare:    t => { arp([88, 91, 96], t, .06, .3, .2, 'sine'); },                                       // レア：青いきらめき
       sr:      t => { arp([84, 88, 91, 96, 100], t, .06, .5, .22); tone(seBus, 'sine', hz(108), t + .3, .9, .1); },   // SR：金色の光
       ur:      t => { tone(seBus, 'sawtooth', 200, t, .6, .08, 1600); arp([84, 88, 91, 96, 100, 103, 108], t + .35, .05, .7, .2, 'square'); bellAt(t + .75, hz(96), .3); },   // 激レア：虹
+      done:    t => { arp([84, 91, 96], t, .07, .35, .24, 'sine'); tone(seBus, 'triangle', hz(100), t + .2, .5, .14); },   // 加工の完成
       bell:    t => { bellAt(t, hz(76), .5); bellAt(t + .55, hz(71), .4); },
       hanamaru: t => { arp([84, 88, 91, 96, 91, 96, 100], t, .06, .28, .2); },
     };
@@ -2439,14 +2516,69 @@
     return { play, set, syncButtons, info: () => ({ unlocked, ctx: ac ? ac.state : null, bgm: !!timer, settings: Object.assign({}, conf()), log: log.slice() }) };
   })();
   const sfx = name => SND.play(name);
-  // 建設完了の音：開いている間に「建設中 → 完成」に変わった施設があれば鳴らす（見学中・読み込み直後は鳴らさない）
-  let bWatch = null;
-  setInterval(() => {
-    if (visit) { bWatch = null; return; }
-    const cur = Object.fromEntries(BUILDING_KEYS.map(k => [k, bState(k)]));
-    if (bWatch && BUILDING_KEYS.some(k => bWatch[k] === 'building' && cur[k] === 'built')) sfx('build');
-    bWatch = cur;
-  }, 400);
+  // ---------- 出来事のログ（段階8a）：最新の1行を上の帯に流し、タップで直近30件 ----------
+  // 記録：作物の完成・加工の完成・建設／進化の完成・納品できる注文が出た・町のレベルアップ。ログ自体はセーブしない。
+  // 起動時：前回最後に開いていた時刻（state.seenAt）より後に終わっていた作物・加工・建設・進化を「留守中」としてまとめて出す
+  const LOG_MAX = 30, LOG = [];
+  const hhmm = ms => { const d = new Date(ms); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  function logEvent(text, at, away) {
+    LOG.push({ text, at: at || now(), away: !!away });
+    while (LOG.length > LOG_MAX) LOG.shift();
+    const el = $('logText'); el.textContent = text; el.classList.remove('flow'); void el.offsetWidth; el.classList.add('flow');
+    $('logLine').classList.toggle('away', !!away);
+    if ($('logPanel').style.display === 'flex') renderLog();
+  }
+  function renderLog() {
+    $('logList').innerHTML = LOG.length ? LOG.slice().reverse().map(e => '<div class="logrow' + (e.away ? ' away' : '') + '"><span class="lt">' + hhmm(e.at) + '</span>' +
+      (e.away ? '<span class="lw">留守中</span>' : '') + '<span class="lx">' + e.text + '</span></div>').join('') : '<div class="hint">まだ出来事はありません</div>';
+    $('logCount').textContent = LOG.length + ' / ' + LOG_MAX + '件';
+  }
+  $('logLine').onclick = () => { renderLog(); $('logPanel').style.display = 'flex'; };
+  $('logClose').onclick = () => { $('logPanel').style.display = 'none'; };
+  $('logPanel').addEventListener('pointerdown', e => { if (e.target === $('logPanel')) $('logPanel').style.display = 'none'; });
+  // いま「できている」もの（キー：開始時刻つきで一意）
+  function doneEvents(t) {
+    const out = [];
+    for (let i = 0; i < activePlots(); i++) { const p = state.plots[i];
+      if (p && t >= p.readyAt) out.push({ key: 'p' + i + ':' + p.plantedAt, at: p.readyAt, kind: 'plot', text: plotName(i) + 'の畑で' + (p.v ? ITEMS['v_' + p.v].name : CROPS[p.crop].name) + 'ができた' }); }
+    for (const k of BUILDING_KEYS) { const b = state.buildings[k], N = BUILDINGS[k].name; if (!b) continue;
+      if (t >= b.builtAt) out.push({ key: 'b' + k + ':' + b.startedAt, at: b.builtAt, kind: 'build', k, text: N + 'が完成した' });
+      if (b.up && t >= b.up.readyAt) out.push({ key: 'e' + k + ':' + b.up.startedAt, at: b.up.readyAt, kind: 'evo', k, text: N + 'がLv' + b.up.lv + 'に進化した' });
+      if (b.job && t >= b.job.readyAt) out.push({ key: 'j' + k + ':' + b.job.startedAt, at: b.job.readyAt, kind: 'job', k, text: N + 'で' + RECIPES[b.job.recipe].product.name + 'ができた' }); }
+    state.orders.forEach((o, i) => { if (o && state.storage[o.crop] >= o.qty) out.push({ key: 'o' + state.orderIds[i], at: t, kind: 'order', text: '注文の' + ITEMS[o.crop].name + '×' + o.qty + 'が納品できる' }); });
+    return out;
+  }
+  let evSeen = null, evOwner = null;
+  function watchEvents(t) {
+    if (visit) return;                                   // 見学中は自分の町ではないので数えない
+    const list = doneEvents(t);
+    if (!evSeen || evOwner !== state) {                  // 起動時（と見学から戻ったとき）：既にできているものは記録済みにする
+      const first = !evSeen; evSeen = new Set(); evOwner = state;
+      const away = first ? list.filter(e => e.kind !== 'order' && e.at > (state.seenAt || 0)).sort((a, b) => a.at - b.at) : [];
+      for (const e of list) evSeen.add(e.key);
+      for (const e of away) logEvent(e.text, e.at, true);
+      if (away.length) toast('留守のあいだに ' + away.length + '件 できあがりました（上の帯の出来事をタップで履歴）', 6000);
+      return;
+    }
+    const cur = new Set();
+    for (const e of list) {
+      cur.add(e.key);
+      if (evSeen.has(e.key)) continue;
+      evSeen.add(e.key); logEvent(e.text, e.kind === 'order' ? t : Math.min(t, e.at));
+      if (e.kind === 'job' || e.kind === 'build' || e.kind === 'evo') { facPop[e.k] = performance.now() / 1000; sfx(e.kind === 'job' ? 'done' : 'build'); }
+    }
+    for (const k of [...evSeen]) if (k[0] === 'o' && !cur.has(k)) evSeen.delete(k);   // 納品できなくなった注文は、また出たら知らせる
+  }
+  // 最後に開いていた時刻（留守中の判定用）。開いている間は15秒ごと、隠れるときにも保存
+  // 保存済みのセーブの seenAt だけを書き換える（ほかの値は save() がその都度書いているので、ここでは触らない）
+  function markSeen() {
+    if (visit) return;
+    state.seenAt = now();
+    try { const raw = localStorage.getItem(SAVE_KEY), d = raw && JSON.parse(raw); if (d && d.saveVersion === SAVE_VERSION) { d.seenAt = state.seenAt; localStorage.setItem(SAVE_KEY, JSON.stringify(d)); } } catch (e) {}
+  }
+  setInterval(() => { if (!document.hidden) markSeen(); }, 15000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); });
+  window.addEventListener('pagehide', markSeen);
 
   // ---------- 設定値（将来の町レベルで拡張） ----------
   const T = 16;                       // 1タイル = 16ドット
@@ -2454,7 +2586,7 @@
   const WORLD = { x0: 0, y0: -6, x1: 32, y1: 24 };
   const BOUNDS = lv => ({ x0: 0, y0: lv >= 4 ? -6 : 0, x1: lv >= 3 ? 32 : 24, y1: lv >= RIVER.lv ? 24 : 18 });   // Lv3 東の加工エリア／Lv4 北の丘／Lv5 南の川
   const WORLD_SEED = 20261127;        // 自然物の配置シード（セーブには含めない）
-  const ZOOM_MIN = 0.7, ZOOM_MAX = 1.5;
+  const ZOOM_MAX = 1.5;                                    // 下限は zoomMin()（町全体が中央の帯に収まる倍率）
   const LAYOUT = {
     plaza: { x: 1, y: 5, w: 5, h: 4 },                 // 広場（タイル）。Lv8で祭り広場
     festLv: 8,
@@ -3806,7 +3938,9 @@
   const scale = () => BASE * cam.zoom;
   // 下限倍率：マップが画面の幅・高さをちょうど覆う倍率（左右・上下に余白を出さない）
   const curBounds = () => { const b = BOUNDS(townLevel()); return { x0: b.x0 * T, y0: b.y0 * T, x1: b.x1 * T, y1: b.y1 * T }; };
-  const zoomMin = () => { const b = curBounds(); return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, VW / ((b.x1 - b.x0) * BASE), VH / ((b.y1 - b.y0) * BASE))); };
+  // 下限倍率（段階8a）：町全体（いまの町Lvの範囲）が中央の帯にちょうど収まる倍率。それより引くと、町の外は地面の色で埋まる
+  const frameMin = () => { const b = curBounds(); return Math.min(ZOOM_MAX, Math.max(0.7, VW / ((b.x1 - b.x0) * BASE), VH / ((b.y1 - b.y0) * BASE))); };   // 段階7までの下限（町が帯を埋める倍率）
+  const zoomMin = () => { const b = curBounds(); return Math.min(ZOOM_MAX, Math.min(VW / ((b.x1 - b.x0) * BASE), VH / ((b.y1 - b.y0) * BASE))); };
   const toWorld = (sx, sy) => ({ x: (sx - VW / 2) / scale() + cam.x, y: (sy - VH / 2) / scale() + cam.y });
   const toScreen = (wx, wy) => ({ x: (wx - cam.x) * scale() + VW / 2, y: (wy - cam.y) * scale() + VH / 2 });
   function clampCam() {
@@ -3820,6 +3954,7 @@
     const tH = Math.ceil($('topBand').getBoundingClientRect().height), bH = Math.ceil($('botBand').getBoundingClientRect().height);
     CY0 = tH; VW = innerWidth; VH = Math.max(120, innerHeight - tH - bH);   // 町は上下の帯のあいだだけに描く
     canvas.style.top = CY0 + 'px'; canvas.style.height = VH + 'px';
+    $('zoomBtns').style.top = (CY0 + VH - 2 * 38 - 6 - 12) + 'px';   // 町の帯の右下
     canvas.width = Math.round(VW * DPR); canvas.height = Math.round(VH * DPR);
     BASE = Math.max(2, Math.min(VW / (18 * T), VH / (12 * T)));
     buildLightCache();
@@ -3830,7 +3965,7 @@
     // 時計塔・畑・解放済みの施設が入る範囲（上下は UI の分だけ余白）。広すぎるときは下限倍率で中央を映す
     const { x0, y0, x1, y1 } = contentBox(), padTop = 14, padBot = 12;   // 上下の帯の外に描くので、余白は少しだけ
     const S = Math.min((VW - 32) / (x1 - x0), (VH - padTop - padBot) / (y1 - y0));
-    cam.zoom = S / BASE;
+    cam.zoom = Math.max(S / BASE, frameMin());           // 自動の構図は、町が帯を埋める倍率より引かない（手で縮小すれば町全体まで引ける）
     clampCam();
     const s2 = scale();
     cam.x = (x0 + x1) / 2;
@@ -3887,19 +4022,52 @@
     for (const [cx, cy, ph] of [[102, -44, 0], [124, -30, 2]]) out.push({ y: cy, shadow: [cx, cy, 6, 2], draw: c => c.drawImage(SPR.cow, cx - 5, cy - 6 + (Math.sin(performance.now() / 600 + ph) > .6 ? -1 : 0)) });
     return out;
   })();
+  // 進化の見た目：Lv3 は金色がかった建物（キャッシュ）＋飾り。Lv2 は花のプランターと旗、Lv3 はさらに金の旗・ちょうちん・石の土台
+  const LV_SPR = {};
+  function lvSprite(k, spr, L) {
+    if (L < 3) return spr;
+    if (!LV_SPR[k]) { const c = document.createElement('canvas'); c.width = spr.width; c.height = spr.height; const g = c.getContext('2d');
+      g.drawImage(spr, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(255,206,96,0.16)'; g.fillRect(0, 0, c.width, c.height); LV_SPR[k] = c; }
+    return LV_SPR[k];
+  }
+  function drawLvDeco(c, k, L, x, top, y, ts) {
+    if (L >= 3) { px(c, x - 1, y - 1, '#cbb68c', 38, 2); px(c, x - 1, y - 1, '#e8dcb8', 38, 1); }        // 石の土台
+    for (const bx of [x + 1, x + 28]) {                                                                  // 花のプランター
+      px(c, bx, y - 4, '#6a3e1e', 7, 3); px(c, bx + 1, y - 4, '#8a5a30', 5, 1);
+      px(c, bx + 1, y - 6, '#4f8f3a', 5, 2); px(c, bx + 1, y - 7, L >= 3 ? '#ffd84a' : '#e05a6a'); px(c, bx + 3, y - 7, '#ffd84a'); px(c, bx + 5, y - 7, '#e05a6a');
+    }
+    const wave = Math.sin(ts * 4 + x) > 0 ? 1 : 0;                                                       // 屋根の旗（Lv2：青、Lv3：金）
+    px(c, x + 31, top - 8, '#5a3a22', 1, 18);
+    px(c, x + 32, top - 8, L >= 3 ? '#e0a820' : '#3f86bd', 5, 3); px(c, x + 37, top - 7 + wave, L >= 3 ? '#e0a820' : '#3f86bd', 1, 1);
+    if (L >= 3) {
+      px(c, x + 33, top - 7, '#fff2b0');                                                                 // 旗の星
+      for (const lx of [x + 4, x + 30]) { px(c, lx + 1, y - 22, '#5a3a22', 1, 2); px(c, lx, y - 20, '#c84a2a', 3, 4); px(c, lx + 1, y - 19, '#ffd27a'); }   // ちょうちん
+    }
+  }
+  function drawScaffold(c, x, top, y) {                         // 進化の工事中：足場
+    for (const sx of [x, x + 34]) { px(c, sx, top + 4, '#8a5a30', 2, y - top - 4); px(c, sx, top + 4, '#b07a40', 1, y - top - 4); }
+    for (const sy of [y - 12, y - 24]) { px(c, x - 1, sy, '#a07040', 38, 2); px(c, x - 1, sy + 2, '#5a3a22', 38, 1); }
+    px(c, x + 2, y - 23, '#ffd84a', 6, 1); px(c, x + 3, y - 22, '#5a3a22', 4, 1);                        // 黄色い注意板
+  }
+  const facPop = {};                                            // 完成の演出：施設キー → 開始時刻（秒、performance.now）
   function pushFacilities(objs, t) {
+    const ts = performance.now() / 1000;
     for (const k of BUILDING_KEYS) {
       if (!facUnlocked(k)) continue;
-      const f = FAC[k], st = bState(k, t), spr = st === 'none' ? SPR[k + '_site'] : st === 'building' ? SPR[k + '_wip'] : SPR[k];
-      const x = f.left, y = f.y - spr.height;
+      const L = facLv(k, t), f = FAC[k], st = bState(k, t), spr = st === 'none' ? SPR[k + '_site'] : st === 'building' ? SPR[k + '_wip'] : lvSprite(k, SPR[k], L);
+      const x = f.left, evo = st === 'built' && evolving(k, t);
       objs.push({ y: f.y, shadow: st === 'none' ? null : [f.x, f.y - 1, 15, 3.5],
         draw: c => {
+          const u = facPop[k] != null ? (ts - facPop[k]) / .6 : 9, dy = u < 1 ? -Math.round(Math.sin(u * Math.PI) * 5 * (1 - u * .4)) : 0;   // 完成：軽く跳ねる
+          const y = f.y - spr.height + dy, top = f.top + dy, bot = f.y + dy;
           c.drawImage(spr, x, y);
           if (st === 'built' && k === 'mill') {                  // 風車の羽根（加工中だけ回る）
             const q = Math.PI / 16, a = Math.round(millAngle / q) * q;
-            c.save(); c.translate(f.left + MILL_HUB.x + .5, f.top + MILL_HUB.y + .5); c.rotate(a);
+            c.save(); c.translate(f.left + MILL_HUB.x + .5, top + MILL_HUB.y + .5); c.rotate(a);
             c.drawImage(SPR.blades, -15.5, -15.5); c.restore();
           }
+          if (st === 'built' && L >= 2) drawLvDeco(c, k, L, x, top, bot, ts);
+          if (evo) drawScaffold(c, x, top, bot);
         } });
       if (k === 'ranch' && st === 'built') for (const o of ranchExtras) objs.push(o);
     }
@@ -3916,7 +4084,17 @@
     }
   }
   function drawFacilityMarkers(ts, t) {
-    const bob = Math.round(Math.sin(ts * 4) * 1.5);
+    const bob = Math.round(Math.sin(ts * 4) * 1.5), now_s = performance.now() / 1000;
+    for (const k of BUILDING_KEYS) {                             // 完成の光（約1秒）
+      if (facPop[k] == null) continue;
+      const u = (now_s - facPop[k]) / 1.1; if (u >= 1) { delete facPop[k]; continue; }
+      const f = FAC[k], cx = f.x, cy = f.top + (f.y - f.top) / 2, a = (1 - u) * .75;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const g = ctx.createRadialGradient(cx, cy, 2, cx, cy, 34); g.addColorStop(0, 'rgba(255,236,150,' + a + ')'); g.addColorStop(1, 'rgba(255,236,150,0)');
+      ctx.fillStyle = g; ctx.fillRect(cx - 34, cy - 34, 68, 68);
+      for (let i = 0; i < 8; i++) { const an = i / 8 * Math.PI * 2 + u * 2, r = 12 + u * 22; px(ctx, Math.round(cx + Math.cos(an) * r), Math.round(cy + Math.sin(an) * r * .8), 'rgba(255,250,200,' + a + ')', 2, 2); }
+      ctx.restore();
+    }
     for (const k of BUILDING_KEYS) {
       if (!facUnlocked(k)) continue;
       const f = FAC[k], st = bState(k, t), b = state.buildings[k];
@@ -3926,6 +4104,8 @@
         ctx.globalAlpha = 1;
       } else if (st === 'building') {
         gaugeBar(f.x - 14, f.y + 4, 28, (t - b.startedAt) / (b.builtAt - b.startedAt));
+      } else if (evolving(k, t)) {
+        gaugeBar(f.x - 14, f.y + 4, 28, (t - b.up.startedAt) / (b.up.readyAt - b.up.startedAt));
       } else if (b.job) {
         if (t >= b.job.readyAt) {                                // 完成品が待っている：製品アイコンの吹き出し
           const bx = f.bubble > 0 ? f.x + 15 : f.x - 31, by = f.y - 36 + bob;
@@ -3939,6 +4119,49 @@
         }
       }
     }
+  }
+  // 施設の進み具合（画面空間・常に表示）：加工中＝製品のアイコン＋バー＋残り時間、建設・進化の工事中＝「建設」「Lv2へ」＋バー＋残り時間。進化Lv2以上は「Lv2」「Lv3」の札
+  let chipInfo = [];
+  function rrect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function drawFacChips(t) {
+    chipInfo = [];
+    const c = ctx; c.save(); c.imageSmoothingEnabled = false;
+    for (const k of BUILDING_KEYS) {
+      if (!facUnlocked(k)) continue;
+      const b = state.buildings[k], st = bState(k, t), f = FAC[k], L = facLv(k, t);
+      if (st === 'built' && L >= 2) {                            // 進化Lvの札（建物の左上）
+        const p = toScreen(f.left + 1, f.top + 4), txt = 'Lv' + L;
+        if (p.x > -30 && p.x < VW && p.y > -20 && p.y < VH) {
+          c.font = 'bold 11px system-ui,sans-serif'; const w = c.measureText(txt).width + 8;
+          rrect(c, p.x - 1, p.y - 1, w + 2, 16, 4); c.fillStyle = '#3a2414'; c.fill();
+          rrect(c, p.x, p.y, w, 14, 3); c.fillStyle = L >= 3 ? '#c8961e' : '#3f86bd'; c.fill();
+          c.fillStyle = '#fff'; c.textBaseline = 'middle'; c.fillText(txt, p.x + 4, p.y + 7.5);
+          chipInfo.push({ k, kind: 'lv', text: txt, x: p.x, y: p.y, w, h: 14 });
+        }
+      }
+      let kind = null, from = 0, to = 0, icon = null, tag = '';
+      if (st === 'building') { kind = 'build'; from = b.startedAt; to = b.builtAt; tag = '建設'; }
+      else if (st === 'built' && b.up && t < b.up.readyAt) { kind = 'evo'; from = b.up.startedAt; to = b.up.readyAt; tag = 'Lv' + b.up.lv + 'へ'; }
+      else if (st === 'built' && b.job && t < b.job.readyAt) { kind = 'job'; from = b.job.startedAt; to = b.job.readyAt; icon = RECIPES[b.job.recipe].product.icon; }
+      if (!kind) continue;
+      const frac = Math.min(1, Math.max(0, (t - from) / (to - from))), txt = fmtTime(to - t);
+      const a = toScreen(f.x, f.y + 3), H = 22;
+      c.font = 'bold 12px system-ui,sans-serif';
+      const tw = Math.ceil(c.measureText(txt).width), lead = icon ? 18 : Math.ceil(c.measureText(tag).width) + 4, W = 6 + lead + 4 + 40 + 5 + tw + 6;
+      const x = Math.round(a.x - W / 2), y = Math.round(a.y + 2);
+      if (x > VW || x + W < 0 || y > VH || y + H < 0) continue;
+      rrect(c, x - 1, y - 1, W + 2, H + 2, 6); c.fillStyle = 'rgba(58,36,20,.9)'; c.fill();
+      rrect(c, x, y, W, H, 5); c.fillStyle = kind === 'job' ? 'rgba(255,248,228,.95)' : 'rgba(255,236,200,.95)'; c.fill();
+      let cx = x + 6;
+      if (icon) { c.drawImage(SPR[icon], cx, y + 2, 18, 18); cx += 18; }
+      else { c.fillStyle = kind === 'evo' ? '#2f6aa0' : '#8a5a20'; c.textBaseline = 'middle'; c.fillText(tag, cx, y + H / 2 + .5); cx += lead; }
+      cx += 4;
+      c.fillStyle = '#7a5a3a'; c.fillRect(cx, y + 8, 40, 6); c.fillStyle = kind === 'job' ? '#7fc24a' : '#f2b84a'; c.fillRect(cx, y + 8, Math.round(40 * frac), 6);
+      c.strokeStyle = '#3a2414'; c.lineWidth = 1; c.strokeRect(cx - .5, y + 7.5, 41, 7);
+      cx += 45; c.fillStyle = '#3a2414'; c.textBaseline = 'middle'; c.fillText(txt, cx, y + H / 2 + .5);
+      chipInfo.push({ k, kind, text: txt, icon, tag, frac, x, y, w: W, h: H });
+    }
+    c.restore();
   }
   // 祭り広場（Lv8）：旗の連なりとちょうちん
   function drawFestival(ts) {
@@ -4217,7 +4440,9 @@
       ctx.fillStyle = g; ctx.fillRect(s.x - rr * 2.2, s.y - rr * 2.2, rr * 4.4, rr * 4.4);
     }
     ctx.globalCompositeOperation = 'source-over';
+    drawFacChips(t);
 
+    watchEvents(t);                                    // 出来事のログ（お手伝いの自動受け取りより先に見る）
     if (!visit) helperTick(t);                         // 見学中はお手伝い（自動の受け取り・通知）も止める
     tutTick(t);
     updateHud();
@@ -4431,7 +4656,7 @@
   function facSig(k) {
     const st = bState(k), b = state.buildings[k], t = now();
     const job = b && b.job ? (t >= b.job.readyAt ? 'done' : 'run') : 'none';
-    return [k, st, job, state.gold >= BUILDINGS[k].cost, facRecipes(k).map(canCraft).join(), townLevel(), facNeighbors(k, state.buildings, t).join()].join('|');
+    return [k, st, job, state.gold >= BUILDINGS[k].cost, facRecipes(k).map(canCraft).join(), townLevel(), facNeighbors(k, state.buildings, t).join(), facLv(k, t), evolving(k, t), evoBlock(k, t)].join('|');
   }
   function mkBtn(label, disabled, onclick) {
     const b = document.createElement('button'); b.className = 'tool pix act'; b.textContent = label; b.disabled = disabled;
@@ -4457,23 +4682,35 @@
       add(gauge, 'mline');
       add('', 'mact').appendChild(mkBtn('時短を使う', false, () => { $('facPanel').style.display = 'none'; openSkip(); }));
     } else {
-      $('facTitle').textContent = B.name;
+      const L = facLv(k), evo = evolving(k);
+      $('facTitle').textContent = B.name + '（Lv' + L + (evo ? ' → Lv' + b.up.lv + ' 進化中' : '') + '）';
+      // 進化：いまの Lv と効果、次の Lv の費用・工事時間
+      const ev = add('', 'evobox'); ev.id = 'evoBox';
+      ev.innerHTML = '<div class="evohd"><span class="evolv lv' + L + '">Lv' + L + '</span> 加工時間 ×' + (EVO_PCT[L] / 100).toFixed(2) +
+        (L >= EVO_MAX ? '<small>（最大Lv）</small>' : '<small>次の Lv' + (L + 1) + '：加工時間 ×' + (EVO_PCT[L + 1] / 100).toFixed(2) + '・費用 ' + goldImg + evoCost(k, L + 1) + 'G・工事 ' + fmtDur(B.buildMs) + '</small>') + '</div>';
+      if (evo) {
+        ev.insertAdjacentHTML('beforeend', '<div class="mline">Lv' + b.up.lv + 'への進化の工事中です（工事中は加工できません）</div>' + gauge);
+        ev.appendChild(Object.assign(mkBtn('時短を使う', false, () => { $('facPanel').style.display = 'none'; openSkip(); }), { id: 'evoSkipBtn' }));
+      } else if (L < EVO_MAX) {
+        const why = evoBlock(k);
+        ev.appendChild(Object.assign(mkBtn(why ? why : 'Lv' + (L + 1) + 'に進化する', !!why, () => { if (startEvo(k)) { sfx('coin'); renderFac(); } }), { id: 'evoBtn' }));
+      }
       if (b.job) {
         const r = RECIPES[b.job.recipe], pr = r.product, done = now() >= b.job.readyAt;
         add((done ? '完成！ ' : '加工中： ') + iconImg(pr.key) + ' ' + pr.name + ' ×' + pr.qty);
         if (done) add('', 'mact').appendChild(mkBtn('受け取る', false, () => { if (collectJob(k)) renderFac(); }));
-        else { add(gauge, 'mline'); add('', 'mact').appendChild(mkBtn('時短を使う', false, () => { $('facPanel').style.display = 'none'; openSkip(); })); }
+        else if (!evo) { add(gauge, 'mline'); add('', 'mact').appendChild(mkBtn('時短を使う', false, () => { $('facPanel').style.display = 'none'; openSkip(); })); }
       }
       for (const rk of facRecipes(k)) {
-        const r = RECIPES[rk], pr = r.product, ok = canCraft(rk), busy = !!b.job;
+        const r = RECIPES[rk], pr = r.product, ok = canCraft(rk), busy = !!b.job || evo;
         const lockedR = (r.unlockLv || 1) > townLevel(), adj = facNeighbors(k, state.buildings, now()).length > 0;
         const ins = !Object.keys(r.inputs).length ? '<span>材料なし</span>' : Object.entries(r.inputs).map(([ik, n]) => iconImg(ik) + ITEMS[ik].name + ' <span class="' +
           (haveFor(ik) >= n ? '' : 'short') + '">' + haveFor(ik) + '/' + n + '</span>').join(' ＋ ');
         const row = document.createElement('div'); row.className = 'mrow';
         row.innerHTML = '<div class="recipe">' + ins + ' → ' + iconImg(pr.key) + '<span>' + pr.name + ' ×' + pr.qty +
-          '<small>加工 ' + fmtDur(r.ms) + (adj ? '→' + fmtDur(shorten(r.ms)) + '（隣接 −10%）' : '') + ' ／ 単価 ' + pr.price + 'G ／ 経験値 ' + pr.orderExp + '</small></span></div>';
+          '<small>加工 ' + fmtDur(r.ms) + (L > 1 || adj ? '→' + fmtDur(jobMs(k, rk) * FAST) + '（' + [L > 1 ? '進化Lv' + L + ' ×' + (EVO_PCT[L] / 100).toFixed(2) : '', adj ? '隣接 −10%' : ''].filter(Boolean).join('・') + '）' : '') + ' ／ 単価 ' + pr.price + 'G ／ 経験値 ' + pr.orderExp + '</small></span></div>';
         if (lockedR) { row.appendChild(mkBtn('町Lv' + r.unlockLv + 'で解放', true)); body.appendChild(row); continue; }
-        row.appendChild(Object.assign(mkBtn(busy ? (now() >= b.job.readyAt ? '受け取り待ち' : '加工中') : ok ? '加工開始' : '材料が足りません', busy || !ok, () => { if (startJob(k, rk)) renderFac(); }), { id: 'facJob_' + rk }));
+        row.appendChild(Object.assign(mkBtn(busy ? (evo ? '進化の工事中' : now() >= b.job.readyAt ? '受け取り待ち' : '加工中') : ok ? '加工開始' : '材料が足りません', busy || !ok, () => { if (startJob(k, rk)) renderFac(); }), { id: 'facJob_' + rk }));
         body.appendChild(row);
       }
     }
@@ -4486,6 +4723,7 @@
     if (!f || !b) return;
     let from, to;
     if (t < b.builtAt) { from = b.startedAt; to = b.builtAt; }
+    else if (b.up && t < b.up.readyAt) { from = b.up.startedAt; to = b.up.readyAt; }
     else if (b.job && t < b.job.readyAt) { from = b.job.startedAt; to = b.job.readyAt; }
     else return;
     f.style.width = (100 * Math.min(1, (t - from) / (to - from))).toFixed(1) + '%';
@@ -5528,7 +5766,7 @@
     hudSig = '';
     buildPalette(); buildPopupRow();
     rebuildWorld(); camTarget = framing();
-    sfx('levelup');
+    sfx('levelup'); logEvent('町がLv' + lv + 'になった');
     toast(levelUpText(lv), 7000);
   };
 
@@ -5634,6 +5872,18 @@
     zoomAround(ex(e), ey(e), toWorld(ex(e), ey(e)), cam.zoom * Math.exp(-e.deltaY * .0015));
   }, { passive: false });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
+  // 拡大・縮小ボタン（段階8a）：1回で1.25倍ずつ。町の帯の中央を中心に。端まで来たらボタンを無効に
+  const ZOOM_STEP = 1.25;
+  function zoomStep(dir) {
+    camTarget = null;
+    const z0 = cam.zoom, lo = zoomMin();
+    let z = dir > 0 ? z0 * ZOOM_STEP : z0 / ZOOM_STEP;
+    if (dir < 0 && z < lo * 1.02) z = lo; if (dir > 0 && z > ZOOM_MAX / 1.02) z = ZOOM_MAX;
+    zoomAround(VW / 2, VH / 2, toWorld(VW / 2, VH / 2), z); syncZoomBtns();
+  }
+  function syncZoomBtns() { $('zoomIn').disabled = cam.zoom >= ZOOM_MAX - 1e-6; $('zoomOut').disabled = cam.zoom <= zoomMin() + 1e-6; }
+  $('zoomIn').onclick = () => zoomStep(1); $('zoomOut').onclick = () => zoomStep(-1);
+  setInterval(syncZoomBtns, 300);
   window.addEventListener('resize', resize);
   if (window.ResizeObserver) { const ro = new ResizeObserver(() => { const t = Math.ceil($('topBand').getBoundingClientRect().height), b = Math.ceil($('botBand').getBoundingClientRect().height); if (t !== CY0 || Math.max(120, innerHeight - t - b) !== VH) resize(); }); ro.observe($('topBand')); ro.observe($('botBand')); }
 
@@ -5648,6 +5898,13 @@
     kitchenCenter: () => window.__clockseed.facCenter('kitchen'),
     lastGacha: () => JSON.parse(JSON.stringify(lastGacha)),
     gachaFx: () => GFX.info(),
+    log: () => LOG.map(e => ({ text: e.text, at: e.at, away: e.away })),
+    logLine: () => $('logText').textContent,
+    plotNames: () => PLOT_NAMES.slice(),
+    facInfo: k => { const b = state.buildings[k]; return { lv: facLv(k), evolving: evolving(k), block: evoBlock(k), cost2: evoCost(k, 2), cost3: evoCost(k, 3), up: b && b.up ? Object.assign({}, b.up) : null, job: b && b.job ? Object.assign({}, b.job) : null, pop: facPop[k] != null }; },
+    chips: () => chipInfo.map(c => Object.assign({}, c, { y: c.y + CY0 })),
+    jobMs: (k, rk) => jobMs(k, rk),
+    zoomInfo: () => ({ zoom: cam.zoom, min: zoomMin(), max: ZOOM_MAX }),
     sound: () => SND.info(),
     towerCenter: () => scr(LAYOUT.tower.x, LAYOUT.tower.y - 30),
     overview: () => { const b = curBounds(), padT = 8, padB = 8; camTarget = null; cam.zoom = Math.min(VW / (b.x1 - b.x0), (VH - padT - padB) / (b.y1 - b.y0)) / BASE; cam.x = (b.x0 + b.x1) / 2; cam.y = (b.y0 + b.y1) / 2 - (padT - padB) / 2 / scale(); },   // 検品用：表示範囲全体を映す（見た目だけ）

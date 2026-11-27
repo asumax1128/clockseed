@@ -22,6 +22,8 @@ const tapOp=op=>pg.locator('.tp-op[data-op="'+op+'"]').tap();
 async function solve(mode){const s=await tp();for(const [i,op,j] of plan(s.digits,s.example)){if(mode==='A'){await tapCard(i);await tapOp(op);await tapCard(j);}else{await tapCard(i);await tapCard(j);await tapOp(op);}}return s;}
 const openTp=async()=>{const c=await pg.evaluate(()=>window.__clockseed.towerCenter());await pg.mouse.click(c.x,c.y);await pg.waitForTimeout(200);await pg.locator('[data-sp="TP"]').tap();await pg.waitForTimeout(150);};
 await pg.goto(url);await pg.waitForTimeout(400);
+// 段階7：特殊ドリルは町Lv4 で解放。町Lv4（チュートリアル済み）のセーブから始める
+await pg.evaluate(()=>{const s=JSON.parse(localStorage.getItem('clockseed.save'));s.townExp=300;s.tutorial.done=true;s.tutorial.step=10;localStorage.setItem('clockseed.save',JSON.stringify(s));});await pg.reload();await pg.waitForTimeout(400);
 await pg.evaluate(()=>document.addEventListener('pointerdown',e=>window.__ptr(e.pointerType),true));
 // ===== 1. 特殊ドリルは2本 =====
 {const c=await pg.evaluate(()=>window.__clockseed.towerCenter());await pg.mouse.click(c.x,c.y);await pg.waitForTimeout(200);

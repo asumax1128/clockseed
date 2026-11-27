@@ -13,7 +13,17 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
   html,body{margin:0;height:100%;overflow:hidden;background:#2f4a2c;color:var(--ink);
     font-family:"DotGothic16","Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif;touch-action:none}
-  #world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+  #world{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}   /* 上下の帯のあいだ（top・height は resize() で設定） */
+  .band{position:fixed;left:0;right:0;z-index:3;background:#3e2a1a;box-shadow:inset 0 -3px 0 #2a1a0e,inset 0 3px 0 #5a3e26;padding:2px 8px}
+  #topBand{top:0;display:flex;flex-direction:column;align-items:stretch;padding-top:4px;box-shadow:inset 0 3px 0 #5a3e26,0 3px 0 #2a1a0e}
+  #botBand{bottom:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding-bottom:6px;box-shadow:inset 0 3px 0 #5a3e26,0 -3px 0 #2a1a0e}
+  .sndbtn{font-family:inherit;color:var(--ink);border:0;cursor:pointer;touch-action:manipulation;padding:3px 9px;font-size:13px;font-weight:bold;white-space:nowrap}
+  .sndbtn[aria-pressed="false"]{opacity:.55;text-decoration:line-through}
+  #sndBtns{display:flex;gap:2px;margin-left:auto}
+  @media (max-width:600px){#title{display:none}#tradeHud{font-size:11px;padding:4px 8px}}
+  @media (max-height:520px){#title{display:none}#topBand .pix{margin:3px}#town,#gold,#warehouse{font-size:14px;padding:2px 8px}#gold img,.stock img{width:20px;height:20px}
+    #drillHud,#dexHud{font-size:13px;padding:1px 8px}#palette .tool{font-size:13px;padding:2px 8px 2px 4px}#palette .tool img{width:22px;height:22px}#palette .tool small{display:none}
+    #tutBar{font-size:13px;padding:3px 6px 3px 10px}}
   #world.grabbing{cursor:grabbing}
   img.px{image-rendering:pixelated;image-rendering:crisp-edges}
 
@@ -22,9 +32,7 @@
     box-shadow:0 -4px 0 0 var(--frame),0 4px 0 0 var(--frame),-4px 0 0 0 var(--frame),4px 0 0 0 var(--frame),
       inset 0 4px 0 0 var(--panel-hi),inset 0 -4px 0 0 var(--panel-lo),0 8px 0 0 #0003}
 
-  .hud{position:fixed;z-index:2;pointer-events:none}
-  .hud > *{pointer-events:auto}
-  #topbar{position:absolute;top:8px;left:12px;right:12px;display:flex;align-items:center;gap:12px}
+  #topbar{display:flex;align-items:center;gap:0 8px;flex-wrap:wrap}
   #title{padding:4px 12px;font-size:20px;font-weight:bold;letter-spacing:.14em;display:flex;align-items:center;gap:8px;white-space:nowrap}
   #title img{width:24px;height:24px}
   #fastBadge{background:#b8503c;color:#fff4e4;padding:1px 6px;font-size:11px;letter-spacing:.05em;display:none}
@@ -40,10 +48,8 @@
   .stock{display:flex;align-items:center;gap:4px}
   .stock img{width:26px;height:26px}
 
-  #palette{bottom:12px;left:0;right:0;display:flex;gap:10px;flex-wrap:nowrap;justify-content:center;pointer-events:none}
-  #palette > *{pointer-events:auto}
-  #variantBar{position:fixed;bottom:66px;left:0;right:0;display:none;gap:6px;justify-content:center;flex-wrap:wrap;pointer-events:none;z-index:5}
-  #variantBar > *{pointer-events:auto}
+  #palette{display:flex;gap:4px 10px;flex-wrap:wrap;justify-content:center}
+  #variantBar{display:none;gap:6px;justify-content:center;flex-wrap:wrap}
   .vbtn{padding:3px 10px 3px 6px;font-size:14px;gap:5px}
   .vbtn img{width:24px;height:24px}
   .vbtn small{display:block;font-size:10px;opacity:.8}
@@ -116,7 +122,7 @@
   .mrow .recipe small{display:block;font-size:11px;font-weight:normal;color:var(--ink-soft)}
   .mrow .short{color:#b8503c}
   .mact{margin-top:10px;display:flex;justify-content:center}
-  #subHud{position:absolute;top:66px;left:12px;display:flex;gap:6px;align-items:flex-start}
+  #subHud{display:flex;gap:0 6px;align-items:center;flex-wrap:wrap}
   #drillHud,#dexHud{display:flex;align-items:center;gap:12px;padding:3px 12px;font-weight:bold;font-size:15px;
     cursor:pointer;border:0;font-family:inherit;color:inherit;touch-action:manipulation}
   #drillHud span,#dexHud span{display:flex;align-items:center;gap:4px}
@@ -152,6 +158,24 @@
   @keyframes fly{from{opacity:1;transform:translate(-50%,6px)}to{opacity:0;transform:translate(-50%,-34px)}}
   .spark{position:absolute;left:50%;top:18px;width:6px;height:6px;background:#ffd85a;animation:spark .7s ease-out forwards;pointer-events:none}
   @keyframes spark{to{opacity:0;transform:translate(var(--dx),var(--dy))}}
+  /* ドリルの正誤の演出（画面中央。操作は邪魔しない） */
+  .fxm{position:fixed;left:50%;top:50%;z-index:80;pointer-events:none;transform:translate(-50%,-50%)}
+  .fx-maru{width:min(46vmin,300px);height:min(46vmin,300px);border-radius:50%;border:min(5.5vmin,36px) solid #e0483a;box-shadow:0 0 0 3px #fff8,inset 0 0 0 3px #fff8;
+    animation:maru .6s ease-out forwards}
+  @keyframes maru{0%{transform:translate(-50%,-50%) scale(.35);opacity:0}25%{transform:translate(-50%,-50%) scale(1.08);opacity:.95}55%{transform:translate(-50%,-50%) scale(1);opacity:.95}100%{transform:translate(-50%,-50%) scale(1.04);opacity:0}}
+  .fx-batsu{width:84px;height:84px;animation:batsu .55s ease-out forwards}
+  .fx-batsu::before,.fx-batsu::after{content:'';position:absolute;left:36px;top:-4px;width:12px;height:92px;background:#4f6fa8;border-radius:6px;box-shadow:0 0 0 2px #fff9}
+  .fx-batsu::before{transform:rotate(45deg)}.fx-batsu::after{transform:rotate(-45deg)}
+  @keyframes batsu{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}20%{opacity:.9;transform:translate(-50%,-50%) scale(1)}75%{opacity:.9}100%{opacity:0}}
+  .shake{animation:shake .32s ease-in-out}
+  @keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
+  .fx-hana{display:flex;flex-direction:column;align-items:center;animation:hanaout 1.7s ease-in forwards}
+  .fx-hana svg{width:min(52vmin,320px);height:min(52vmin,320px);filter:drop-shadow(0 0 3px #fff)}
+  .fx-hana path{fill:none;stroke:#e0483a;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:hanadraw .75s ease-out forwards}
+  .fx-hana path.petal{animation-delay:.35s;stroke-width:4.5}
+  .fx-hana b{margin-top:-6px;padding:4px 14px;background:#fff6e0;color:#c0392b;font-size:20px;border-radius:8px;box-shadow:0 0 0 3px #e0483a}
+  @keyframes hanadraw{to{stroke-dashoffset:0}}
+  @keyframes hanaout{0%{opacity:0;transform:translate(-50%,-50%) scale(.85)}10%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0}}
   .intg{display:inline-flex;align-items:center;font-size:1.3em;margin-right:2px}
   .intg .lim{display:inline-flex;flex-direction:column;font-size:.5em;line-height:1.1;margin-left:1px}
   .intg sup,.intg sub{vertical-align:baseline;font-size:1em}
@@ -222,16 +246,15 @@
   .trow .tool{font-size:14px;padding:6px 12px}
   .tseeds{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}.tseed{font-size:12px;padding:3px 8px 3px 4px;gap:4px}.tseed img{width:22px;height:22px}
   .tmsg{font-size:13px;min-height:18px;margin-top:4px}.tmsg.ng{color:#b0402a}.tmsg.ok{color:#2f7d32;font-weight:bold}
-  #tutBar{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:10px;padding:6px 8px 6px 12px;
+  #tutBar{position:relative;z-index:40;display:flex;align-items:center;gap:10px;padding:6px 8px 6px 12px;
     max-width:min(640px,calc(100% - 24px));font-weight:bold;font-size:15px;background:#fff6e0;box-shadow:0 0 0 3px #ff9a5c}
-  body:has(#variantBar[style*="flex"]) #tutBar{bottom:132px}
   #tutStep{background:#ff7b5c;color:#fff;border-radius:10px;padding:1px 8px;font-size:12px;flex-shrink:0}
   #tutText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
   #tutSkip{flex-shrink:0;font-size:12px;padding:3px 10px;border:2px solid #b8946a;background:#fff;border-radius:6px;cursor:pointer;color:#5a3a22}
   .tut-hl{outline:4px solid #ff7b5c!important;outline-offset:2px;animation:tutPulse 1s ease-in-out infinite;position:relative;z-index:2}
   @keyframes tutPulse{0%,100%{outline-color:#ff7b5c}50%{outline-color:#ffd54a}}
   .glock{font-size:13px;color:var(--ink-soft)}.gbtns .gticket{background:#ffe8c8}
-  #visitBar{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:12px;align-items:center;padding:8px 10px 8px 16px;font-weight:bold;font-size:15px;background:#fff6e0}
+  #visitBar{align-self:center;z-index:20;display:flex;gap:12px;align-items:center;padding:8px 10px 8px 16px;font-weight:bold;font-size:15px;background:#fff6e0}
   #visitBar small{font-weight:normal;font-size:12px;margin-left:6px;color:var(--ink-soft)}#visitBar .tool{font-size:15px;padding:6px 14px;white-space:nowrap}
   body.visiting #gold,body.visiting #warehouse,body.visiting #palette,body.visiting #variantBar,body.visiting #subHud,body.visiting #title{display:none!important}
   body.visiting #topbar{justify-content:flex-start}.spbtns .fxf-entry b{font-size:12px;line-height:1.25}
@@ -241,6 +264,7 @@
   .spbox .sphead{display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:14px;margin-bottom:6px;gap:8px;flex-wrap:wrap}
   .spbox .sphead small{font-weight:normal;font-size:12px;color:var(--ink-soft)}
   .spbtns{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .spbtns .tool.locked{background:#e4ddd0;color:#8a7a66;cursor:not-allowed;filter:grayscale(.6)}.spbtns .tool.locked small{font-weight:bold;color:#8a5a30}
   .spbtns .tool{flex-direction:column;font-size:14px;padding:6px 4px}
   .spbtns small{font-size:11px;color:var(--ink-soft)}
   .choice.long{font-size:17px}
@@ -288,6 +312,20 @@
   .gcard .gcat{font-size:10px;color:var(--ink-soft)}
   .gnew{display:inline-block;background:#d9503a;color:#fff;font-weight:bold;font-size:12px;padding:0 6px;margin-right:4px;animation:gnew 1s ease-in-out infinite}
   @keyframes gnew{50%{transform:scale(1.12)}}
+  /* ガチャの演出 */
+  #gachaFx{position:fixed;inset:0;z-index:70;background:#1e140cd8;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:pointer}
+  #gachaCv{width:min(92vw,calc(76vh * 4 / 3));height:auto;aspect-ratio:4/3;image-rendering:pixelated;image-rendering:crisp-edges;box-shadow:0 0 0 4px #5a3a22,0 0 0 8px #2a1a10}
+  #gachaCard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}
+  #gachaCard.show .gcard{animation:gcardin .35s cubic-bezier(.2,1.4,.4,1)}
+  #gachaCard.r-UR .gcard{animation:gcardin .35s cubic-bezier(.2,1.4,.4,1),gglow 1.4s ease-in-out .35s infinite}
+  @keyframes gcardin{from{transform:scale(.2) rotate(-8deg);opacity:0}to{transform:none;opacity:1}}
+  #gachaFlash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none}
+  #gachaFlash.on{animation:gflash .7s ease-out}
+  @keyframes gflash{0%{opacity:0}12%{opacity:.95}100%{opacity:0}}
+  #gachaCount{position:absolute;top:12px;left:16px;color:#fff6e0;font-weight:bold;font-size:18px}
+  #gachaHint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);color:#fff6e0;font-size:15px;white-space:nowrap;animation:ghint 1.2s ease-in-out infinite}
+  @keyframes ghint{50%{opacity:.45}}
+  #gachaAll{position:absolute;top:8px;right:12px;font-size:14px;padding:5px 12px}
   .gdup{font-size:11px;color:#3f7d2c;font-weight:bold;margin-top:3px}
   .gcard.big{width:min(320px,80vw);margin:12px auto;padding:14px 12px}
   .gcard.big .gic{width:84px;height:84px}
@@ -325,9 +363,7 @@
 </style>
 </head>
 <body>
-<canvas id="world" aria-label="ときの種の町（畑と時計塔）"></canvas>
-
-<div class="hud" style="inset:0">
+<div id="topBand" class="band">
   <div id="topbar">
     <div id="title" class="pix"><img class="px" data-icon="ic_sprout" alt="">ときの種<span id="fastBadge"></span></div>
     <div id="town" class="pix" title="町レベル"><span id="lvText">町Lv1</span><span id="expBar"><i id="expFill"></i></span><span id="expText">0/30</span></div>
@@ -337,8 +373,6 @@
       <span id="stocks" style="display:contents"></span>
     </button>
   </div>
-  <div id="palette" style="position:absolute"></div>
-  <div id="variantBar"></div>
   <div id="subHud">
     <button id="drillHud" class="pix" title="時計塔のドリル（時短ストック・カケラ・即完了チケット）">
       <span><img class="px" data-icon="ic_hourglass" alt="時短"><span id="dhStock">0:00</span></span>
@@ -349,7 +383,15 @@
       <span><img class="px" data-icon="ic_book" alt="図鑑">図鑑 <span id="dexHudNum">0/50</span></span>
     </button>
     <button id="tradeHud" class="pix" title="交換掲示板（町のコード・変種のギフト）"><span id="tradeHudText">交換掲示板</span></button>
+    <span id="sndBtns"><button id="bgmBtn" class="pix sndbtn" aria-pressed="true" title="BGM（音楽）のオン・オフ">♪ BGM</button><button id="seBtn" class="pix sndbtn" aria-pressed="true" title="効果音のオン・オフ">♬ 効果音</button></span>
   </div>
+<div id="visitBar" class="pix" style="display:none"><span id="visitText"></span><button class="tool pix act" id="visitEnd">見学を終わる</button></div>
+</div>
+<canvas id="world" aria-label="ときの種の町（畑と時計塔）"></canvas>
+<div id="botBand" class="band">
+<div id="tutBar" class="pix" style="display:none"><span id="tutStep"></span><span id="tutText"></span><button id="tutSkip">スキップ</button></div>
+  <div id="variantBar"></div>
+  <div id="palette"></div>
 </div>
 <div id="fxfPanel" class="fxf" style="display:none"><div class="fxf-top"><span class="fxf-title">FACTOR×FACTOR ソロ・イージー<small>（移植版）</small></span><button class="fxf-x" id="fxfClose" aria-label="閉じる">×</button></div><div id="fxfBody" class="fxf-body"></div></div>
 <div id="tpPanel" class="fxf tp" style="display:none"><div class="fxf-top"><span class="fxf-title">テンパズル<small>（移植版）</small></span><button class="fxf-x" id="tpClose" aria-label="閉じる">×</button></div><div id="tpBody" class="fxf-body"></div></div>
@@ -359,12 +401,10 @@
   <div id="popupVarWrap" style="display:none"><div class="vlabel">変種（ガチャで解放した種）</div><div class="row" id="popupVar"></div></div>
   <button class="cancel" id="popupCancel">やめる</button>
 </div></div>
-<div id="tutBar" class="pix" style="display:none"><span id="tutStep"></span><span id="tutText"></span><button id="tutSkip">スキップ</button></div>
 <div id="tradePanel" class="overlay"><div class="box pix tradebox">
   <div class="panelhd"><b>交換掲示板</b><button id="tradeClose" aria-label="閉じる">×</button></div>
   <div id="tradeBody"></div>
 </div></div>
-<div id="visitBar" class="pix" style="display:none"><span id="visitText"></span><button class="tool pix act" id="visitEnd">見学を終わる</button></div>
 <div id="ordersPanel" class="overlay"><div class="box pix">
   <div class="panelhd"><b>注文掲示板</b><button id="ordersClose" aria-label="閉じる">×</button></div>
   <div id="orderList"></div>
@@ -393,6 +433,13 @@
   <div class="panelhd"><b>図鑑</b><button id="dexClose" aria-label="閉じる">×</button></div>
   <div id="dexBody"></div>
 </div></div>
+<div id="skipConfirm" class="overlay" style="z-index:60"><div class="box pix" role="dialog" aria-modal="true" aria-labelledby="skipQ">
+  <div class="q" id="skipQ">チュートリアルをスキップしますか？</div>
+  <div class="hint" style="margin:6px 0 10px">ここまでの報酬はそのまま残ります</div>
+  <div class="row" style="justify-content:center;gap:12px"><button class="tool pix act" id="skipYes">スキップする</button><button class="tool pix" id="skipNo">やめる</button></div>
+</div></div>
+<div id="gachaFx" style="display:none" aria-live="polite"><canvas id="gachaCv" aria-label="カプセルマシンの演出"></canvas><div id="gachaCard"></div><div id="gachaFlash"></div>
+  <div id="gachaCount"></div><div id="gachaHint"></div><button id="gachaAll" class="tool pix">まとめて見る</button></div>
 <div id="toast" class="pix"></div>
 
 <script id="drill-engine">
@@ -1656,7 +1703,7 @@
 (() => {
   'use strict';
   const SAVE_KEY = 'clockseed.save';
-  const SAVE_VERSION = 12;
+  const SAVE_VERSION = 13;
   const MAX_PLOTS = 24;                // 区画の最大数（町Lv8で24）
   const ORDER_COUNT = 3;               // 同時に出る注文の数
   const ORDER_MIN = 3, ORDER_MAX = 9;  // 生の作物の注文の個数の範囲
@@ -1828,7 +1875,7 @@
                  storage: {}, gold: 0, townExp: 0, orders: [], orderIds: [], nextOrder: null, buildings: {}, drill: freshDrill(), gacha: window.ClockseedGacha.freshState(),
                  buffs: freshBuffs(), helpers: freshHelpers(), decor: { treeAt: 0 },
                  trade: { uid: window.ClockseedCode.randomId(6), stock: {}, received: [] },
-                 tutorial: freshTutorial() };
+                 tutorial: freshTutorial(), settings: { bgm: true, se: true } };
     for (const k of ITEM_KEYS) st.storage[k] = 0;
     for (const k of BUILDING_KEYS) st.buildings[k] = null;
     // 新しいセーブ：チュートリアル用に最初の2件を固定（小麦×3・にんじん×3）。3件目はふつうの注文
@@ -1892,6 +1939,9 @@
         s.tutorial = { done: !!tu.done, step: Math.min(10, Math.max(1, nat(tu.step) || 1)), sets: nat(tu.sets), mark: nat(tu.mark),
           flags: { d1: !!(tu.flags && tu.flags.d1), pull: !!(tu.flags && tu.flags.pull) }, tickets: Math.min(99, nat(tu.tickets)), granted: !!tu.granted };
       } else s.tutorial = Object.assign(freshTutorial(), { done: true, step: 10 });
+      // 音の設定（version 12 以前には無い → BGM・効果音ともにオン）
+      const dz = d.settings || {};
+      s.settings = { bgm: dz.bgm !== false, se: dz.se !== false };
       // 交換掲示板（version 10 以前には無い → 新しい発行元ID・ストック0・受け取り記録なし）
       const dt = d.trade || {};
       if (typeof dt.uid === 'string' && /^[0-9A-Z]{6}$/.test(dt.uid)) s.trade.uid = dt.uid;
@@ -2272,6 +2322,131 @@
      ここから下は見た目と操作だけ。ゲーム状態は上のロジックだけが変更する。
      ===================================================================== */
   const $ = id => document.getElementById(id);
+
+  // ---------- 音（WebAudio で生成。外部ファイルなし） ----------
+  // 効果音：正解・不正解・植える・収穫・納品・コイン・建設完了・レベルアップ・ガチャ（レア度別）・鐘・花丸
+  // BGM：オルゴール風のループ（自作の旋律）。ブラウザの決まりで、最初のタップのあとに鳴り始める
+  const SND = (() => {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    let ac = null, master = null, seBus = null, bgmBus = null, timer = null, nextT = 0, step = 0, unlocked = false;
+    const log = [];                                       // 検品用：鳴らした効果音の記録（直近50件）
+    const conf = () => (visit ? visit.real : state).settings;
+    const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+    function ensure() {
+      if (!AC) return null;
+      if (!ac) {
+        try { ac = new AC(); } catch (e) { return null; }
+        master = ac.createGain(); master.gain.value = 0.9; master.connect(ac.destination);
+        seBus = ac.createGain(); seBus.gain.value = 0.5; seBus.connect(master);
+        bgmBus = ac.createGain(); bgmBus.gain.value = 0; bgmBus.connect(master);
+      }
+      if (ac.state === 'suspended') ac.resume().catch(() => {});
+      return ac;
+    }
+    // 1音：波形・高さ（Hz）・開始・長さ・音量・高さの移動先
+    function tone(bus, type, f, t, dur, vol, f2, att = 0.006) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t);
+      if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + att);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(bus); o.start(t); o.stop(t + dur + 0.02);
+    }
+    function noise(t, dur, vol, hp = 1500) {             // ガチャの「ガラガラ」用の短い雑音
+      const n = Math.max(1, Math.floor(ac.sampleRate * dur)), buf = ac.createBuffer(1, n, ac.sampleRate), a = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) a[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      s.buffer = buf; f.type = 'highpass'; f.frequency.value = hp; g.gain.value = vol;
+      s.connect(f); f.connect(g); g.connect(seBus); s.start(t);
+    }
+    const arp = (ms, t, gap, dur, vol, type = 'triangle') => ms.forEach((m, i) => tone(seBus, type, hz(m), t + i * gap, dur, vol));
+    function bellAt(t, f, vol) { [[1, 1], [2.76, .45], [5.4, .25], [8.9, .1]].forEach(([k, v]) => tone(seBus, 'sine', f * k, t, 2.4 / Math.sqrt(k), vol * v, null, 0.003)); }
+    const SE = {
+      correct: t => { tone(seBus, 'triangle', hz(88), t, .14, .35); tone(seBus, 'triangle', hz(93), t + .09, .32, .35); },
+      wrong:   t => { tone(seBus, 'square', 220, t, .16, .12, 170); tone(seBus, 'square', 165, t + .14, .22, .1, 120); },
+      plant:   t => { tone(seBus, 'sine', 520, t, .12, .35, 260); noise(t, .05, .05, 2500); },
+      harvest: t => arp([84, 88, 91, 96], t, .055, .22, .26),
+      deliver: t => { arp([79, 84, 88], t, .08, .3, .24); SE.coin(t + .26); },
+      coin:    t => { tone(seBus, 'square', hz(83), t, .07, .12); tone(seBus, 'square', hz(88), t + .07, .32, .12); },
+      build:   t => { arp([72, 76, 79], t, .1, .26, .24, 'square'); tone(seBus, 'triangle', hz(84), t + .3, .6, .3); },
+      levelup: t => { arp([72, 76, 79, 84], t, .11, .24, .22, 'square'); arp([79, 84, 88, 91, 96], t + .48, .07, .5, .22); },
+      gacha:   t => { for (let i = 0; i < 6; i++) noise(t + i * .07, .05, .12, 1800 + i * 300); tone(seBus, 'triangle', hz(84), t + .45, .25, .25); },
+      pop:     t => { tone(seBus, 'sine', 700, t, .1, .3, 1100); },                                        // コモン：小さくポン
+      rare:    t => { arp([88, 91, 96], t, .06, .3, .2, 'sine'); },                                       // レア：青いきらめき
+      sr:      t => { arp([84, 88, 91, 96, 100], t, .06, .5, .22); tone(seBus, 'sine', hz(108), t + .3, .9, .1); },   // SR：金色の光
+      ur:      t => { tone(seBus, 'sawtooth', 200, t, .6, .08, 1600); arp([84, 88, 91, 96, 100, 103, 108], t + .35, .05, .7, .2, 'square'); bellAt(t + .75, hz(96), .3); },   // 激レア：虹
+      bell:    t => { bellAt(t, hz(76), .5); bellAt(t + .55, hz(71), .4); },
+      hanamaru: t => { arp([84, 88, 91, 96, 91, 96, 100], t, .06, .28, .2); },
+    };
+    function play(name) {
+      let ok = false;
+      if (conf().se && unlocked && SE[name] && ensure()) { try { SE[name](ac.currentTime + 0.01); ok = true; } catch (e) {} }
+      log.push({ name, played: ok }); if (log.length > 50) log.shift();
+      return ok;
+    }
+    // ----- BGM：オルゴール風（8小節×8分音符のループ。テンポ 84） -----
+    const _ = null;
+    const MEL = [76, _, 79, _, 84, _, 79, _,   81, _, 79, 76, 74, _, _, _,   72, _, 76, _, 79, _, 81, _,   79, _, _, _, _, _, _, _,
+                 76, _, 79, _, 84, _, 86, _,   88, _, 86, 84, 81, _, _, _,   79, _, 76, _, 74, _, 76, _,   72, _, _, _, _, _, _, _];
+    const BASS = [48, 55, 45, 52, 41, 48, 43, 50, 48, 55, 45, 52, 41, 43, 48, 43];   // 1小節に2音（1拍目・3拍目）
+    const STEP = 60 / 84 / 2;
+    function boxNote(m, t, vol) {                         // 櫛の歯をはじいたような減衰音
+      const f = hz(m);
+      tone(bgmBus, 'sine', f, t, 1.6, vol, null, 0.004);
+      tone(bgmBus, 'sine', f * 2, t, .7, vol * .35, null, 0.003);
+      tone(bgmBus, 'sine', f * 3.01, t, .3, vol * .12, null, 0.002);
+    }
+    function schedule() {
+      if (!ac) return;
+      while (nextT < ac.currentTime + 0.5) {
+        const i = step % MEL.length;
+        if (MEL[i] != null) boxNote(MEL[i], nextT, .22);
+        if (i % 4 === 0) boxNote(BASS[i / 4 | 0], nextT, .12);
+        nextT += STEP; step++;
+      }
+    }
+    function bgmOn() {
+      if (!conf().bgm || !unlocked || !ensure() || timer) return;
+      nextT = ac.currentTime + 0.1; step = 0;
+      bgmBus.gain.cancelScheduledValues(ac.currentTime); bgmBus.gain.setValueAtTime(0.0001, ac.currentTime); bgmBus.gain.exponentialRampToValueAtTime(0.5, ac.currentTime + 1.5);
+      schedule(); timer = setInterval(schedule, 150);
+    }
+    function bgmOff() {
+      if (timer) { clearInterval(timer); timer = null; }
+      if (ac) { bgmBus.gain.cancelScheduledValues(ac.currentTime); bgmBus.gain.setValueAtTime(bgmBus.gain.value, ac.currentTime); bgmBus.gain.linearRampToValueAtTime(0, ac.currentTime + 0.3); }
+    }
+    function unlock() {                                   // 最初のタップ（またはキー）で音を使えるようにする
+      if (unlocked) return; unlocked = true;
+      if (conf().bgm || conf().se) ensure();
+      bgmOn();
+    }
+    document.addEventListener('pointerdown', unlock, true); document.addEventListener('keydown', unlock, true);
+    document.addEventListener('visibilitychange', () => { if (!ac) return; if (document.hidden) ac.suspend().catch(() => {}); else ac.resume().catch(() => {}); });
+    function set(kind, on) {
+      const S = conf(); S[kind] = !!on;
+      save();                                           // 見学中は save() が何もしないので、見学を終えたときに保存される
+      if (kind === 'bgm') { if (on) bgmOn(); else bgmOff(); }
+      syncButtons();
+    }
+    function syncButtons() {
+      const S = conf();
+      $('bgmBtn').setAttribute('aria-pressed', String(S.bgm)); $('bgmBtn').title = 'BGM：' + (S.bgm ? 'オン（タップでオフ）' : 'オフ（タップでオン）');
+      $('seBtn').setAttribute('aria-pressed', String(S.se)); $('seBtn').title = '効果音：' + (S.se ? 'オン（タップでオフ）' : 'オフ（タップでオン）');
+    }
+    $('bgmBtn').onclick = () => set('bgm', !conf().bgm);
+    $('seBtn').onclick = () => set('se', !conf().se);
+    syncButtons();
+    return { play, set, syncButtons, info: () => ({ unlocked, ctx: ac ? ac.state : null, bgm: !!timer, settings: Object.assign({}, conf()), log: log.slice() }) };
+  })();
+  const sfx = name => SND.play(name);
+  // 建設完了の音：開いている間に「建設中 → 完成」に変わった施設があれば鳴らす（見学中・読み込み直後は鳴らさない）
+  let bWatch = null;
+  setInterval(() => {
+    if (visit) { bWatch = null; return; }
+    const cur = Object.fromEntries(BUILDING_KEYS.map(k => [k, bState(k)]));
+    if (bWatch && BUILDING_KEYS.some(k => bWatch[k] === 'building' && cur[k] === 'built')) sfx('build');
+    bWatch = cur;
+  }, 400);
 
   // ---------- 設定値（将来の町レベルで拡張） ----------
   const T = 16;                       // 1タイル = 16ドット
@@ -3626,7 +3801,7 @@
 
   // ---------- カメラ ----------
   const canvas = $('world'), ctx = canvas.getContext('2d');
-  let VW = 0, VH = 0, DPR = 1, BASE = 4;
+  let VW = 0, VH = 0, DPR = 1, BASE = 4, CY0 = 0;        // CY0：中央の帯（Canvas）の上端の画面座標
   const cam = { x: 150, y: 85, zoom: 1 };
   const scale = () => BASE * cam.zoom;
   // 下限倍率：マップが画面の幅・高さをちょうど覆う倍率（左右・上下に余白を出さない）
@@ -3642,7 +3817,9 @@
   }
   function resize() {
     DPR = Math.min(window.devicePixelRatio || 1, 2);
-    VW = innerWidth; VH = innerHeight;
+    const tH = Math.ceil($('topBand').getBoundingClientRect().height), bH = Math.ceil($('botBand').getBoundingClientRect().height);
+    CY0 = tH; VW = innerWidth; VH = Math.max(120, innerHeight - tH - bH);   // 町は上下の帯のあいだだけに描く
+    canvas.style.top = CY0 + 'px'; canvas.style.height = VH + 'px';
     canvas.width = Math.round(VW * DPR); canvas.height = Math.round(VH * DPR);
     BASE = Math.max(2, Math.min(VW / (18 * T), VH / (12 * T)));
     buildLightCache();
@@ -3651,7 +3828,7 @@
   function framing() {            // 時計塔と畑の両方が入るカメラ（現在のカメラは変えずに目標値だけ返す）
     const keep = { x: cam.x, y: cam.y, zoom: cam.zoom };
     // 時計塔・畑・解放済みの施設が入る範囲（上下は UI の分だけ余白）。広すぎるときは下限倍率で中央を映す
-    const { x0, y0, x1, y1 } = contentBox(), padTop = state.tutorial && !state.tutorial.done ? 150 : 64, padBot = 84;   // チュートリアル中は案内の帯の分だけ上を空ける
+    const { x0, y0, x1, y1 } = contentBox(), padTop = 14, padBot = 12;   // 上下の帯の外に描くので、余白は少しだけ
     const S = Math.min((VW - 32) / (x1 - x0), (VH - padTop - padBot) / (y1 - y0));
     cam.zoom = S / BASE;
     clampCam();
@@ -3823,7 +4000,7 @@
   let bell = null;
   const FOLK_PATH = [[[-6, 150], [34, 140]], [[112, 96], [76, 112]], [[-6, 100], [22, 120]], [[116, 160], [70, 148]]];
   const bellPos = () => ({ x: LAYOUT.tower.x, y: LAYOUT.tower.y - SPR.tower.height + 4 });
-  function ringBell() { bell = { t0: performance.now() / 1000 }; }
+  function ringBell() { bell = { t0: performance.now() / 1000 }; sfx('bell'); }
   function pushDecor(objs, ts, t) {
     for (const id of Object.keys(DECOR_SPOTS)) {
       const n = decorShown(id); if (!n || DECOR_FLAT[id]) continue;
@@ -4162,7 +4339,7 @@
     for (const k of paletteCrops()) row.appendChild(cropBtn(k, () => {
       const i = popupPlot; closePopup();
       selected = k; selectedV = null; buildPalette();
-      if (i >= 0) plant(i, k);
+      if (i >= 0 && plant(i, k)) sfx('plant');
     }, false));
     const vrow = $('popupVar'); vrow.innerHTML = '';     // 変種（解放済みのものだけ）
     const vs = paletteCrops().filter(k => CROPS[k].unlockLv <= townLevel()).flatMap(unlockedVariants);
@@ -4170,7 +4347,7 @@
     for (const sd of vs) vrow.appendChild(variantBtn(sd, () => {
       const i = popupPlot, k = VARIANTS[sd].crop; closePopup();
       selected = k; selectedV = sd; buildPalette();
-      if (i >= 0) plant(i, k, sd);
+      if (i >= 0 && plant(i, k, sd)) sfx('plant');
     }, false));
   }
   buildPalette(); buildPopupRow();
@@ -4193,7 +4370,7 @@
         '<div class="orew"><span>' + goldImg + r.gold + '</span><span class="xp">町経験値 +' + r.exp + '</span></div>';
       const b = document.createElement('button'); b.className = 'tool pix act';
       if (short > 0) { b.textContent = 'あと' + short + '個'; b.disabled = true; }
-      else { b.textContent = '納品'; b.onclick = () => { const x = deliverPeddler(); if (x) { toast('行商人に納品：+' + x.gold + 'G・町経験値 +' + x.exp + (x.boosted ? '（ブースト）' : '')); renderOrders(); } }; }
+      else { b.textContent = '納品'; b.onclick = () => { const x = deliverPeddler(); if (x) { sfx('deliver'); toast('行商人に納品：+' + x.gold + 'G・町経験値 +' + x.exp + (x.boosted ? '（ブースト）' : '')); renderOrders(); } }; }
       row.appendChild(b); list.appendChild(row);
     }
     state.orders.forEach((o, i) => {
@@ -4204,7 +4381,7 @@
         '<div class="orew"><span>' + goldImg + r.gold + '</span><span class="xp">町経験値 +' + r.exp + '</span></div>';
       const b = document.createElement('button'); b.className = 'tool pix act';
       if (short > 0) { b.textContent = 'あと' + short + '個'; b.disabled = true; }
-      else { b.textContent = '納品'; b.onclick = () => { const x = deliver(i); if (x) { if (x.boosted) toast('注文ブースト券：町経験値 +' + x.exp + '（+50%）'); renderOrders(); } }; }
+      else { b.textContent = '納品'; b.onclick = () => { const x = deliver(i); if (x) { sfx('deliver'); if (x.boosted) toast('注文ブースト券：町経験値 +' + x.exp + '（+50%）'); renderOrders(); } }; }
       row.appendChild(b);
       const rr = document.createElement('button'); rr.className = 'tool pix rrbtn';       // 注文リロール券で引き直す
       rr.textContent = '引き直す（券×' + ownedCount('cs03') + '）'; rr.disabled = ownedCount('cs03') < 1;
@@ -4236,10 +4413,10 @@
         '<div class="cnt">' + n + '個</div>';
       const b1 = document.createElement('button'); b1.className = 'tool pix small';
       b1.textContent = '1個売る +' + up + 'G'; b1.disabled = n < 1;
-      b1.onclick = () => { sell(k, 1); renderWarehouse(); };
+      b1.onclick = () => { if (sell(k, 1)) sfx('coin'); renderWarehouse(); };
       const b2 = document.createElement('button'); b2.className = 'tool pix small';
       b2.textContent = '全部売る +' + (up * n) + 'G'; b2.disabled = n < 1;
-      b2.onclick = () => { sell(k, n); renderWarehouse(); };
+      b2.onclick = () => { if (sell(k, n)) sfx('coin'); renderWarehouse(); };
       row.appendChild(b1); row.appendChild(b2); list.appendChild(row);
     }
   }
@@ -4378,6 +4555,13 @@
   }
   // 特殊ドリル（FACTOR×FACTOR 移植版・テンパズル移植版。どちらも全画面の別モジュール）
   const spToday = () => (state.drill.spDay === localDay() ? state.drill.spCount : 0);
+  const SP_UNLOCK = { FXF: 3, TP: 4 };                     // 特殊ドリルの解放：FACTOR×FACTOR は町Lv3、テンパズルは町Lv4
+  const spOpen = k => townLevel() >= SP_UNLOCK[k];
+  function spLock(b, k) {                                  // 解放前：「町Lv○で解放」と表示して選べない
+    if (spOpen(k)) return;
+    b.disabled = true; b.classList.add('locked'); b.onclick = null;
+    b.querySelector('small').textContent = '町Lv' + SP_UNLOCK[k] + 'で解放';
+  }
   function specialBox() {
     const box = document.createElement('div'); box.className = 'spbox'; box.id = 'specialBox';
     const left = Math.max(0, SPECIAL_REWARD.perDay - spToday()), H = SPECIAL_REWARD.hi, Lo = SPECIAL_REWARD.lo;
@@ -4385,10 +4569,10 @@
     const g = document.createElement('div'); g.className = 'spbtns';
     { const r = state.drill.stats[FXF_TYPE] || { ok: 0, n: 0 }, b = document.createElement('button');   // FACTOR×FACTOR ソロ・イージー（移植版）
       b.className = 'tool pix fxf-entry'; b.dataset.sp = 'FXF'; b.innerHTML = '<b>FACTOR×FACTOR<br>ソロ・イージー（移植版）</b><small>正解 ' + r.ok + ' / ' + r.n + '</small>';
-      b.onclick = openFxf; g.appendChild(b); }
+      b.onclick = openFxf; spLock(b, 'FXF'); g.appendChild(b); }
     { const r = state.drill.stats[TP_TYPE] || { ok: 0, n: 0 }, b = document.createElement('button');   // テンパズル（移植版）
       b.className = 'tool pix tp-entry'; b.dataset.sp = 'TP'; b.innerHTML = '<b>テンパズル<br>（移植版）</b><small>正解 ' + r.ok + ' / ' + r.n + '</small>';
-      b.onclick = () => openTp(); g.appendChild(b); }
+      b.onclick = () => openTp(); spLock(b, 'TP'); g.appendChild(b); }
     box.appendChild(g); return box;
   }
   function visualSvg(v) {             // 問題の図（時計・図形・長方形・三角形）
@@ -4450,6 +4634,30 @@
     }
     const hud = $('drillHud'); hud.classList.remove('pulse'); void hud.offsetWidth; hud.classList.add('pulse');
   }
+  // ---------- ドリルの正誤の演出：〇（正解）・✕（不正解・小さく揺れる）・花丸（5問を終えた／10問連続正解） ----------
+  function fxMaru() {
+    const d = document.createElement('div'); d.className = 'fxm fx-maru'; document.body.appendChild(d); setTimeout(() => d.remove(), 650);
+  }
+  function fxBatsu() {
+    const d = document.createElement('div'); d.className = 'fxm fx-batsu'; document.body.appendChild(d); setTimeout(() => d.remove(), 600);
+    const box = $('drillPanel').querySelector('.box'); box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+  }
+  let hanaPath = null;
+  function fxHanamaru(label) {
+    if (!hanaPath) {                                       // うずまき（2周半）と、まわりの花びら（9枚）
+      let sp = '', pe = '';
+      for (let i = 0; i <= 150; i++) { const t = i / 150, a = -Math.PI / 2 + t * Math.PI * 5, r = 6 + t * 34; sp += (i ? 'L' : 'M') + (60 + Math.cos(a) * r).toFixed(1) + ' ' + (60 + Math.sin(a) * r * .92).toFixed(1); }
+      for (let k = 0; k < 9; k++) {
+        const a0 = -Math.PI / 2 + k / 9 * Math.PI * 2, a1 = a0 + Math.PI * 2 / 9, R = 44, p = (a, r) => (60 + Math.cos(a) * r).toFixed(1) + ' ' + (60 + Math.sin(a) * r).toFixed(1);
+        pe += (k ? '' : 'M' + p(a0, R)) + 'Q' + p((a0 + a1) / 2, R + 22) + ' ' + p(a1, R);
+      }
+      hanaPath = { sp, pe };
+    }
+    const d = document.createElement('div'); d.className = 'fxm fx-hana';
+    d.innerHTML = '<svg viewBox="-12 -12 144 144" aria-hidden="true"><path style="--len:900" d="' + hanaPath.sp + '"/><path class="petal" style="--len:900" d="' + hanaPath.pe + '"/></svg><b>' + label + '</b>';
+    document.body.appendChild(d); setTimeout(() => d.remove(), 1750);
+    sfx('hanamaru');
+  }
   function answerDrill(k) {
     if (!ds || ds.locked) return;
     ds.locked = true;
@@ -4464,9 +4672,12 @@
       fb.innerHTML = '<span class="fly">せいかい！ +' + res.sec + '秒　カケラ+' + fmtShard(res.shards) + (res.ticket ? '　チケット+1' : '') + '</span>' +
         (res.spHigh === false ? '<br><small>今日の高効率（' + SPECIAL_REWARD.perDay + '問）は終わりました</small>' : '');
       sparkle(fb);
+      sfx('correct');
+      if (res.ticket) fxHanamaru('10問連続正解！'); else fxMaru();
       if (res.ticket) toast('10問連続正解！ 即完了チケットを1枚手に入れました');
       setTimeout(() => { if (ds === cur && drillOpen()) nextDrill(); }, 950);
     } else {
+      sfx('wrong'); fxBatsu();
       fb.innerHTML = 'ざんねん… こたえは「' + fmtMath(pb.choices[pb.answer].label) + '」' + (res.streakLost ? '<br><small>連続正解が0に戻りました</small>' : '') + '<br>';
       const nb = mkBtn('つぎへ', false, nextDrill); nb.style.marginTop = '6px'; fb.appendChild(nb);
     }
@@ -4479,6 +4690,7 @@
   function renderDrillResult() {
     if (!state.tutorial.done) { state.tutorial.sets += 1; save(); }   // チュートリアル：ドリル5問のセットを終えた
     const r = ds.results, okN = r.filter(x => x.correct).length, sec = r.reduce((a, x) => a + x.sec, 0);
+    fxHanamaru(okN === ds.set.length ? '全問正解！' : ds.set.length + '問クリア！');   // 5問を終えたら花丸
     const sh = r.reduce((a, x) => a + x.shards, 0), tk = r.filter(x => x.ticket).length;
     $('drillTitle').textContent = 'けっか';
     const body = $('drillBody');
@@ -4503,6 +4715,7 @@
   const fxfEl = () => $('fxfPanel');
   const fxfOpen = () => fxfEl().style.display === 'flex';
   function openFxf() {
+    if (!spOpen('FXF')) return;                         // 町Lv3で解放
     $('drillPanel').style.display = 'none'; ds = null;
     fxf = { stage: 'intro', g: null, earned: { sec: 0, shards: 0, ok: 0, n: 0, tickets: 0 } };
     fxfEl().style.display = 'flex'; renderFxf();
@@ -4715,7 +4928,7 @@
   }
   function exitVisit() {
     if (!visit) return;
-    state = visit.real; const c = visit.cam; visit = null;
+    state = visit.real; const c = visit.cam; visit = null; save();   // 見学中に変えた音の設定も保存
     rebuildWorld(); camTarget = null; Object.assign(cam, c); clampCam(); hudSig = '';
     document.body.classList.remove('visiting'); $('visitBar').style.display = 'none';
     buildPalette(); renderTrade(); $('tradePanel').style.display = 'flex';   // 掲示板に戻る
@@ -4821,7 +5034,7 @@
   function drawTutArrow(c, ts) {                          // 町の中の目印（下向きの矢印）
     const g = tutActive() && state.tutorial._g; if (!g || !g.world) return;
     const { x, y } = g.world, bob = Math.round(Math.sin(ts * 5) * 2.5), X = Math.round(x);
-    if (g.world.below !== undefined && toScreen(x, y).y < 170) {          // 上が HUD で隠れるときは、下から上向きの矢印
+    if (g.world.below !== undefined && toScreen(x, y).y < 30) {          // 上が帯の端で切れるときは、下から上向きの矢印
       const Y = Math.round(g.world.below + 6 - bob);
       c.fillStyle = '#5a1e10'; c.fillRect(X - 5, Y + 5, 10, 9); c.fillRect(X - 8, Y + 4, 16, 2); c.fillRect(X - 6, Y + 2, 12, 2); c.fillRect(X - 4, Y, 8, 2); c.fillRect(X - 2, Y - 2, 4, 2);
       c.fillStyle = '#ff9a5c'; c.fillRect(X - 3, Y + 5, 6, 8); c.fillRect(X - 6, Y + 5, 12, 1); c.fillRect(X - 4, Y + 3, 8, 1); c.fillRect(X - 2, Y + 1, 4, 1);
@@ -4832,7 +5045,12 @@
     c.fillStyle = '#ff9a5c'; c.fillRect(X - 3, Y - 13, 6, 8); c.fillRect(X - 6, Y - 5, 12, 1); c.fillRect(X - 4, Y - 3, 8, 1); c.fillRect(X - 2, Y - 1, 4, 1);
     c.fillStyle = '#ffe1b8'; c.fillRect(X - 2, Y - 12, 2, 5);
   }
-  $('tutSkip').onclick = () => {                          // スキップ：その時点までの報酬・解放はそのまま
+  // スキップ：確認してから終える（その時点までの報酬・解放はそのまま）。「やめる」ならチュートリアルに戻る
+  $('tutSkip').onclick = () => { if (!state.tutorial.done) $('skipConfirm').style.display = 'flex'; };
+  $('skipNo').onclick = () => { $('skipConfirm').style.display = 'none'; };
+  $('skipConfirm').addEventListener('pointerdown', e => { if (e.target === $('skipConfirm')) $('skipConfirm').style.display = 'none'; });
+  $('skipYes').onclick = () => {
+    $('skipConfirm').style.display = 'none';
     const T = state.tutorial; if (T.done) return;
     T.done = true; save(); tutMark(null); $('tutBar').style.display = 'none'; hudSig = '';
     if (panelOpen('drillPanel') && !ds) renderDrillMenu();
@@ -4846,6 +5064,7 @@
   let tpz = null;                                   // { stage:'select'|'play', tier, mode:'A'|'B', entry, board, inA, selB, msg, done:null|'solved'|'gaveup', recent:[], earned }
   const tpOpen = () => $('tpPanel').style.display === 'flex';
   function openTp() {
+    if (!spOpen('TP')) return;                          // 町Lv4で解放
     $('drillPanel').style.display = 'none'; ds = null;
     tpz = { stage: 'select', tier: '入門', mode: 'A', recent: [], earned: { sec: 0, shards: 0, ok: 0, n: 0, tickets: 0 } };
     $('tpPanel').style.display = 'flex'; renderTp();
@@ -4964,7 +5183,7 @@
     if (state.tutorial.tickets > 0) {
       const tb = document.createElement('button'); tb.className = 'tool pix gticket'; tb.id = 'gachaTicketBtn';
       tb.innerHTML = 'チケットで引く<small>チュートリアルチケット 残り' + state.tutorial.tickets + '枚</small>';
-      tb.onclick = () => { const res = ticketPull(); if (res) { hudSig = ''; renderGachaResult(res); } };
+      tb.onclick = () => { const res = ticketPull(); if (res) { hudSig = ''; renderGachaResult(res); GFX.start(res); } };
       row.appendChild(tb);
     }
     for (const n of [1, 10]) {
@@ -4989,11 +5208,158 @@
       (!r.dup && !r.isNew && it.cat === 'decor' ? '<div class="gdup">所持数 ' + ownedCount(r.id) + '</div>' : '') +
       (it.cat === 'cons' && big ? '<div class="gdup">所持数 ' + ownedCount(r.id) + '</div>' : '') + '</div>';
   }
+  // ---------- ガチャの演出：時計塔の下のカプセルマシンからカプセルが落ちて、開くと中身が出る ----------
+  // 抽選・天井・被りの処理は gachaPull / ticketPull で先に終わっている（ここは見た目だけ。結果は変えない）。
+  // 1回：カプセル1個 → カード。10連：1個ずつ開けて、最後に一覧。タップで早送り（開く前 → すぐ開く／カード → つぎへ）
+  const GFX = (() => {
+    const LW = 200, LH = 150, OPEN = 1.9, CARD = 2.05;           // 論理解像度（ドット絵風に拡大）と、開く・カードを出す時刻（秒）
+    const CAP = { C: ['#8fd0a0', '#5aa070'], R: ['#7ab8ff', '#3f7fd0'], SR: ['#ffd85a', '#d8a020'], UR: null };
+    let fx = null;                                                // { res, i, t0, opened, carded, parts, raf, done }
+    const ov = () => $('gachaFx'), cv = () => $('gachaCv');
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    function start(res, done) {
+      if (!res || !res.length) { done && done(); return; }
+      fx = { res, i: 0, done, raf: 0 };
+      ov().style.display = 'flex'; $('gachaAll').style.display = res.length > 1 ? '' : 'none';
+      begin(0);
+      const loop = () => { if (!fx) return; draw(); fx.raf = requestAnimationFrame(loop); };
+      fx.raf = requestAnimationFrame(loop);
+    }
+    function begin(i) {
+      fx.i = i; fx.t0 = performance.now() / 1000 - (i ? 0.35 : 0); fx.opened = false; fx.carded = false; fx.parts = []; fx.skipT = 0;
+      $('gachaCard').innerHTML = ''; $('gachaCard').className = '';
+      $('gachaCount').textContent = fx.res.length > 1 ? (i + 1) + ' / ' + fx.res.length : '';
+      $('gachaHint').textContent = 'タップで早送り';
+      sfx('gacha');
+    }
+    const T = () => performance.now() / 1000 - fx.t0 + fx.skipT;
+    function open() {                                             // カプセルが開く：レア度ごとの演出
+      fx.opened = true;
+      const r = fx.res[fx.i].rarity, P = fx.parts, cx = LW / 2, cy = 78;
+      const n = { C: 12, R: 26, SR: 34, UR: 48 }[r];
+      for (let k = 0; k < n; k++) {
+        const a = rnd(0, Math.PI * 2), v = r === 'C' ? rnd(25, 55) : rnd(30, 90);
+        P.push({ x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - (r === 'C' ? 20 : 0), life: rnd(.5, r === 'C' ? .8 : 1.4), age: 0, k: r === 'C' ? 'dot' : 'star', h: rnd(0, 360) });
+      }
+      if (r === 'UR') { const f = $('gachaFlash'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); }
+      sfx({ C: 'pop', R: 'rare', SR: 'sr', UR: 'ur' }[r]);
+    }
+    function card() {
+      fx.carded = true;
+      const r = fx.res[fx.i], c = $('gachaCard');
+      c.className = 'show r-' + r.rarity; c.innerHTML = cardHtml(r, true);
+      $('gachaHint').textContent = fx.i + 1 < fx.res.length ? 'タップでつぎのカプセル' : (fx.res.length > 1 ? 'タップで結果の一覧へ' : 'タップで閉じる');
+    }
+    function tap() {
+      if (!fx) return;
+      if (!fx.opened || !fx.carded) {                             // 早送り：すぐに開いてカードを出す
+        fx.skipT += Math.max(0, CARD - T()); if (!fx.opened) open(); card(); return;
+      }
+      if (fx.i + 1 < fx.res.length) begin(fx.i + 1); else finish();
+    }
+    function finish() {
+      if (!fx) return;
+      cancelAnimationFrame(fx.raf); const d = fx.done; fx = null;
+      ov().style.display = 'none'; $('gachaCard').innerHTML = '';
+      d && d();
+    }
+    // ----- 描画（すべて四角形の組み合わせでドット絵風に） -----
+    function disc(c, x, y, r, col) { c.fillStyle = col; for (let yy = -r; yy <= r; yy++) { const w = Math.round(Math.sqrt(r * r - yy * yy)); c.fillRect(Math.round(x - w), Math.round(y + yy), w * 2, 1); } }
+    function capsule(c, x, y, r, rar, t, split) {
+      const top = rar === 'UR' ? 'hsl(' + ((t * 240) % 360) + ',85%,62%)' : CAP[rar][0], rim = rar === 'UR' ? 'hsl(' + ((t * 240 + 60) % 360) + ',80%,45%)' : CAP[rar][1];
+      const s = split || 0;
+      c.save(); c.translate(x, y);
+      // 下半分（白）
+      c.save(); c.translate(s * 10, s * 16); c.rotate(s * .5);
+      disc(c, 0, 0, r, '#5a3a22'); disc(c, 0, 0, r - 1, '#f4efe4');
+      c.fillStyle = '#5a3a22'; c.fillRect(-r, -1, r * 2, 2);
+      c.restore();
+      // 上半分（レア度の色）。下半分を隠すように上側だけ塗る
+      c.save(); c.translate(-s * 14, -s * 30); c.rotate(-s * 1.2);
+      c.beginPath(); c.rect(-r - 1, -r - 1, r * 2 + 2, r + 1); c.clip();
+      disc(c, 0, 0, r, '#5a3a22'); disc(c, 0, 0, r - 1, top); c.fillStyle = rim; c.fillRect(-r + 1, -2, r * 2 - 2, 2);
+      c.fillStyle = '#ffffffb0'; c.fillRect(-r * .45, -r * .7, r * .3, r * .25);
+      c.restore();
+      c.restore();
+    }
+    function machine(c, t, turn) {
+      // 時計塔の足もと（れんが・扉）
+      c.fillStyle = '#c9b48e'; c.fillRect(40, 0, 120, 92);
+      c.fillStyle = '#b39a72'; for (let y = 4; y < 92; y += 8) for (let x = 40 + ((y / 8) % 2) * 6; x < 160; x += 12) c.fillRect(x, y, 10, 1);
+      c.fillStyle = '#e8dcc0'; c.fillRect(40, 0, 4, 92); c.fillRect(156, 0, 4, 92);
+      disc(c, 100, 4, 18, '#5a3a22'); disc(c, 100, 4, 16, '#fff6e0');
+      c.fillStyle = '#5a3a22'; c.fillRect(99, -6, 2, 10); c.save(); c.translate(100, 4); c.rotate(t * .8); c.fillRect(-1, 0, 2, 9); c.restore();
+      c.fillStyle = '#7a4a2a'; c.fillRect(124, 40, 22, 52); c.fillStyle = '#5a3a22'; c.fillRect(124, 40, 22, 2); c.fillRect(134, 42, 2, 50);
+      // 床
+      c.fillStyle = '#a88a62'; c.fillRect(0, 92, LW, LH - 92); c.fillStyle = '#967650'; for (let x = 0; x < LW; x += 16) c.fillRect(x, 92, 1, LH - 92);
+      c.fillStyle = '#00000022'; c.fillRect(60, 132, 80, 4);
+      // カプセルマシン（ガラスの丸・赤い胴・取っ手・出口）
+      disc(c, 100, 62, 26, '#5a3a22'); disc(c, 100, 62, 24, '#cfe8f4');
+      const cols = ['#8fd0a0', '#7ab8ff', '#ffd85a', '#f4a0b8', '#c7b8ff'], jig = turn ? Math.sin(t * 40) * 1.5 : 0;
+      for (let k = 0; k < 11; k++) { const a = k * 2.4, rr = 6 + (k % 3) * 5; disc(c, 100 + Math.cos(a) * rr + (k % 2 ? jig : -jig), 70 + Math.sin(a) * rr * .5 - (k % 4), 5, cols[k % 5]); }
+      c.fillStyle = '#ffffffa0'; c.fillRect(84, 46, 6, 3); c.fillRect(82, 50, 3, 6);
+      c.fillStyle = '#5a3a22'; c.fillRect(70, 84, 60, 50); c.fillStyle = '#d0483a'; c.fillRect(72, 86, 56, 46);
+      c.fillStyle = '#e86a58'; c.fillRect(72, 86, 56, 3); c.fillStyle = '#a8352a'; c.fillRect(72, 129, 56, 3);
+      disc(c, 100, 102, 8, '#5a3a22'); disc(c, 100, 102, 6, '#f6ead0');
+      c.save(); c.translate(100, 102); c.rotate(turn ? Math.min(1, t / .6) * Math.PI * 2 : 0); c.fillStyle = '#5a3a22'; c.fillRect(-7, -1.5, 14, 3); c.restore();
+      c.fillStyle = '#2a1a10'; c.fillRect(91, 118, 18, 12); c.fillStyle = '#5a3a22'; c.fillRect(89, 116, 22, 2);
+    }
+    function star(c, x, y, s, col) { c.fillStyle = col; c.fillRect(x - s, y, s * 2 + 1, 1); c.fillRect(x, y - s, 1, s * 2 + 1); if (s > 1) c.fillRect(x - 1, y - 1, 3, 3); }
+    function draw() {
+      const C = cv(), c = C.getContext('2d'), t = T(), r = fx.res[fx.i].rarity;
+      if (C.width !== LW) { C.width = LW; C.height = LH; }
+      c.imageSmoothingEnabled = false; c.clearRect(0, 0, LW, LH);
+      machine(c, t, t < .6);
+      if (t >= OPEN && !fx.opened) open();
+      if (t >= CARD && !fx.carded) card();
+      // カプセル：出口から落ちて弾む → 手前に大きく → ゆれる → 開く
+      let x = 100, y = 124, sc = 5, split = 0;
+      if (t < .6) sc = 0;
+      else if (t < 1.1) { const u = (t - .6) / .5; y = 124 + Math.min(1, u * 1.4) * 8 - Math.abs(Math.sin(u * Math.PI * 2)) * 6 * (1 - u); x = 100 + u * 4; }
+      else if (t < 1.5) { const u = (t - 1.1) / .4, e = u * u * (3 - 2 * u); x = 104 - e * 4; y = 132 - e * 54; sc = 5 + e * 9; }
+      else { x = 100; y = 78; sc = 14; }
+      if (sc > 0) {
+        if (t >= 1.1) { c.fillStyle = 'rgba(30,18,10,' + Math.min(.55, (t - 1.1)) + ')'; c.fillRect(0, 0, LW, LH); }
+        if (r === 'SR' || r === 'UR') { if (t >= OPEN) rays(c, t, r); }
+        if (t >= 1.5 && t < OPEN) { c.save(); c.translate(x, y); c.rotate(Math.sin((t - 1.5) * 28) * .18); c.translate(-x, -y); }
+        split = t >= OPEN ? Math.min(1, (t - OPEN) / .25) : 0;
+        if (split < 1) capsule(c, x, y, Math.round(sc), r, t, split);
+        else capsule(c, x, y, Math.round(sc), r, t, 1 + (t - OPEN - .25) * 2);
+        if (t >= 1.5 && t < OPEN) c.restore();
+      }
+      // 粒（コモン：小さなポン／レア：青いきらめき／SR：金の粒／激レア：虹）
+      const dt = 1 / 60;
+      for (const p of fx.parts) {
+        p.age += dt; if (p.age > p.life) continue;
+        p.x += p.vx * dt; p.y += p.vy * dt; p.vy += (p.k === 'dot' ? 60 : 12) * dt;
+        const a = 1 - p.age / p.life, X = Math.round(p.x), Y = Math.round(p.y);
+        const col = r === 'C' ? (p.h > 180 ? '#fff8d8' : '#fff') : r === 'R' ? (p.h > 180 ? '#9fd8ff' : '#e0f4ff') : r === 'SR' ? (p.h > 180 ? '#ffe27a' : '#fff4c0') : 'hsl(' + ((p.h + t * 300) % 360) + ',95%,65%)';
+        c.globalAlpha = a; if (p.k === 'dot') c.fillStyle = col, c.fillRect(X, Y, 2, 2); else star(c, X, Y, 1 + Math.round(a * 2 * ((p.h | 0) % 2 + 1) / 2), col); c.globalAlpha = 1;
+      }
+    }
+    function rays(c, t, r) {                                     // SR：金色の光／激レア：虹色の光
+      const n = r === 'UR' ? 14 : 10, cx = LW / 2, cy = 78, u = Math.min(1, (t - OPEN) / .3);
+      c.save(); c.translate(cx, cy); c.rotate(t * .5);
+      for (let k = 0; k < n; k++) {
+        const a = k / n * Math.PI * 2;
+        c.fillStyle = r === 'UR' ? 'hsla(' + (k * 360 / n + t * 120) % 360 + ',95%,65%,.55)' : 'rgba(255,214,90,' + (.45 - (k % 2) * .15) + ')';
+        c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a - .1) * 140 * u, Math.sin(a - .1) * 140 * u); c.lineTo(Math.cos(a + .1) * 140 * u, Math.sin(a + .1) * 140 * u); c.closePath(); c.fill();
+      }
+      c.restore();
+      const g = c.createRadialGradient(cx, cy, 0, cx, cy, 40);
+      g.addColorStop(0, r === 'UR' ? 'rgba(255,255,255,.9)' : 'rgba(255,240,170,.85)'); g.addColorStop(1, 'rgba(255,240,170,0)');
+      c.fillStyle = g; c.fillRect(cx - 40, cy - 40, 80, 80);
+    }
+    $('gachaFx').addEventListener('pointerdown', e => { if (e.target.id === 'gachaAll') return; e.preventDefault(); tap(); });
+    $('gachaAll').onclick = () => finish();
+    return { start, tap, finish, info: () => (fx ? { active: true, i: fx.i, n: fx.res.length, rarity: fx.res[fx.i].rarity, id: fx.res[fx.i].id, opened: fx.opened, carded: fx.carded, t: T() } : { active: false }) };
+  })();
   function doGacha(n) {
     const res = gachaPull(n);
     if (!res) return;
     hudSig = '';
-    renderGachaResult(res);
+    renderGachaResult(res);                           // 結果（一覧）を先に下に用意して、その上で演出を見せる
+    GFX.start(res);
   }
   function renderGachaResult(res) {
     $('drillTitle').textContent = res.length === 1 ? 'ガチャの結果' : 'ガチャの結果（' + res.length + '連）';
@@ -5162,6 +5528,7 @@
     hudSig = '';
     buildPalette(); buildPopupRow();
     rebuildWorld(); camTarget = framing();
+    sfx('levelup');
     toast(levelUpText(lv), 7000);
   };
 
@@ -5181,9 +5548,10 @@
     const p = state.plots[i];
     if (mode === 'plant' && !p && selected) {
       const fromStock = selectedV && !state.gacha.items[selectedV];
-      if (plant(i, selected, selectedV) && fromStock) { buildPalette(); if (!selectedV) mode = null; }   // ストックが尽きたら、このなぞりはそこで止める
+      const okP = plant(i, selected, selectedV); if (okP) sfx('plant');
+      if (okP && fromStock) { buildPalette(); if (!selectedV) mode = null; }   // ストックが尽きたら、このなぞりはそこで止める
     }
-    else if (mode === 'harvest' && p) { const r = harvest(i); if (r && r.fx.length) toast(ITEMS[r.key].name + ' ×' + r.n + '（' + r.fx.join('・') + '）'); }
+    else if (mode === 'harvest' && p) { const r = harvest(i); if (r) sfx('harvest'); if (r && r.fx.length) toast(ITEMS[r.key].name + ' ×' + r.n + '（' + r.fx.join('・') + '）'); }
   }
   const ptrs = new Map();
   let gesture = null;          // 'farm' | 'pan' | 'pinch'
@@ -5218,15 +5586,16 @@
     cam.x = w.x - (sx - VW / 2) / scale(); cam.y = w.y - (sy - VH / 2) / scale();
     clampCam();
   }
+  const ex = e => e.clientX, ey = e => e.clientY - CY0;     // 画面座標 → Canvas 内の座標
   canvas.addEventListener('pointerdown', e => {
     e.preventDefault(); camTarget = null;
     try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
-    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    ptrs.set(e.pointerId, { x: ex(e), y: ey(e) });
     if (ptrs.size === 2) { startPinch(); return; }
     if (ptrs.size > 2) return;
-    if (visit) { startPan(e.clientX, e.clientY, false); return; }   // 見学中：町を見回すだけ（植える・収穫・注文・施設・ドリル・鐘は無効）
-    const i = plotAt(e.clientX, e.clientY);
-    if (i < 0) { startPan(e.clientX, e.clientY, hitBoard(e.clientX, e.clientY) ? 'board' : hitBell(e.clientX, e.clientY) ? 'bell' : (hitFac(e.clientX, e.clientY) ? 'fac:' + hitFac(e.clientX, e.clientY) : hitTower(e.clientX, e.clientY) ? 'tower' : false)); return; }   // 区画の外 → カメラ（掲示板の上のタップは注文パネル）
+    if (visit) { startPan(ex(e), ey(e), false); return; }   // 見学中：町を見回すだけ（植える・収穫・注文・施設・ドリル・鐘は無効）
+    const i = plotAt(ex(e), ey(e));
+    if (i < 0) { startPan(ex(e), ey(e), hitBoard(ex(e), ey(e)) ? 'board' : hitBell(ex(e), ey(e)) ? 'bell' : (hitFac(ex(e), ey(e)) ? 'fac:' + hitFac(ex(e), ey(e)) : hitTower(ex(e), ey(e)) ? 'tower' : false)); return; }   // 区画の外 → カメラ（掲示板の上のタップは注文パネル）
     gesture = 'farm';                                         // 区画の上 → なぞり優先（カメラは動かさない）
     touched = new Set();
     const p = state.plots[i];
@@ -5239,14 +5608,14 @@
   });
   canvas.addEventListener('pointermove', e => {
     if (!ptrs.has(e.pointerId)) return;
-    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    ptrs.set(e.pointerId, { x: ex(e), y: ey(e) });
     if (gesture === 'pinch' && ptrs.size >= 2) {
       const m = mid(); zoomAround(m.x, m.y, pinch.w, pinch.z0 * m.d / pinch.d0);
     } else if (gesture === 'pan') {
-      pan.moved = Math.max(pan.moved, Math.hypot(e.clientX - pan.sx, e.clientY - pan.sy));
-      cam.x = pan.cx - (e.clientX - pan.sx) / scale(); cam.y = pan.cy - (e.clientY - pan.sy) / scale(); clampCam();
+      pan.moved = Math.max(pan.moved, Math.hypot(ex(e) - pan.sx, ey(e) - pan.sy));
+      cam.x = pan.cx - (ex(e) - pan.sx) / scale(); cam.y = pan.cy - (ey(e) - pan.sy) / scale(); clampCam();
     } else if (gesture === 'farm' && mode) {
-      apply(plotAt(e.clientX, e.clientY));
+      apply(plotAt(ex(e), ey(e)));
     }
   });
   const up = e => {
@@ -5262,22 +5631,26 @@
   canvas.addEventListener('pointercancel', up);
   canvas.addEventListener('wheel', e => {
     e.preventDefault(); camTarget = null;
-    zoomAround(e.clientX, e.clientY, toWorld(e.clientX, e.clientY), cam.zoom * Math.exp(-e.deltaY * .0015));
+    zoomAround(ex(e), ey(e), toWorld(ex(e), ey(e)), cam.zoom * Math.exp(-e.deltaY * .0015));
   }, { passive: false });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
   window.addEventListener('resize', resize);
+  if (window.ResizeObserver) { const ro = new ResizeObserver(() => { const t = Math.ceil($('topBand').getBoundingClientRect().height), b = Math.ceil($('botBand').getBoundingClientRect().height); if (t !== CY0 || Math.max(120, innerHeight - t - b) !== VH) resize(); }); ro.observe($('topBand')); ro.observe($('botBand')); }
 
   // 検品用（読み取り専用の座標変換。ゲーム状態は触らない）
+  const scr = (wx, wy) => { const p = toScreen(wx, wy); return { x: p.x, y: p.y + CY0 }; };   // 検品用：画面（クライアント）座標
   if (DEBUG) window.__clockseed = {
-    plotCenter: i => { const R = plotRect(i); return toScreen(R.x + R.w / 2, R.y + R.h / 2); },
-    worldToScreen: toScreen,
-    boardCenter: () => toScreen(BOARD.cx, BOARD.top + 10),
-    facCenter: k => toScreen(FAC[k].x, FAC[k].y - (bState(k) === 'none' ? 8 : 20)),
+    plotCenter: i => { const R = plotRect(i); return scr(R.x + R.w / 2, R.y + R.h / 2); },
+    worldToScreen: scr,
+    boardCenter: () => scr(BOARD.cx, BOARD.top + 10),
+    facCenter: k => scr(FAC[k].x, FAC[k].y - (bState(k) === 'none' ? 8 : 20)),
     millCenter: () => window.__clockseed.facCenter('mill'),
     kitchenCenter: () => window.__clockseed.facCenter('kitchen'),
     lastGacha: () => JSON.parse(JSON.stringify(lastGacha)),
-    towerCenter: () => toScreen(LAYOUT.tower.x, LAYOUT.tower.y - 30),
-    overview: () => { const b = curBounds(), padT = 110, padB = 70; camTarget = null; cam.zoom = Math.min(VW / (b.x1 - b.x0), (VH - padT - padB) / (b.y1 - b.y0)) / BASE; cam.x = (b.x0 + b.x1) / 2; cam.y = (b.y0 + b.y1) / 2 - (padT - padB) / 2 / scale(); },   // 検品用：表示範囲全体を映す（見た目だけ）
+    gachaFx: () => GFX.info(),
+    sound: () => SND.info(),
+    towerCenter: () => scr(LAYOUT.tower.x, LAYOUT.tower.y - 30),
+    overview: () => { const b = curBounds(), padT = 8, padB = 8; camTarget = null; cam.zoom = Math.min(VW / (b.x1 - b.x0), (VH - padT - padB) / (b.y1 - b.y0)) / BASE; cam.x = (b.x0 + b.x1) / 2; cam.y = (b.y0 + b.y1) / 2 - (padT - padB) / 2 / scale(); },   // 検品用：表示範囲全体を映す（見た目だけ）
     lookAt: (x, y, z) => { camTarget = null; cam.zoom = z; cam.x = x; cam.y = y; },                                                                                                          // 検品用：指定の位置を映す（見た目だけ）
     mapInfo: () => ({ level: townLevel(), bounds: curBounds(), plots: activePlots(), houses: visStatics.filter(o => o.house).length, festival: builtLevel >= LAYOUT.festLv, river: builtLevel >= RIVER.lv, hill: builtLevel >= LAYOUT.hill.lv,
       riverPlots: LAYOUT.plots.map((_, i) => i).filter(i => i < activePlots() && plotNearRiver(i, townLevel())), facilities: BUILDING_KEYS.filter(k => facUnlocked(k)), crops: paletteCrops().filter(k => CROPS[k].unlockLv <= townLevel()) }),
@@ -5289,7 +5662,7 @@
       return { stage: fxf.stage, phase: g.phase, hp: g.hp, score: g.score, combo: g.combo, caught: g.caught, misses: g.misses, timeouts: g.timeouts, level: g.q.level, target: g.q.target,
         tiles: g.q.tiles.map(t => ({ id: t.id, label: t.label })), pairs: pair, cleared: g.cleared, clearBonus: g.clearBonus, playMs: g.playMs, earned: Object.assign({}, fxf.earned) }; },
     tutorial: () => { const T = state.tutorial, g = tutActive() ? tutTick(now(), true) : null;
-      return { done: T.done, step: T.step, sets: T.sets, tickets: T.tickets, flags: Object.assign({}, T.flags), text: g ? g.text : '', dom: g && g.dom || null, world: g && g.world ? toScreen(g.world.x, g.world.y) : null,
+      return { done: T.done, step: T.step, sets: T.sets, tickets: T.tickets, flags: Object.assign({}, T.flags), text: g ? g.text : '', dom: g && g.dom || null, world: g && g.world ? scr(g.world.x, g.world.y) : null,
         level: townLevel(), plots: activePlots(), shards: state.drill.shards, pity: Object.assign({}, state.gacha.pity), total: state.gacha.total, gold: state.gold }; },
     constants: () => JSON.parse(JSON.stringify({ CROPS, RECIPES, BUILDINGS, TOWN_LV_EXP, PLOTS_BY_LV, DRILL_REWARD, SPECIAL_REWARD, DRILL_STOCK_MAX, DRILL_DAY_SOFTCAP, SKIP_RUSH, ORDER_COUNT,
       ITEMS: Object.fromEntries(ITEM_KEYS.filter(k => !ITEMS[k].seed).map(k => [k, { price: ITEMS[k].price, orderExp: ITEMS[k].orderExp, orderQty: ITEMS[k].orderQty, recipe: ITEMS[k].recipe || null, unlockLv: ITEMS[k].unlockLv }])),
@@ -5302,10 +5675,10 @@
     fxfTileCenter: id => { const el = document.querySelector('#fxfGrid [data-tile-id="' + id + '"]'); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; },
     drillSetInfo: () => (ds ? { kind: ds.kind || 'set', level: ds.level, i: ds.i, set: ds.set.map(p => ({ type: p.type, level: p.level, role: p.role })) } : null),
     timers: () => timers().map(x => ({ id: x.id, remaining: x.ready - now(), dur: origDur(x) })),
-    viewport: () => { const b = curBounds(); return { w: VW, h: VH, mapX0: b.x0, mapY0: b.y0, mapW: b.x1, mapH: b.y1, zoomMin: zoomMin() }; },
+    viewport: () => { const b = curBounds(); return { w: VW, h: VH, top: CY0, bottom: CY0 + VH, topBand: $('topBand').getBoundingClientRect().height, botBand: $('botBand').getBoundingClientRect().height, mapX0: b.x0, mapY0: b.y0, mapW: b.x1, mapH: b.y1, zoomMin: zoomMin() }; },
     camera: () => ({ x: cam.x, y: cam.y, zoom: cam.zoom }),
     decorInfo: () => ({ shown: Object.fromEntries(Object.keys(DECOR_SPOTS).concat('dc08').map(id => [id, decorShown(id)])), charm: charmPoints(), bonus: charmBonus(),
-      treeDays: treeDays(), treeStage: treeStage(), season: seasonNow(), lampOn: lampOn(), bell: !!bell, bellPos: toScreen(bellPos().x, bellPos().y + 4),
+      treeDays: treeDays(), treeStage: treeStage(), season: seasonNow(), lampOn: lampOn(), bell: !!bell, bellPos: scr(bellPos().x, bellPos().y + 4),
       spots: DECOR_SPOTS, treesHidden: statics.filter(o => o.nat && decorBlocks(o)).length }),
     spriteSizes: () => Object.fromEntries(Object.entries(SPR).map(([k, v]) => [k, [v.width, v.height]])),
   };

@@ -22,6 +22,8 @@ const openGame=async()=>{const c=await pg.evaluate(()=>window.__clockseed.towerC
   await pg.locator('[data-sp="FXF"]').click();await pg.waitForTimeout(150);await pg.locator('#fxfStart').click();await pg.waitForTimeout(2500);};
 const day=new Date().toISOString().slice(0,10);
 await pg.goto(url);await pg.waitForTimeout(400);
+// 段階7：特殊ドリルは町Lv3 で解放。町Lv3（チュートリアル済み）のセーブから始める
+await pg.evaluate(()=>{const s=JSON.parse(localStorage.getItem('clockseed.save'));s.townExp=120;s.tutorial.done=true;s.tutorial.step=10;localStorage.setItem('clockseed.save',JSON.stringify(s));});await pg.reload();await pg.waitForTimeout(400);
 // ===== 1. メニュー：選択式の因数分解ドリルが移植版に置き換わり、テンパズル・10さがしは残る =====
 {const c=await pg.evaluate(()=>window.__clockseed.towerCenter());await pg.mouse.click(c.x,c.y);await pg.waitForTimeout(200);
  log('[menu] special buttons',JSON.stringify(await pg.$$eval('#specialBox .spbtns button',x=>x.map(e=>e.innerText.replace(/\s+/g,' ')))));await pg.locator('#drillClose').click();}

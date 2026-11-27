@@ -134,6 +134,7 @@
   .tstats{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;font-size:12px;color:var(--ink-soft);text-align:left;margin:4px 8px 12px}
   .tstats span{display:flex;justify-content:space-between}
   .tstats b{color:var(--ink)}
+  .setnote{font-size:11px;color:var(--ink-soft);text-align:center;margin:4px 0 0}
   .dacts{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:6px}
   .dq-head{display:flex;align-items:center;gap:10px;font-weight:bold;justify-content:space-between;font-size:15px}
   .lvtag{background:#5a3a22;color:#fff6e0;padding:1px 8px;margin-right:4px}
@@ -151,6 +152,18 @@
   @keyframes fly{from{opacity:1;transform:translate(-50%,6px)}to{opacity:0;transform:translate(-50%,-34px)}}
   .spark{position:absolute;left:50%;top:18px;width:6px;height:6px;background:#ffd85a;animation:spark .7s ease-out forwards;pointer-events:none}
   @keyframes spark{to{opacity:0;transform:translate(var(--dx),var(--dy))}}
+  .intg{display:inline-flex;align-items:center;font-size:1.3em;margin-right:2px}
+  .intg .lim{display:inline-flex;flex-direction:column;font-size:.5em;line-height:1.1;margin-left:1px}
+  .intg sup,.intg sub{vertical-align:baseline;font-size:1em}
+  .roletag{font-size:12px;padding:1px 7px;margin-left:6px;border-radius:3px;color:#fff}
+  .roletag.review{background:#3f86bd}.roletag.challenge{background:#c0702a}.roletag.special{background:#7c62d8}
+  .spbox{margin:10px 4px 4px;padding:8px 10px;border:2px dashed #b89a6a;background:#fbf2dc}
+  .spbox .sphead{display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:14px;margin-bottom:6px;gap:8px;flex-wrap:wrap}
+  .spbox .sphead small{font-weight:normal;font-size:12px;color:var(--ink-soft)}
+  .spbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .spbtns .tool{flex-direction:column;font-size:14px;padding:6px 4px}
+  .spbtns small{font-size:11px;color:var(--ink-soft)}
+  .choice.long{font-size:17px}
   .fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.05;font-size:.82em;margin:0 3px}
   .fr span:first-child{border-bottom:2px solid currentColor;padding:0 3px 2px}
   .fr span:last-child{padding-top:2px}
@@ -542,24 +555,569 @@
       k => xeq(x + near(k)), { f: 2, a, b, c, d }, null, null);
   } };
 
+  // ================= C〜E 共通：値の型（key は数値を丸めた値。表示の違う同じ値も同じ key になる） =================
+  const K = v => { const r = Math.round(v * 1e8) / 1e8; return String(r === 0 ? 0 : r); };
+  const Q = (p, q = 1, unit = '') => { const f = frac(p, q); return { label: f.label + unit, key: 'v:' + K(p / q), v: p / q }; };
+  const INF = { label: '∞', key: 'inf' };
+  const SUP = { 2: '²', 3: '³', 4: '⁴' }, SUB = '₀₁₂₃₄₅₆₇₈₉';
+  const sub = n => String(n).split('').map(c => SUB[+c]).join('');
+  // 根号を含む値：項 [[係数, 根号の中]]／分母。根号の中の平方因子は外へ出し、同じ根号はまとめ、全体を約分する
+  function surdNorm(terms, den) {
+    const m = new Map();
+    for (let [c, r] of terms) {
+      if (!c) continue;
+      for (let s = Math.floor(Math.sqrt(r)); s > 1; s--) if (r % (s * s) === 0) { c *= s; r /= s * s; break; }
+      for (let s = 2; s * s <= r; s++) while (r % (s * s) === 0) { c *= s; r /= s * s; }
+      m.set(r, (m.get(r) || 0) + c);
+    }
+    let t = [...m.entries()].filter(([, c]) => c).map(([r, c]) => [c, r]).sort((a, b) => (a[1] === 1) - (b[1] === 1) || b[1] - a[1]);
+    if (den < 0) { den = -den; t = t.map(([c, r]) => [-c, r]); }
+    const g = t.reduce((a, [c]) => gcd(a, c), den) || 1;
+    return { t: t.map(([c, r]) => [c / g, r]), d: den / g };
+  }
+  const surdVal = s => s.t.reduce((a, [c, r]) => a + c * Math.sqrt(r), 0) / s.d;
+  function surdLabel(s) {
+    if (!s.t.length) return '0';
+    const term = (c, r) => (r === 1 ? String(Math.abs(c)) : (Math.abs(c) === 1 ? '' : Math.abs(c)) + '√' + r);
+    const body = s.t.map(([c, r], i) => (i === 0 ? (c < 0 ? MINUS : '') : (c < 0 ? ' ' + MINUS + ' ' : ' + ')) + term(c, r)).join('');
+    return s.d === 1 ? body : s.t.length === 1 ? body + '/' + s.d : '(' + body + ')/' + s.d;
+  }
+  const S = (terms, den = 1) => { const s = surdNorm(terms, den); return { label: surdLabel(s), key: 'v:' + K(surdVal(s)), v: surdVal(s), s }; };
+  const rt = n => S([[1, n]]);                                    // √n（簡単にした形）
+  const sAdd = (x, y, sy = 1) => S(x.s.t.map(([c, r]) => [c * y.s.d, r]).concat(y.s.t.map(([c, r]) => [sy * c * x.s.d, r])), x.s.d * y.s.d);
+  const sNeg = x => S(x.s.t.map(([c, r]) => [-c, r]), x.s.d);
+  const sOf = v => (v.s ? v : S([[Math.round(v.v * 1e6), 1]], 1e6));   // 有理数（Q）を根号の形に
+  // 組・集合・式
+  const tup = vals => ({ label: '(' + vals.map(v => v.label).join(', ') + ')', key: 'p:' + vals.map(v => K(v.v)).join(','), v: 0 });
+  const pmPt = (c, axis) => ({ label: axis === 'x' ? '(±' + c.label + ', 0)' : '(0, ±' + c.label + ')', key: 'pm:' + axis + ':' + K(c.v), v: c.v });
+  const rootsSet = rs => { const q = rs.map(([p, d]) => Q(p, d)).sort((a, b) => a.v - b.v);
+    return { label: 'x = ' + q.map(x => x.label).join(', '), key: 's:' + q.map(x => K(x.v)).join(','), v: 0 }; };
+  function polyStr(cs, vr = 'x') {                                  // 係数（高次から）→ 2x² − 3x + 1
+    const n = cs.length - 1, parts = [];
+    cs.forEach((c, i) => {
+      const e = n - i; if (!c) return;
+      const a = Math.abs(c), body = e === 0 ? String(a) : (a === 1 ? '' : a) + vr + (e > 1 ? SUP[e] : '');
+      parts.push(parts.length === 0 ? (c < 0 ? MINUS : '') + body : (c < 0 ? ' ' + MINUS + ' ' : ' + ') + body);
+    });
+    return parts.length ? parts.join('') : '0';
+  }
+  const lin = (a, b, vr = 'x') => polyStr([a, b], vr);
+  const IOP = { gt: '>', ge: '≥', lt: '<', le: '≤' }, IFLIP = { gt: 'lt', lt: 'gt', ge: 'le', le: 'ge' };
+  const ineq = (op, a) => ({ label: 'x ' + IOP[op] + ' ' + sn(a), key: 'I:' + op + ':' + K(a), v: a });
+  const between = (lo, hi) => ({ label: sn(lo) + ' < x < ' + sn(hi), key: 'B:' + K(lo) + ',' + K(hi), v: lo });
+  const outside = (lo, hi) => ({ label: 'x < ' + sn(lo) + ', ' + sn(hi) + ' < x', key: 'O:' + K(lo) + ',' + K(hi), v: lo });
+  function cpx(re, im) {
+    const ip = Math.abs(im) === 1 ? 'i' : Math.abs(im) + 'i';
+    const label = im === 0 ? sn(re) : re === 0 ? (im < 0 ? MINUS : '') + ip : sn(re) + (im < 0 ? ' ' + MINUS + ' ' : ' + ') + ip;
+    return { label, key: 'c:' + K(re) + ',' + K(im), v: re };
+  }
+  const deg = d => ({ label: d + '°', key: 'deg:' + d, v: d });
+  const piR = (p, q) => { const g = gcd(p, q) || 1; p /= g; q /= g;
+    const num = p === 0 ? '0' : (p === 1 ? '' : p) + 'π'; return { label: q === 1 || p === 0 ? num : num + '/' + q, key: 'r:' + K(p / q), v: p / q }; };
+  const circ = (p, q, r2) => ({ label: '中心(' + sn(p) + ', ' + sn(q) + ')、半径 ' + rt(r2).label, key: 'C:' + p + ',' + q + ',' + K(Math.sqrt(r2)), v: r2 });
+  const asym = (p, q) => { const f = frac(p, q), k = p / q;
+    return { label: 'y = ±' + (k === 1 ? '' : Number.isInteger(k) ? String(k) : '(' + f.label + ')') + 'x', key: 'A:' + K(k), v: k }; };
+  const okF = x => x.v === undefined || (isFinite(x.v) && Math.abs(x.v) < 1e6);
+
+  // ================= C：数学I・A =================
+  T.C1 = { level: 'C', name: '展開と因数分解の係数', gen(rng) {
+    if (rng() < 0.5) {
+      let a, b, c, d; do { a = ri(rng, 1, 4); c = ri(rng, 1, 4); b = nz(rng, -6, 6); d = nz(rng, -6, 6); } while (a * d + b * c === 0);
+      const v = a * d + b * c;
+      return build(rng, 'C1', 'C', '(' + lin(a, b) + ')(' + lin(c, d) + ') を展開したときの x の係数は？', Q(v),
+        [Q(a * d), Q(b * c), Q(a * d - b * c), Q(-v), Q(b * d), Q(a * c)],      // 片方の項だけ／符号ミス／定数項・x²の係数と混同
+        k => Q(v + near(k)), { f: 'expand', a, b, c, d }, null, null);
+    }
+    let p, q, r, s; do { p = ri(rng, 1, 3); r = ri(rng, 1, 3); q = nz(rng, -5, 5); s = nz(rng, -5, 5); } while (gcd(p, q) !== 1);
+    const A = p * r, B = p * s + q * r, C = q * s;
+    return build(rng, 'C1', 'C', polyStr([A, B, C]) + ' = (' + lin(p, q) + ')(' + (r === 1 ? '' : r) + 'x + □) の □ は？', Q(s),
+      [Q(-s), Q(C), p !== 1 ? Q(B - q * r) : null, Q(q), Q(B)],                // 符号ミス／定数項そのまま／係数で割り忘れ
+      k => Q(s + near(k)), { f: 'factor', p, q, r, s }, null, null);
+  } };
+  T.C2 = { level: 'C', name: '二次方程式', gen(rng) {
+    if (rng() < 0.6) {
+      let r1, r2; do { r1 = nz(rng, -9, 9); r2 = nz(rng, -9, 9); } while (r1 === r2 || r1 === -r2);
+      const a = rng() < 0.7 ? 1 : 2;
+      return build(rng, 'C2', 'C', polyStr([a, -a * (r1 + r2), a * r1 * r2]) + ' = 0 を解くと？', rootsSet([[r1, 1], [r2, 1]]),
+        [rootsSet([[-r1, 1], [-r2, 1]]), rootsSet([[-r1, 1], [r2, 1]]), rootsSet([[r1, 1], [-r2, 1]])],   // 符号ミス
+        k => rootsSet([[r1 + near(k), 1], [r2, 1]]), { f: 'int', a, r1, r2 }, null, null);
+    }
+    let p, q, r; do { p = ri(rng, 2, 3); q = nz(rng, -5, 5); r = nz(rng, -6, 6); } while (gcd(p, q) !== 1 || q === p * r);
+    return build(rng, 'C2', 'C', polyStr([p, -(q + p * r), q * r]) + ' = 0 を解くと？', rootsSet([[q, p], [r, 1]]),
+      [rootsSet([[-q, p], [-r, 1]]), rootsSet([[p, q], [r, 1]]), rootsSet([[q, 1], [r, 1]]), rootsSet([[q, p], [-r, 1]])],   // 符号／逆数／係数で割り忘れ
+      k => rootsSet([[q, p], [r + near(k), 1]]), { f: 'frac', p, q, r }, null, null);
+  } };
+  T.C3 = { level: 'C', name: '二次関数の最大・最小', gen(rng) {
+    const a = pick(rng, [-3, -2, -1, 1, 2, 3]), p = ri(rng, -4, 4), q = ri(rng, -9, 9), cs = [a, -2 * a * p, a * p * p + q];
+    if (a < 0 || rng() < 0.55) return build(rng, 'C3', 'C', 'y = ' + polyStr(cs) + ' の' + (a > 0 ? '最小値' : '最大値') + 'は？', Q(q),
+      [Q(cs[2]), Q(p), Q(-q), p ? Q(4 * a * p * p + q) : null],                   // y切片／頂点のx座標／符号ミス／頂点のxの符号ミス
+      k => Q(q + near(k)), { f: 'ext', a, p, q }, null, null);
+    let u, w; do { u = ri(rng, 1, 3); w = ri(rng, 1, 3); } while (u === w);
+    const s = p - u, t = p + w, far = a * Math.max(u, w) ** 2 + q, nearV = a * Math.min(u, w) ** 2 + q;
+    return build(rng, 'C3', 'C', 'y = ' + polyStr(cs) + '（' + sn(s) + ' ≤ x ≤ ' + sn(t) + '）の最大値は？', Q(far),
+      [Q(q), Q(nearV), Q(cs[2]), Q(a * (u + w) ** 2 + q)],                        // 最小値と混同／近い方の端／x=0の値
+      k => Q(far + near(k)), { f: 'dom', a, p, q, s, t }, null, null);
+  } };
+  const TRIG = { sin: { 30: S([[1, 1]], 2), 45: S([[1, 2]], 2), 60: S([[1, 3]], 2) }, cos: { 30: S([[1, 3]], 2), 45: S([[1, 2]], 2), 60: S([[1, 1]], 2) },
+                 tan: { 30: S([[1, 3]], 3), 45: S([[1, 1]]), 60: S([[1, 3]]) } };
+  const TRIG_POOL = [S([[1, 1]], 2), S([[1, 2]], 2), S([[1, 3]], 2), S([[1, 1]]), S([[1, 3]]), S([[1, 3]], 3), S([[1, 2]]), S([[2, 1]]), S([[-1, 1]], 2), S([[-1, 3]], 2), S([[2, 3]], 3), S([[1, 2]], 4)];
+  T.C4 = { level: 'C', name: '三角比の値', gen(rng) {
+    const fn = pick(rng, ['sin', 'cos', 'tan']), th = pick(rng, [30, 45, 60]), other = fn === 'sin' ? 'cos' : 'sin', comp = 90 - th;
+    const tanRecip = fn === 'tan' ? TRIG.tan[comp] : null;
+    return build(rng, 'C4', 'C', fn + ' ' + th + '° = ?', TRIG[fn][th],
+      [fn === 'tan' ? tanRecip : TRIG[other][th], TRIG[fn][comp], fn === 'tan' ? TRIG.sin[th] : TRIG.tan[th]],   // sin・cos の取り違え／余角の値／tan の逆数
+      k => TRIG_POOL[(k - 1) % TRIG_POOL.length], { fn, th }, null, null);
+  } };
+  const fact = n => (n <= 1 ? 1 : n * fact(n - 1)), P_ = (n, r) => fact(n) / fact(n - r), C_ = (n, r) => P_(n, r) / fact(r);
+  T.C5 = { level: 'C', name: '場合の数', gen(rng) {
+    const f = pick(rng, ['perm', 'comb', 'fact']), U = '通り';
+    if (f === 'perm') { const n = ri(rng, 4, 8), r = ri(rng, 2, 3);
+      return build(rng, 'C5', 'C', '異なる ' + n + ' 個の文字から ' + r + ' 個を選んで1列に並べる並べ方は何通り？', Q(P_(n, r), 1, U),
+        [Q(C_(n, r), 1, U), Q(n ** r, 1, U), Q(n * r, 1, U), Q(P_(n, r + 1), 1, U)], k => Q(P_(n, r) + near(k), 1, U), { f, n, r }, null, pos); }
+    if (f === 'comb') { const n = ri(rng, 5, 10), r = ri(rng, 2, 4);
+      return build(rng, 'C5', 'C', n + ' 人の中から ' + r + ' 人の係を選ぶ選び方は何通り？（係の区別はしない）', Q(C_(n, r), 1, U),
+        [Q(P_(n, r), 1, U), Q(n * r, 1, U), Q(C_(n, r - 1), 1, U), Q(n ** r, 1, U)], k => Q(C_(n, r) + near(k), 1, U), { f, n, r }, null, pos); }
+    const n = ri(rng, 3, 6);
+    return build(rng, 'C5', 'C', n + ' 人が1列に並ぶ並び方は何通り？', Q(fact(n), 1, U),
+      [Q(fact(n - 1), 1, U), Q(n * (n - 1), 1, U), Q(n * n, 1, U), Q(n ** n, 1, U)], k => Q(fact(n) + near(k), 1, U), { f, n }, null, pos);
+  } };
+  T.C6 = { level: 'C', name: '確率', gen(rng) {
+    const f = pick(rng, ['dice', 'die', 'coin', 'lot']), pr = x => x.v > 0 && x.v <= 1;
+    if (f === 'dice') { const s = ri(rng, 3, 11), c = 6 - Math.abs(7 - s);
+      return build(rng, 'C6', 'C', '2個のサイコロを同時に投げるとき、出た目の和が ' + s + ' になる確率は？', Q(c, 36),
+        [Q(1, 11), Q(c, 18), Q(c - 1, 36), Q(c, 6)],                               // 和を同様に確からしいと誤解／組合せで数える／数え落とし
+        k => Q(c + near(k), 36), { f, s }, null, pr); }
+    if (f === 'die') { const k0 = ri(rng, 2, 5);
+      return build(rng, 'C6', 'C', '1個のサイコロを投げるとき、' + k0 + ' 以上の目が出る確率は？', Q(7 - k0, 6),
+        [Q(6 - k0, 6), Q(k0 - 1, 6), Q(1, 6), Q(k0, 6)], k => Q(7 - k0 + near(k), 6), { f, k: k0 }, null, pr); }
+    if (f === 'coin') { const n = ri(rng, 2, 4), m = pick(rng, ['all', 'least', 'one']), N = 2 ** n;
+      const ans = m === 'all' ? Q(1, N) : m === 'least' ? Q(N - 1, N) : Q(n, N);
+      const words = { all: 'すべて表になる', least: '少なくとも1枚は表になる', one: 'ちょうど1枚だけ表になる' }[m];
+      return build(rng, 'C6', 'C', n + ' 枚の硬貨を同時に投げるとき、' + words + '確率は？', ans,
+        [Q(1, N), Q(N - 1, N), Q(n, N), Q(1, n), Q(1, 2)],                          // 余事象との混同／場合の数の数え方
+        k => Q(Math.max(1, Math.round(ans.v * N)) + near(k), N), { f, n, m }, null, pr); }
+    const n = ri(rng, 5, 10), w = ri(rng, 2, Math.min(4, n - 1));
+    return build(rng, 'C6', 'C', n + ' 本のうち当たりが ' + w + ' 本あるくじを、もどさずに2本続けて引くとき、2本とも当たる確率は？', Q(w * (w - 1), n * (n - 1)),
+      [Q(w * w, n * n), Q(w, n), Q(w - 1, n - 1), Q(w * (w - 1), n * n)],          // もどす場合と混同／1本分だけ
+      k => Q(w * (w - 1) + near(k), n * (n - 1)), { f, n, w }, null, pr);
+  } };
+  const halfL = v => (Number.isInteger(v) ? Q(v) : { label: (v < 0 ? MINUS : '') + Math.abs(v), key: 'v:' + K(v), v });
+  T.C7 = { level: 'C', name: 'データの平均値・中央値', gen(rng) {
+    const n = ri(rng, 5, 8), isHalf = x => x.v !== undefined && Number.isInteger(x.v * 2) && x.v > 0;
+    if (rng() < 0.5) {
+      let d; for (;;) { d = Array.from({ length: n - 1 }, () => ri(rng, 1, 20)); const sm = d.reduce((a, b) => a + b, 0), need = [];
+        for (let x = 1; x <= 20; x++) if ((sm + x) % n === 0) need.push(x);
+        if (need.length) { d.push(pick(rng, need)); break; } }
+      const sum = d.reduce((a, b) => a + b, 0), mean = sum / n, sorted = d.slice().sort((a, b) => a - b);
+      const med = n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+      return build(rng, 'C7', 'C', 'データ ' + d.join(', ') + ' の平均値は？', Q(mean),
+        [halfL(med), halfL(sum / (n - 1)), halfL((sorted[0] + sorted[n - 1]) / 2), halfL(sum / (n + 1))],   // 中央値と混同／個数の数え違い／最大と最小の平均
+        k => Q(mean + near(k)), { f: 'mean', d }, null, isHalf);
+    }
+    const d = Array.from({ length: n }, () => ri(rng, 1, 20)), sorted = d.slice().sort((a, b) => a - b), sum = d.reduce((a, b) => a + b, 0);
+    const med = n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+    const raw = n % 2 ? d[(n - 1) / 2] : (d[n / 2 - 1] + d[n / 2]) / 2;            // 並べかえずに真ん中を取る
+    return build(rng, 'C7', 'C', 'データ ' + d.join(', ') + ' の中央値は？', halfL(med),
+      [halfL(raw), halfL(sum / n), halfL(sorted[Math.floor(n / 2)]), halfL(sorted[Math.floor((n - 1) / 2)])],
+      k => halfL(med + near(k)), { f: 'median', d }, null, isHalf);
+  } };
+  T.C8 = { level: 'C', name: '絶対値と一次不等式', gen(rng) {
+    const f = pick(rng, ['lin', 'lin', 'lt', 'gt']);
+    if (f === 'lin') {
+      let a, c; do { a = ri(rng, -5, 5); c = ri(rng, -5, 5); } while (a === c || a === 0);
+      const x0 = ri(rng, -9, 9), b = ri(rng, -9, 9), d = b + (a - c) * x0, op = pick(rng, ['gt', 'lt', 'ge', 'le']);
+      const sol = a - c > 0 ? op : IFLIP[op];
+      const strict = { gt: 'ge', ge: 'gt', lt: 'le', le: 'lt' };
+      return build(rng, 'C8', 'C', lin(a, b) + ' ' + IOP[op] + ' ' + lin(c, d) + ' を解くと？', ineq(sol, x0),
+        [ineq(IFLIP[sol], x0), ineq(sol, -x0), ineq(strict[sol], x0)],             // 不等号の向き（負で割るとき）／符号ミス／等号の有無
+        k => ineq(sol, x0 + near(k)), { f, a, b, c, d, op }, null, null);
+    }
+    const p = ri(rng, -6, 6), r = ri(rng, 1, 6), lo = p - r, hi = p + r;
+    const abs = '|' + (p === 0 ? 'x' : 'x ' + (p > 0 ? MINUS + ' ' + p : '+ ' + (-p))) + '|';
+    if (f === 'lt') return build(rng, 'C8', 'C', abs + ' < ' + r + ' を解くと？', between(lo, hi),
+      [outside(lo, hi), p ? between(-p - r, -p + r) : null, between(-r, r), ineq('lt', hi)],   // 外側と混同／符号ミス／ずらし忘れ
+      k => between(lo + near(k), hi), { f, p, r }, null, null);
+    return build(rng, 'C8', 'C', abs + ' > ' + r + ' を解くと？', outside(lo, hi),
+      [between(lo, hi), p ? outside(-p - r, -p + r) : null, outside(-r, r), ineq('gt', hi)],
+      k => outside(lo + near(k), hi), { f, p, r }, null, null);
+  } };
+
+  // ================= D：数学II・B =================
+  T.D1 = { level: 'D', name: '指数の計算', gen(rng) {
+    const okP = x => okF(x) && x.v > 0;
+    if (rng() < 0.5) {
+      let a, m, n, k, e; do { a = pick(rng, [2, 3]); m = ri(rng, 1, 6); n = ri(rng, 1, 6); k = ri(rng, 1, 6); e = m + n - k; } while (e < (a === 2 ? -3 : -2) || e > (a === 2 ? 6 : 4));
+      const P = x => (x >= 0 ? Q(a ** x) : Q(1, a ** -x));
+      return build(rng, 'D1', 'D', a + '^' + m + ' × ' + a + '^' + n + ' ÷ ' + a + '^' + k + ' = ?', P(e),
+        [m * n - k <= 8 && m * n - k >= -4 ? P(m * n - k) : null, m + n + k <= 10 ? P(m + n + k) : null, Q(e), P(-e)],   // 指数をかける／ひき算を足す／指数だけ／符号
+        kk => P(e + near(kk)), { f: 'law', a, m, n, k }, null, okP);
+    }
+    let b, q, p; do { b = pick(rng, [2, 3, 4, 5]); q = pick(rng, [2, 3]); p = pick(rng, [-2, -1, 1, 2, 3]); } while (gcd(p, q) !== 1 || b ** q > 125 || (b === 5 && q === 3));
+    const B = b ** q, V = x => (x >= 0 ? Q(b ** x) : Q(1, b ** -x));
+    return build(rng, 'D1', 'D', B + '^(' + (p < 0 ? MINUS : '') + Math.abs(p) + '/' + q + ') = ?', V(p),
+      [Q(B * p, q), V(-p), Q(b), Q(b * p)],                                         // 指数をかけるだけ／符号ミス
+      k => V(p + near(k)), { f: 'frac', b, q, p }, null, okP);
+  } };
+  T.D2 = { level: 'D', name: '対数の計算', gen(rng) {
+    const f = pick(rng, ['basic', 'sum', 'diff', 'base']), lg = b => 'log' + sub(b) + ' ';
+    if (f === 'basic') {
+      const b = pick(rng, [2, 3, 5, 10]), k = b === 2 ? ri(rng, -3, 5) : ri(rng, -2, 3), M = k >= 0 ? Q(b ** k) : Q(1, b ** -k);
+      return build(rng, 'D2', 'D', lg(b) + M.label + ' = ?', Q(k), [Q(-k), Q(k + 1), Q(k - 1), M], kk => Q(k + near(kk)), { f, b, k }, null, null);
+    }
+    if (f === 'sum') {
+      let b, k, M, N; do { b = pick(rng, [2, 3, 6, 10]); k = ri(rng, 2, 3); const P = b ** k, ds = []; for (let x = 2; x < P; x++) if (P % x === 0) ds.push(x);
+        M = pick(rng, ds); N = P / M; } while (M === b || N === b || M === N);
+      return build(rng, 'D2', 'D', lg(b) + M + ' + ' + lg(b) + N + ' = ?', Q(k), [Q(k + 1), Q(k - 1), Q(M + N), Q(-k)], kk => Q(k + near(kk)), { f, b, M, N }, null, null);
+    }
+    if (f === 'diff') {
+      const b = pick(rng, [2, 3, 5]), k = ri(rng, 1, 3), N = ri(rng, 2, 5), M = N * b ** k;
+      return build(rng, 'D2', 'D', lg(b) + M + ' ' + MINUS + ' ' + lg(b) + N + ' = ?', Q(k), [Q(k + 1), Q(-k), Q(M - N), Q(k - 1)], kk => Q(k + near(kk)), { f, b, M, N }, null, null);
+    }
+    let b, u, v; do { b = pick(rng, [2, 3]); u = ri(rng, 2, 3); v = ri(rng, 1, 5); } while (v % u === 0 || b ** u > 27 || b ** v > 243);
+    return build(rng, 'D2', 'D', lg(b ** u) + (b ** v) + ' = ?', Q(v, u), [Q(u, v), Q(v - u), Q(v * u), Q(v)], kk => Q(v + near(kk), u), { f, b, u, v }, null, null);
+  } };
+  // 加法定理：15°・75°・105° の値（45°±30°、60°+45°）
+  const ADD = {
+    15: { sin: S([[1, 6], [-1, 2]], 4), cos: S([[1, 6], [1, 2]], 4), tan: S([[2, 1], [-1, 3]]), A: 45, B: 30, op: -1 },
+    75: { sin: S([[1, 6], [1, 2]], 4), cos: S([[1, 6], [-1, 2]], 4), tan: S([[2, 1], [1, 3]]), A: 45, B: 30, op: 1 },
+    105: { sin: S([[1, 6], [1, 2]], 4), cos: S([[1, 2], [-1, 6]], 4), tan: S([[-2, 1], [-1, 3]]), A: 60, B: 45, op: 1 },
+  };
+  const BASE_T = { sin: { 30: S([[1, 1]], 2), 45: S([[1, 2]], 2), 60: S([[1, 3]], 2) }, cos: { 30: S([[1, 3]], 2), 45: S([[1, 2]], 2), 60: S([[1, 1]], 2) },
+                   tan: { 30: S([[1, 3]], 3), 45: S([[1, 1]]), 60: S([[1, 3]]) } };
+  const TRIPLES = [[3, 4, 5], [4, 3, 5], [5, 12, 13], [12, 5, 13], [8, 15, 17], [15, 8, 17]];
+  T.D3 = { level: 'D', name: '加法定理・2倍角', gen(rng) {
+    if (rng() < 0.5) {
+      const th = pick(rng, [15, 75, 105]), fn = pick(rng, ['sin', 'cos', 'tan']), E = ADD[th], ans = E[fn];
+      const alt = fn === 'sin' ? E.cos : fn === 'cos' ? E.sin : null;
+      const naive = sAdd(BASE_T[fn][E.A], BASE_T[fn][E.B], E.op);                // 値をそのまま足す（引く）
+      const twice = S(ans.s.t, ans.s.d / 2 === Math.floor(ans.s.d / 2) ? ans.s.d / 2 : ans.s.d * 2);
+      return build(rng, 'D3', 'D', fn + ' ' + th + '° = ?', ans, [alt, sNeg(ans), naive, twice],
+        k => TRIG_POOL[(k - 1) % TRIG_POOL.length], { f: 'add', th, fn }, null, null);
+    }
+    const [x, y, h] = pick(rng, TRIPLES), fn = pick(rng, ['sin', 'cos']);           // sinθ = y/h, cosθ = x/h（0°<θ<90°）
+    const ans = fn === 'sin' ? Q(2 * x * y, h * h) : Q(x * x - y * y, h * h);
+    return build(rng, 'D3', 'D', '0° < θ < 90°、sin θ = ' + y + '/' + h + ' のとき、' + fn + ' 2θ = ?', ans,
+      fn === 'sin' ? [Q(2 * y, h), Q(-2 * x * y, h * h), Q(x * x - y * y, h * h), Q(y * y, h * h)]   // 2sinθ／符号／公式の取り違え
+                   : [Q(y * y - x * x, h * h), Q(2 * x * y, h * h), Q(2 * x, h), Q(1 - 2 * y, h)],
+      k => Q(Math.round(ans.v * h * h) + near(k), h * h), { f: 'double', x, y, h, fn }, null, x0 => Math.abs(x0.v) <= 2);
+  } };
+  T.D4 = { level: 'D', name: '多項式の微分', gen(rng) {
+    const a = nz(rng, -3, 3), b = ri(rng, -6, 6), c = ri(rng, -6, 6), d = ri(rng, -6, 6), F = 'f(x) = ' + polyStr([a, b, c, d]);
+    if (rng() < 0.6) {
+      const k = ri(rng, -3, 3), v = 3 * a * k * k + 2 * b * k + c;
+      return build(rng, 'D4', 'D', F + ' のとき、f′(' + sn(k) + ') = ?', Q(v),
+        [Q(a * k ** 3 + b * k * k + c * k + d), Q(a * k * k + b * k + c), Q(3 * a * k ** 3 + 2 * b * k * k + c * k), Q(3 * a * k * k - 2 * b * k + c)],   // 微分していない／指数をかけ忘れ／次数を下げ忘れ
+        kk => Q(v + near(kk)), { f: 'val', a, b, c, d, k }, null, null);
+    }
+    const e = pick(rng, [1, 2]), v = e === 2 ? 3 * a : 2 * b;
+    return build(rng, 'D4', 'D', F + ' のとき、f′(x) の ' + (e === 2 ? 'x²' : 'x') + ' の係数は？', Q(v),
+      e === 2 ? [Q(a), Q(2 * a), Q(2 * b), Q(3 * b)] : [Q(b), Q(c), Q(3 * a), Q(2 * c)],
+      kk => Q(v + near(kk)), { f: 'coef', a, b, c, d, e }, null, null);
+  } };
+  T.D5 = { level: 'D', name: '等差数列・等比数列', gen(rng) {
+    const f = pick(rng, ['an', 'as', 'gn', 'gs']);
+    if (f === 'an' || f === 'as') {
+      const a = ri(rng, -10, 10), d = nz(rng, -5, 5), n = f === 'an' ? ri(rng, 6, 20) : ri(rng, 5, 12), an = a + (n - 1) * d, Sn = n * (2 * a + (n - 1) * d) / 2;
+      const q = '初項 ' + sn(a) + '、公差 ' + sn(d) + ' の等差数列の' + (f === 'an' ? '第 ' + n + ' 項' : '初項から第 ' + n + ' 項までの和') + 'は？';
+      return f === 'an' ? build(rng, 'D5', 'D', q, Q(an), [Q(a + n * d), Q(a + (n - 2) * d), Q(n * d), Q(a * n)], k => Q(an + near(k)), { f, a, d, n }, null, null)
+        : build(rng, 'D5', 'D', q, Q(Sn), [Q(n * (a + an)), Q(an), Q(n * (2 * a + n * d) / 2), Q((n - 1) * (2 * a + (n - 2) * d) / 2)], k => Q(Sn + near(k)), { f, a, d, n }, null, x => Number.isInteger(x.v));
+    }
+    const a = pick(rng, [1, 2, 3, 5]), r = pick(rng, [2, 3, -2]), n = f === 'gn' ? ri(rng, 3, 7) : ri(rng, 3, 6), an = a * r ** (n - 1), Sn = a * (r ** n - 1) / (r - 1);
+    const q = '初項 ' + a + '、公比 ' + sn(r) + ' の等比数列の' + (f === 'gn' ? '第 ' + n + ' 項' : '初項から第 ' + n + ' 項までの和') + 'は？';
+    return f === 'gn' ? build(rng, 'D5', 'D', q, Q(an), [Q(a * r ** n), Q(a * r * (n - 1)), Q((a * r) ** (n - 1)), Q(a + (n - 1) * r)], k => Q(an + near(k)), { f, a, r, n }, null, null)
+      : build(rng, 'D5', 'D', q, Q(Sn), [Q(a * (r ** (n - 1) - 1) / (r - 1)), Q(a * (r ** n - 1)), Q(an), Q(a * (r ** (n + 1) - 1) / (r - 1))], k => Q(Sn + near(k)), { f, a, r, n }, null, x => Number.isInteger(x.v));
+  } };
+  const vecName = s => s + '⃗';
+  T.D6 = { level: 'D', name: 'ベクトルの成分と大きさ', gen(rng) {
+    let a1, a2, b1, b2; do { a1 = ri(rng, -5, 5); a2 = ri(rng, -5, 5); b1 = ri(rng, -5, 5); b2 = ri(rng, -5, 5); } while ((!a1 && !a2) || (!b1 && !b2) || (a1 === b1 && a2 === b2));
+    const pre = vecName('a') + ' = (' + sn(a1) + ', ' + sn(a2) + ')、' + vecName('b') + ' = (' + sn(b1) + ', ' + sn(b2) + ') のとき、';
+    if (rng() < 0.5) {
+      const p = ri(rng, 1, 3), q = nz(rng, -3, 3), V = (x, y) => tup([Q(x), Q(y)]), v1 = p * a1 + q * b1, v2 = p * a2 + q * b2;
+      const nm = (p === 1 ? '' : p) + vecName('a') + ' ' + (q < 0 ? MINUS : '+') + ' ' + (Math.abs(q) === 1 ? '' : Math.abs(q)) + vecName('b');
+      return build(rng, 'D6', 'D', pre + nm + ' の成分は？', V(v1, v2),
+        [V(p * a1 - q * b1, p * a2 - q * b2), V(p * a1 + Math.sign(q) * b1, p * a2 + Math.sign(q) * b2), V(v2, v1), V(a1 + q * b1, a2 + q * b2)],   // 符号／係数のかけ忘れ／成分の入れ替え
+        k => V(v1 + near(k), v2), { f: 'lin', a1, a2, b1, b2, p, q }, null, null);
+    }
+    const sg = pick(rng, [1, -1]), s1 = a1 + sg * b1, s2 = a2 + sg * b2;
+    if (!s1 && !s2) return T.D6.gen(rng);
+    const nm = '|' + vecName('a') + ' ' + (sg < 0 ? MINUS : '+') + ' ' + vecName('b') + '|';
+    return build(rng, 'D6', 'D', pre + nm + ' は？', rt(s1 * s1 + s2 * s2),
+      [sAdd(rt(a1 * a1 + a2 * a2), rt(b1 * b1 + b2 * b2), sg), Q(s1 * s1 + s2 * s2), Q(Math.abs(s1) + Math.abs(s2)), rt((a1 - sg * b1) ** 2 + (a2 - sg * b2) ** 2)],
+      k => rt(s1 * s1 + s2 * s2 + k), { f: 'mag', a1, a2, b1, b2, sg }, null, x => x.v > 0);
+  } };
+  T.D7 = { level: 'D', name: '2点間の距離', gen(rng) {
+    let x1, y1, x2, y2; do { x1 = ri(rng, -6, 6); y1 = ri(rng, -6, 6); x2 = ri(rng, -6, 6); y2 = ri(rng, -6, 6); } while (x1 === x2 || y1 === y2);
+    const dx = x2 - x1, dy = y2 - y1;
+    return build(rng, 'D7', 'D', '2点 A(' + sn(x1) + ', ' + sn(y1) + ')、B(' + sn(x2) + ', ' + sn(y2) + ') の間の距離は？', rt(dx * dx + dy * dy),
+      [Q(Math.abs(dx) + Math.abs(dy)), Q(dx * dx + dy * dy), rt((x1 + x2) ** 2 + (y1 + y2) ** 2), dx * dx !== dy * dy ? rt(Math.abs(dx * dx - dy * dy)) : null],   // ルートなし／差でなく和／ひき算
+      k => rt(dx * dx + dy * dy + k), { x1, y1, x2, y2 }, null, x => x.v > 0);
+  } };
+  T.D8 = { level: 'D', name: '円の方程式', gen(rng) {
+    let p, q, r2, F; do { p = ri(rng, -5, 5); q = ri(rng, -5, 5); r2 = ri(rng, 1, 30); F = p * p + q * q - r2; } while (!p && !q);
+    const lhs = 'x² + y²' + [[-2 * p, 'x'], [-2 * q, 'y'], [F, '']].filter(([c]) => c).map(([c, v]) => (c < 0 ? ' ' + MINUS + ' ' : ' + ') + Math.abs(c) + v).join('');
+    const wrongR = p * p + q * q + F;
+    return build(rng, 'D8', 'D', lhs + ' = 0 の中心と半径は？', circ(p, q, r2),
+      [circ(-p, -q, r2), circ(p, q, r2 * r2), circ(-2 * p, -2 * q, r2), wrongR > 0 && wrongR !== r2 ? circ(p, q, wrongR) : null],   // 中心の符号／ルートの付け忘れ／係数そのまま
+      k => circ(p, q + near(k), r2), { p, q, r2 }, null, null);
+  } };
+
+  // ================= E：数学III・C =================
+  T.E1 = { level: 'E', name: '数列・関数の極限', gen(rng) {
+    const f = pick(rng, ['seq', 'seq', 'fn', 'sin']);
+    if (f === 'seq') {
+      const g = pick(rng, ['same', 'same', 'low', 'high']), a = ri(rng, 1, 6), d = ri(rng, 1, 6), b = ri(rng, -9, 9), c = nz(rng, -9, 9), e = ri(rng, -9, 9), h = nz(rng, -9, 9);
+      const num = g === 'low' ? [a, c] : [a, b, c], den = g === 'high' ? [d, h] : [d, e, h];
+      const ans = g === 'same' ? Q(a, d) : g === 'low' ? Q(0) : INF;
+      return build(rng, 'E1', 'E', 'n→∞ のとき (' + polyStr(num, 'n') + ')/(' + polyStr(den, 'n') + ') の極限は？', ans,
+        [g === 'same' ? Q(c, h) : Q(a, d), Q(d, a), g === 'same' ? INF : Q(0), g === 'same' ? Q(0) : Q(c, h)],   // 定数項の比／逆数／発散・0と混同
+        k => Q(Math.round(a / d * 6) + near(k), 6), { f, g, a, b, c, d, e, h }, null, okF);
+    }
+    if (f === 'fn') {
+      let p, s; do { p = nz(rng, -5, 5); s = ri(rng, -5, 5); } while (p === s);
+      return build(rng, 'E1', 'E', 'x→' + sn(p) + ' のとき (' + polyStr([1, -(p + s), p * s]) + ')/(' + lin(1, -p) + ') の極限は？', Q(p - s),
+        [Q(0), INF, Q(s - p), Q(p + s)],                                              // 0/0 を0とする／発散と誤解／符号ミス
+        k => Q(p - s + near(k)), { f, p, s }, null, okF);
+    }
+    const k0 = ri(rng, 2, 6), m = ri(rng, 1, 4);
+    return build(rng, 'E1', 'E', 'x→0 のとき (sin ' + k0 + 'x)/(' + (m === 1 ? '' : m) + 'x) の極限は？', Q(k0, m),
+      [Q(1), Q(m, k0), Q(0), Q(k0 * m)], k => Q(k0 + near(k), m), { f, k: k0, m }, null, okF);
+  } };
+  T.E2 = { level: 'E', name: '積・商・合成関数の微分', gen(rng) {
+    const f = pick(rng, ['prod', 'quot', 'chain']), k = ri(rng, -2, 2);
+    if (f === 'prod') {
+      const a = nz(rng, -3, 3), b = ri(rng, -5, 5), c = nz(rng, -3, 3), d = ri(rng, -5, 5);
+      const u = a * k + b, w = c * k * k + d, v = a * w + u * 2 * c * k;
+      return build(rng, 'E2', 'E', 'f(x) = (' + lin(a, b) + ')(' + polyStr([c, 0, d]) + ') のとき、f′(' + sn(k) + ') = ?', Q(v),
+        [Q(a * 2 * c * k), Q(a * w), Q(u * 2 * c * k), Q(a * w - u * 2 * c * k)],     // 微分どうしの積／片方だけ微分／符号ミス
+        kk => Q(v + near(kk)), { f, a, b, c, d, k }, null, null);
+    }
+    if (f === 'quot') {
+      let a, b, c, d; do { a = nz(rng, -4, 4); b = ri(rng, -5, 5); c = nz(rng, -3, 3); d = ri(rng, -5, 5); } while (a * d - b * c === 0 || c * k + d === 0);
+      const D = c * k + d, top = a * d - b * c;
+      return build(rng, 'E2', 'E', 'f(x) = (' + lin(a, b) + ')/(' + lin(c, d) + ') のとき、f′(' + sn(k) + ') = ?', Q(top, D * D),
+        [Q(-top, D * D), Q(top, D), Q(a, c), Q(a * d + b * c, D * D)],               // 分子の順序ミス／2乗し忘れ／分子・分母を別々に微分
+        kk => Q(top + near(kk), D * D), { f, a, b, c, d, k }, null, null);
+    }
+    const n = ri(rng, 2, 4); let a, b; do { a = nz(rng, -3, 3); b = ri(rng, -3, 3); } while (Math.abs(a * k + b) > 4 || a * k + b === 0);
+    const u = a * k + b, v = n * a * u ** (n - 1);
+    return build(rng, 'E2', 'E', 'f(x) = (' + lin(a, b) + ')' + SUP[n] + ' のとき、f′(' + sn(k) + ') = ?', Q(v),
+      [Q(n * u ** (n - 1)), Q(a * u ** (n - 1)), Q(n * a * u ** n), Q(u ** n)],      // 中身の微分を忘れる／指数を下げない
+      kk => Q(v + near(kk)), { f, a, b, n, k }, null, null);
+  } };
+  T.E3 = { level: 'E', name: '定積分', gen(rng) {
+    let a, b, c, s, t; do { a = ri(rng, -3, 3); b = ri(rng, -4, 4); c = ri(rng, -5, 5); s = ri(rng, -2, 2); t = ri(rng, s + 1, 3); } while (!a && !b);
+    const F = x => [a * x ** 3, 3, b * x * x, 2, c * x, 1], Fv = x => a * x ** 3 / 3 + b * x * x / 2 + c * x;
+    const num6 = x => 2 * a * x ** 3 + 3 * b * x * x + 6 * c * x;                    // F(x) の6倍（整数）
+    const ans = Q(num6(t) - num6(s), 6), fv = x => a * x * x + b * x + c;
+    return build(rng, 'E3', 'E', '∫_' + sn(s) + '^' + sn(t) + ' (' + polyStr([a, b, c]) + ') dx = ?', ans,
+      [Q(num6(t), 6), Q(num6(s) - num6(t), 6), Q(fv(t) - fv(s)), Q(a * (t ** 3 - s ** 3) + b * (t * t - s * s) + c * (t - s))],   // 下端の代入忘れ／上下の取り違え／微分してしまう／次数で割り忘れ
+      k => Q(num6(t) - num6(s) + near(k) * 6, 6), { a, b, c, s, t }, null, null);
+  } };
+  T.E4 = { level: 'E', name: '複素数の計算', gen(rng) {
+    const f = pick(rng, ['mul', 'conj', 'div']), z = (x, y) => '(' + cpx(x, y).label + ')';
+    if (f === 'mul') {
+      const a = nz(rng, -5, 5), b = nz(rng, -5, 5), c = nz(rng, -5, 5), d = nz(rng, -5, 5);
+      return build(rng, 'E4', 'E', z(a, b) + z(c, d) + ' = ?', cpx(a * c - b * d, a * d + b * c),
+        [cpx(a * c + b * d, a * d + b * c), cpx(a * c - b * d, a * d - b * c), cpx(a * c, b * d), cpx(a * c - b * d, -(a * d + b * c))],   // i² = 1 とする／符号ミス／実部どうし・虚部どうし
+        k => cpx(a * c - b * d + near(k), a * d + b * c), { f, a, b, c, d }, null, null);
+    }
+    if (f === 'conj') {
+      const a = nz(rng, -6, 6), b = nz(rng, -6, 6);
+      return build(rng, 'E4', 'E', 'z = ' + cpx(a, b).label + ' のとき、z と共役な複素数 z̄ の積 z z̄ = ?', cpx(a * a + b * b, 0),
+        [cpx(a * a - b * b, 0), cpx(a * a - b * b, 2 * a * b), cpx(a * a + b * b, 2 * a * b), cpx(a * a, -b * b)],   // i² の扱い／z² と混同
+        k => cpx(a * a + b * b + near(k), 0), { f, a, b }, null, null);
+    }
+    let p, q, c, d; do { p = ri(rng, -4, 4); q = ri(rng, -4, 4); c = nz(rng, -3, 3); d = nz(rng, -3, 3); } while (!p && !q);
+    const ur = p * c - q * d, ui = p * d + q * c;
+    return build(rng, 'E4', 'E', z(ur, ui) + ' ÷ ' + z(c, d) + ' = ?', cpx(p, q),
+      [cpx(p, -q), cpx(q, p), cpx(-p, -q), cpx(-q, p)],                              // 共役のかけ方の符号ミス／実部と虚部の入れ替え
+      k => cpx(p + near(k), q), { f, p, q, c, d }, null, null);
+  } };
+  const ANG_SET = [30, 45, 60, 90, 120, 135, 150];
+  T.E5 = { level: 'E', name: 'ベクトルの内積と角度', gen(rng) {
+    if (rng() < 0.5) {
+      const three = rng() < 0.5, n = three ? 3 : 2, a = Array.from({ length: n }, () => ri(rng, -4, 4)), b = Array.from({ length: n }, () => ri(rng, -4, 4));
+      if (a.every(x => !x) || b.every(x => !x)) return T.E5.gen(rng);
+      const dot = a.reduce((s, x, i) => s + x * b[i], 0), V = v => '(' + v.map(sn).join(', ') + ')';
+      return build(rng, 'E5', 'E', vecName('a') + ' = ' + V(a) + '、' + vecName('b') + ' = ' + V(b) + ' のとき、内積 ' + vecName('a') + '·' + vecName('b') + ' = ?', Q(dot),
+        [Q(a[0] * b[0] - a[1] * b[1] + (three ? a[2] * b[2] : 0)), Q(a.reduce((s, x) => s + x, 0) * b.reduce((s, x) => s + x, 0)), three ? Q(a[0] * b[0] + a[1] * b[1]) : Q(a[0] * b[1] + a[1] * b[0]), Q(-dot)],
+        k => Q(dot + near(k)), { f: 'dot', a, b }, null, null);
+    }
+    const th = pick(rng, ANG_SET), m = ri(rng, 1, 4); let nn; do { nn = ri(rng, 1, 4); } while (([30, 60, 120, 150].includes(th)) && (m * nn) % 2);
+    const kind = th === 45 || th === 135 ? 2 : th === 30 || th === 150 ? 3 : 1;
+    const bl = kind === 1 ? Q(nn) : S([[nn, kind]]);
+    const dot = th === 90 ? 0 : th === 45 ? m * nn : th === 135 ? -m * nn : th === 60 ? m * nn / 2 : th === 120 ? -m * nn / 2 : th === 30 ? 3 * m * nn / 2 : -3 * m * nn / 2;
+    const others = ANG_SET.filter(x => x !== th && x !== 180 - th && x !== 90 - th);
+    return build(rng, 'E5', 'E', '|' + vecName('a') + '| = ' + m + '、|' + vecName('b') + '| = ' + bl.label + '、' + vecName('a') + '·' + vecName('b') + ' = ' + sn(dot) +
+      ' のとき、' + vecName('a') + ' と ' + vecName('b') + ' のなす角 θ（0° ≤ θ ≤ 180°）は？', deg(th),
+      [th !== 90 ? deg(180 - th) : null, th > 0 && th < 90 ? deg(90 - th) : th > 90 ? deg(th - 90) : null],   // cos の符号の見落とし／sin と cos の取り違え
+      k => deg(others[(k - 1) % others.length]), { f: 'angle', th, m, n: nn, kind, dot }, null, null);
+  } };
+  T.E6 = { level: 'E', name: '空間ベクトルの成分と大きさ', gen(rng) {
+    const P = () => [ri(rng, -5, 5), ri(rng, -5, 5), ri(rng, -5, 5)], A = P(), B = P();
+    const d = B.map((x, i) => x - A[i]); if (d.filter(x => x).length < 2) return T.E6.gen(rng);
+    const V = v => tup(v.map(x => Q(x))), pre = '2点 A(' + A.map(sn).join(', ') + ')、B(' + B.map(sn).join(', ') + ') について、';
+    if (rng() < 0.5) return build(rng, 'E6', 'E', pre + 'AB⃗ の成分は？', V(d),
+      [V(d.map(x => -x)), V(A.map((x, i) => x + B[i])), V([d[0], d[1], B[2]]), V([d[1], d[0], d[2]])],   // BA と取り違え／和／z成分の引き忘れ
+      k => V([d[0] + near(k), d[1], d[2]]), { f: 'comp', A, B }, null, null);
+    const s2 = d.reduce((s, x) => s + x * x, 0);
+    return build(rng, 'E6', 'E', pre + '|AB⃗| = ?', rt(s2),
+      [Q(d.reduce((s, x) => s + Math.abs(x), 0)), Q(s2), d[2] ? rt(d[0] * d[0] + d[1] * d[1]) : null, rt(A.reduce((s, x, i) => s + (x + B[i]) ** 2, 0))],
+      k => rt(s2 + k), { f: 'mag', A, B }, null, x => x.v > 0);
+  } };
+  const ARGS = [[1, 6], [1, 4], [1, 3], [1, 2], [2, 3], [3, 4], [5, 6], [1, 1], [7, 6], [5, 4], [4, 3], [3, 2], [5, 3], [7, 4], [11, 6]];
+  // z = a + bi：π/6・π/3 系は |z| = 2r（成分は ±r と ±r√3）、π/4 系は |z| = r√2（成分は ±r）、軸上は |z| = r
+  function polarParts(p, q, r) {
+    const comp = v => { const a = Math.abs(v), sg = Math.sign(v); if (a < 1e-9) return null;
+      if (q === 4 || Math.abs(a - 1) < 1e-9 || Math.abs(a - 0.5) < 1e-9) return S([[sg * r, 1]]);
+      return S([[sg * r, 3]]); };
+    return [comp(Math.cos(p / q * Math.PI)), comp(Math.sin(p / q * Math.PI))];
+  }
+  function zLabel(re, im) {
+    const il = im ? (im.label === '1' ? 'i' : im.label === MINUS + '1' ? MINUS + 'i' : im.label + 'i') : '';
+    if (!re) return il;
+    return re.label + (im ? (il.startsWith(MINUS) ? ' ' + MINUS + ' ' + il.slice(1) : ' + ' + il) : '');
+  }
+  const sAbs = x => (x.v < 0 ? sNeg(x) : x);
+  T.E7 = { level: 'E', name: '極形式（偏角と絶対値）', gen(rng) {
+    const [p, q] = pick(rng, ARGS), r = q === 1 || q === 2 ? ri(rng, 1, 4) : pick(rng, [1, 2]);
+    const R = q === 4 ? S([[r, 2]]) : q === 6 || q === 3 ? S([[2 * r, 1]]) : S([[r, 1]]);
+    const [re, im] = polarParts(p, q, r), zl = zLabel(re, im), th = p / q;
+    if (rng() < 0.65) {
+      const P_ = x => { let v = x % 2; if (v < 0) v += 2; for (const d of [1, 2, 3, 4, 6]) if (Math.abs(v * d - Math.round(v * d)) < 1e-9) return piR(Math.round(v * d), d); return null; };
+      return build(rng, 'E7', 'E', 'z = ' + zl + ' の偏角 θ（0 ≤ θ < 2π）は？', piR(p, q),
+        [P_(-th), P_(1 - th), P_(th + 1), P_(0.5 - th)],                              // 共役と混同／π−θ／象限の取り違え／sin と cos の取り違え
+        k => P_(th + k / 6), { f: 'arg', p, q, r }, null, null);
+    }
+    const r2 = Math.round(R.v * R.v), sumAbs = re && im ? sAdd(sAbs(re), sAbs(im)) : null;
+    return build(rng, 'E7', 'E', 'z = ' + zl + ' の絶対値 |z| は？', R,
+      [Q(r2), sumAbs, re && im ? rt(Math.round(Math.abs(re.v * re.v - im.v * im.v))) : null, S([[1, 1]])],   // ルートの付け忘れ／成分をそのまま足す／ひき算
+      k => rt(r2 + k), { f: 'abs', p, q, r }, null, x => x.v > 0);
+  } };
+  T.E8 = { level: 'E', name: '2次曲線（焦点・漸近線）', gen(rng) {
+    const f = pick(rng, ['para', 'asym', 'focus']);
+    if (f === 'para') {
+      const p = nz(rng, -4, 4), ax = pick(rng, ['x', 'y']), P = (x, y) => tup([Q(x), Q(y)]);
+      const eq = ax === 'x' ? 'y² = ' + (4 * p === 1 ? '' : sn(4 * p)) + 'x' : 'x² = ' + sn(4 * p) + 'y', F = ax === 'x' ? P(p, 0) : P(0, p);
+      return build(rng, 'E8', 'E', '放物線 ' + eq + ' の焦点の座標は？', F,
+        [ax === 'x' ? P(4 * p, 0) : P(0, 4 * p), ax === 'x' ? P(0, p) : P(p, 0), ax === 'x' ? P(-p, 0) : P(0, -p), ax === 'x' ? P(2 * p, 0) : P(0, 2 * p)],   // 4p をそのまま／軸の取り違え／符号ミス
+        k => (ax === 'x' ? P(p + near(k), 0) : P(0, p + near(k))), { f, p, ax }, null, null);
+    }
+    if (f === 'asym') {
+      let a, b; do { a = ri(rng, 1, 6); b = ri(rng, 1, 6); } while (a === b);
+      const sq = n => (n === 1 ? '' : '/' + n * n);
+      return build(rng, 'E8', 'E', '双曲線 x²' + sq(a) + ' ' + MINUS + ' y²' + sq(b) + ' = 1 の漸近線は？', asym(b, a),
+        [asym(a, b), asym(b * b, a * a), asym(b, 2 * a), asym(2 * b, a)],            // a・b の取り違え／2乗のまま
+        k => asym(b + k, a), { f, a, b }, null, null);
+    }
+    const [a, b, c] = pick(rng, [[3, 4, 5], [4, 3, 5], [5, 12, 13], [12, 5, 13], [6, 8, 10], [8, 6, 10], [1, 1, 0], [2, 2, 0]]);
+    const cc = c ? Q(c) : rt(a * a + b * b);
+    const sq = n => (n === 1 ? '' : '/' + n * n);
+    return build(rng, 'E8', 'E', '双曲線 x²' + sq(a) + ' ' + MINUS + ' y²' + sq(b) + ' = 1 の焦点の座標は？', pmPt(cc, 'x'),
+      [pmPt(cc, 'y'), pmPt(Q(a), 'x'), a !== b ? pmPt(rt(Math.abs(a * a - b * b)), 'x') : null, pmPt(Q(a + b), 'x')],   // 軸の取り違え／頂点と混同／楕円の式を使う
+      k => pmPt(rt(a * a + b * b + k), 'x'), { f, a, b }, null, null);
+  } };
+
+  // ================= 特殊ドリル（S1 因数分解・S2 テンパズル・S3 10さがし） =================
+  const facL = (p, q) => { const one = v => '(x ' + (v < 0 ? MINUS + ' ' + (-v) : '+ ' + v) + ')';
+    const [x, y] = p >= q ? [p, q] : [q, p]; return { label: x === y ? one(x) + '²' : one(x) + one(y), key: 'P:' + (p + q) + ',' + p * q, v: p * q }; };
+  T.S1 = { level: 'S', name: '因数分解ドリル', gen(rng) {
+    let p, q; do { p = nz(rng, -9, 9); q = nz(rng, -9, 9); } while (Math.abs(p * q) > 48);
+    const c = p * q, b = p + q, pairs = [];
+    for (let u = -Math.abs(c); u <= Math.abs(c); u++) if (u && c % u === 0 && u + c / u !== b) pairs.push([u, c / u]);
+    return build(rng, 'S1', 'S', polyStr([1, b, c]) + ' を因数分解すると？', facL(p, q),
+      [facL(-p, -q), facL(p, -q), facL(-p, q)].concat(pairs.length ? [facL(...pick(rng, pairs))] : []),   // 符号ミス／かけて c でも、たして b にならない組
+      k => facL(p + near(k), q), { p, q, b, c }, null, null);
+  } };
+  // テンパズル：4つの数を1回ずつ使い、＋−×÷とかっこで10を作る。式は木で持ち、優先順位に合わせて最小限のかっこで表示する
+  const rq = (p, q) => { if (q < 0) { p = -p; q = -q; } const g = gcd(p, q) || 1; return [p / g, q / g]; };
+  const OPS = { '+': (a, b) => rq(a[0] * b[1] + b[0] * a[1], a[1] * b[1]), '−': (a, b) => rq(a[0] * b[1] - b[0] * a[1], a[1] * b[1]),
+                '×': (a, b) => rq(a[0] * b[0], a[1] * b[1]), '÷': (a, b) => (b[0] === 0 ? null : rq(a[0] * b[1], a[1] * b[0])) };
+  const PREC = { '+': 1, '−': 1, '×': 2, '÷': 2 };
+  const evalT = t => { if (t.n !== undefined) return [t.n, 1]; const a = evalT(t.l), b = evalT(t.r); return a && b ? OPS[t.op](a, b) : null; };
+  function showT(t, parentPrec = 0, right = false, parentOp = null) {
+    if (t.n !== undefined) return String(t.n);
+    const s = showT(t.l, PREC[t.op], false, t.op) + ' ' + t.op + ' ' + showT(t.r, PREC[t.op], true, t.op);
+    const need = PREC[t.op] < parentPrec || (right && PREC[t.op] === parentPrec && (parentOp === '−' || parentOp === '÷'));
+    return need ? '(' + s + ')' : s;
+  }
+  const flatT = t => (t.n !== undefined ? String(t.n) : flatT(t.l) + ' ' + t.op + ' ' + flatT(t.r));   // かっこを付け忘れた式
+  function evalFlat(str) {                                            // 優先順位どおりに左から計算（かっこなし）
+    const tk = str.split(' '), nums = [[+tk[0], 1]], ops = [];
+    for (let i = 1; i < tk.length; i += 2) {
+      const op = tk[i], v = [+tk[i + 1], 1];
+      if (PREC[op] === 2) { const r = OPS[op](nums.pop(), v); if (!r) return null; nums.push(r); } else { ops.push(op); nums.push(v); }
+    }
+    let acc = nums[0]; ops.forEach((op, i) => { acc = OPS[op](acc, nums[i + 1]); });
+    return acc;
+  }
+  function allTrees(ds) {                                             // 4つの数（並べ方も含む）のすべての式
+    if (ds.length === 1) return [{ n: ds[0] }];
+    const out = [];
+    for (let i = 1; i < ds.length; i++) for (const L of allTrees(ds.slice(0, i))) for (const R of allTrees(ds.slice(i))) for (const op of ['+', '−', '×', '÷']) out.push({ op, l: L, r: R });
+    return out;
+  }
+  const perms = a => (a.length <= 1 ? [a] : a.flatMap((x, i) => perms(a.slice(0, i).concat(a.slice(i + 1))).map(p => [x].concat(p))));
+  const tq = (lbl, v) => ({ label: lbl, key: 'q:' + v[0] + '/' + v[1], v: v[0] / v[1] });
+  T.S2 = { level: 'S', name: 'テンパズル', gen(rng) {
+    for (;;) {
+      const d = [ri(rng, 1, 9), ri(rng, 1, 9), ri(rng, 1, 9), ri(rng, 1, 9)], seen = new Set(), sols = [], others = [];
+      for (const p of perms(d)) { const k = p.join(); if (seen.has(k)) continue; seen.add(k);
+        for (const t of allTrees(p)) { const v = evalT(t); if (!v) continue; (v[0] === 10 && v[1] === 1 ? sols : others).push({ t, v }); } }
+      if (!sols.length) continue;
+      const sol = pick(rng, sols), mist = [];
+      const fl = flatT(sol.t), fv = evalFlat(fl);
+      if (fv && !(fv[0] === 10 && fv[1] === 1)) mist.push(tq(fl, fv));             // かっこの付け忘れ
+      const swap = (t, path) => { if (t.n !== undefined) return [];               // 演算子を1つ取り違える
+        const res = []; for (const op of ['+', '−', '×', '÷']) if (op !== t.op) res.push(Object.assign({}, t, { op }));
+        return res.concat(swap(t.l).map(l => Object.assign({}, t, { l })), swap(t.r).map(r => Object.assign({}, t, { r }))); };
+      for (const t of swap(sol.t)) { const v = evalT(t); if (v && !(v[0] === 10 && v[1] === 1) && rng() < 0.5) mist.push(tq(showT(t), v)); }
+      const pool = others.filter(o => o.v[1] === 1 || rng() < 0.3);
+      return build(rng, 'S2', 'S', '4つの数 ' + d.join('・') + ' を1回ずつ使って 10 を作る式は？', tq(showT(sol.t), sol.v), mist,
+        () => { const o = pick(rng, pool.length ? pool : others); return tq(showT(o.t), o.v); }, { d }, null, null);
+    }
+  } };
+  T.S3 = { level: 'S', name: '10さがし', gen(rng) {
+    const grp = (a) => ({ label: a.join('・'), key: 'g:' + a.reduce((s, x) => s + x, 0), v: a.reduce((s, x) => s + x, 0) });
+    const n = pick(rng, [2, 3, 3]); let g;
+    do { g = Array.from({ length: n }, () => ri(rng, 1, 9)); } while (g.reduce((s, x) => s + x, 0) !== 10);
+    const tweak = (delta) => { const a = g.slice(), i = ri(rng, 0, n - 1); a[i] += delta; if (a[i] < 1 || a[i] > 9) return null;
+      for (let k = a.length - 1; k > 0; k--) { const j = Math.floor(rng() * (k + 1)); [a[k], a[j]] = [a[j], a[k]]; } return grp(a); };
+    return build(rng, 'S3', 'S', '合計がちょうど 10 になる組はどれ？', grp(g), [tweak(1), tweak(-1), tweak(2), tweak(-2), tweak(3)],
+      k => { const m = Array.from({ length: n }, () => ri(rng, 1, 9)); return grp(m); }, { g }, null, x => x.v !== 10);
+  } };
+
   const LEVELS = {
     A: { label: '算数（低中）', ready: true, types: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8'] },
     B: { label: '算数（高〜中学）', ready: true, types: ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8'] },
-    C: { label: '準備中', ready: false, types: [] },
-    D: { label: '準備中', ready: false, types: [] },
-    E: { label: '準備中', ready: false, types: [] },
+    C: { label: '数学I・A', ready: true, types: ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8'] },
+    D: { label: '数学II・B', ready: true, types: ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8'] },
+    E: { label: '数学III・C', ready: true, types: ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8'] },
+    S: { label: '特殊ドリル', ready: true, special: true, types: ['S1', 'S2', 'S3'] },
   };
+  // 挑戦問題：1つ上の難度の易しいタイプ（E は E の中で最も基本のタイプ＝E6。E6 を復習に出すときは E4）
+  const CHALLENGE = { A: ['B2', 'B4', 'B6'], B: ['C5', 'C7', 'C1'], C: ['D1', 'D2', 'D7'], D: ['E4', 'E6', 'E1'], E: ['E6', 'E4'] };
   const generate = (type, rng) => T[type].gen(rng || Math.random);
-  // n問セット：同じタイプが重ならないように選ぶ（8種から5種）
-  function makeSet(level, rng, n) {
-    rng = rng || Math.random; n = n || 5;
-    const ids = LEVELS[level].types.slice();
-    for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
-    const out = [];
-    for (let i = 0; i < n; i++) out.push(generate(ids[i % ids.length], rng));
+  const shuffled = (a, rng) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  // 5問セット＝通常3問＋復習1問＋挑戦1問（タイプは重ならない）
+  //   opts.missed：[[タイプ, 間違えた回数], …]。その難度で間違えた回数が最も多いタイプを復習に出す（同数なら乱数で選ぶ）。記録がなければ通常問題
+  function makeSet(level, rng, n, opts) {
+    rng = rng || Math.random; n = n || 5; opts = opts || {};
+    const types = LEVELS[level].types, miss = (opts.missed || []).filter(([id, w]) => types.includes(id) && w > 0);
+    let review = null;
+    if (miss.length) { const mx = Math.max(...miss.map(m => m[1])), cand = miss.filter(m => m[1] === mx).map(m => m[0]); review = cand[Math.floor(rng() * cand.length)]; }
+    const chal = CHALLENGE[level].filter(t => t !== review);
+    const challenge = level === 'E' ? chal[0] : chal[Math.floor(rng() * chal.length)];   // E は最も基本のタイプ（復習と重なるときは次に基本のタイプ）
+    const pool = shuffled(types.filter(id => id !== review && id !== challenge), rng), out = [];
+    const nNormal = n - 2 + (review ? 0 : 1);
+    for (let i = 0; i < nNormal; i++) out.push(Object.assign(generate(pool[i % pool.length], rng), { role: 'normal' }));
+    if (review) out.push(Object.assign(generate(review, rng), { role: 'review' }));
+    out.push(Object.assign(generate(challenge, rng), { role: 'challenge' }));
     return out;
   }
-  root.ClockseedDrill = { TYPES: T, LEVELS, generate, makeSet };
+  // 特殊ドリル：同じタイプを n 問
+  const makeSpecialSet = (type, rng, n) => Array.from({ length: n || 5 }, () => Object.assign(generate(type, rng || Math.random), { role: 'special' }));
+  root.ClockseedDrill = { TYPES: T, LEVELS, CHALLENGE, generate, makeSet, makeSpecialSet };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 
@@ -712,7 +1270,7 @@
 (() => {
   'use strict';
   const SAVE_KEY = 'clockseed.save';
-  const SAVE_VERSION = 9;
+  const SAVE_VERSION = 10;
   const MAX_PLOTS = 24;                // 区画の最大数（町Lv8で24）
   const ORDER_COUNT = 3;               // 同時に出る注文の数
   const ORDER_MIN = 3, ORDER_MAX = 9;  // 生の作物の注文の個数の範囲
@@ -806,14 +1364,16 @@
   const ITEM_KEYS = Object.keys(ITEMS);
   const BUILDING_KEYS = Object.keys(BUILDINGS);
 
-  // ドリルの報酬（正解1問ごと）。C〜E は後の段階で表のとおりに足す
-  const DRILL_REWARD = { A: { sec: 40, shards: 2 }, B: { sec: 80, shards: 3 } };
+  // ドリルの報酬（正解1問ごと。設計 v0.3 の表）
+  const DRILL_REWARD = { A: { sec: 40, shards: 2 }, B: { sec: 80, shards: 3 }, C: { sec: 120, shards: 5 }, D: { sec: 160, shards: 7 }, E: { sec: 200, shards: 9 } };
+  // 特殊ドリル（因数分解・テンパズル・10さがし）：その日の5問目までは高効率、6問目以降は控えめ（解いた問題数で数える）
+  const SPECIAL_REWARD = { hi: { sec: 180, shards: 5 }, lo: { sec: 60, shards: 2 }, perDay: 5 };
   const DRILL_STOCK_MAX = 10800;       // 時短ストックの上限（秒）＝180分。超えた分は切り捨て
   const DRILL_DAY_SOFTCAP = 120;       // その日の累計がこれを超えた分から、カケラは半分
   const DRILL_TICKET_STREAK = 10;      // 連続正解がこの数に達するごとに即完了チケット1枚
   const SKIP_RUSH = 0.25;              // 残りが元の所要時間の25%を切ると追い込み区間（ストック2秒＝1秒短縮）
   const localDay = (t = Date.now()) => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
-  const freshDrill = () => ({ stock: 0, shards: 0, shardHalf: 0, tickets: 0, streak: 0, stats: {}, day: '', dayCount: 0 });
+  const freshDrill = () => ({ stock: 0, shards: 0, shardHalf: 0, tickets: 0, streak: 0, stats: {}, day: '', dayCount: 0, spDay: '', spCount: 0 });
 
   const townLevelOf = exp => { let lv = 1; TOWN_LV_EXP.forEach((need, i) => { if (exp >= need) lv = i + 1; }); return lv; };
   const PLOTS_BY_LV = [6, 9, 12, 14, 16, 18, 20, 24];                     // 町Lvごとの畑の上限
@@ -920,8 +1480,10 @@
         D.stock = Math.min(DRILL_STOCK_MAX, nat(dd.stock)); D.shards = nat(dd.shards); D.shardHalf = dd.shardHalf === 1 ? 1 : 0;
         D.tickets = nat(dd.tickets); D.streak = nat(dd.streak); D.dayCount = nat(dd.dayCount);
         D.day = typeof dd.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dd.day) ? dd.day : '';
+        D.spDay = typeof dd.spDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dd.spDay) ? dd.spDay : '';   // 特殊ドリル（version 9 以前には無い）
+        D.spCount = D.spDay ? nat(dd.spCount) : 0;
         if (dd.stats && typeof dd.stats === 'object') for (const [id, v] of Object.entries(dd.stats)) {
-          if (/^[A-E]\d{1,2}$/.test(id) && v && nat(v.n) >= nat(v.ok)) D.stats[id] = { ok: nat(v.ok), n: nat(v.n) };
+          if (/^[A-ES]\d{1,2}$/.test(id) && v && nat(v.n) >= nat(v.ok)) D.stats[id] = { ok: nat(v.ok), n: nat(v.n) };
         }
       }
       // 世界樹の苗の初回入手日時（version 8 以前には無い。すでに持っていれば移行した時刻を入手日とする）
@@ -1036,10 +1598,15 @@
     D.dayCount += 1;
     const st = D.stats[typeId] || (D.stats[typeId] = { ok: 0, n: 0 });
     st.n += 1;
-    const res = { correct, sec: 0, shards: 0, ticket: false, halved: false, capped: false, streakLost: false };
+    const res = { correct, sec: 0, shards: 0, ticket: false, halved: false, capped: false, streakLost: false, spHigh: null };
+    let R = DRILL_REWARD[level];
+    if (level === 'S') {                                       // 特殊ドリル：その日の何問目かで報酬が変わる（不正解も1問と数える）
+      if (D.spDay !== day) { D.spDay = day; D.spCount = 0; }
+      D.spCount += 1; res.spHigh = D.spCount <= SPECIAL_REWARD.perDay;
+      R = res.spHigh ? SPECIAL_REWARD.hi : SPECIAL_REWARD.lo;
+    }
     if (correct) {
       st.ok += 1;
-      const R = DRILL_REWARD[level];
       const before = D.stock;
       D.stock = Math.min(DRILL_STOCK_MAX, D.stock + R.sec);
       res.sec = D.stock - before; res.capped = res.sec < R.sec;
@@ -1193,7 +1760,7 @@
   // 報酬ゴールド＝単価×個数×1.3（端数切り上げ）。小数誤差を避けるため整数で ceil(x*13/10) を計算
   // 町の魅力：飾りを持っていれば種類ごとに1回だけ数える（所持状態から計算。セーブしない）
   const CHARM_PT = { C: 1, R: 2, SR: 4, UR: 6 }, CHARM_SPECIAL = { dc07: 8 };
-  const CHARM_TIERS = [[45, 25], [30, 20], [20, 15], [12, 10], [5, 5]];   // [魅力の下限, 注文の町経験値ボーナス%]
+  const CHARM_TIERS = [[36, 25], [30, 20], [20, 15], [12, 10], [5, 5]];   // [魅力の下限, 注文の町経験値ボーナス%]（飾り全14種で最大38点）
   const charmPoints = () => GA.ITEMS.filter(it => it.cat === 'decor' && state.gacha.items[it.id] >= 1)
     .reduce((a, it) => a + (CHARM_SPECIAL[it.id] || CHARM_PT[it.r]), 0);
   const charmBonus = (pt = charmPoints()) => { const t = CHARM_TIERS.find(([lo]) => pt >= lo); return t ? t[1] : 0; };
@@ -3317,7 +3884,15 @@
   // ---------- ドリル（時計塔のパネル） ----------
   const DRILL = window.ClockseedDrill;
   const LV_KEYS = ['A', 'B', 'C', 'D', 'E'];
-  const fmtMath = str => String(str).replace(/(−?\d+)\/(\d+)/g, '<span class="fr"><span>$1</span><span>$2</span></span>');
+  // 数式の表示：分数（√・π の分子も）を縦に、^(…)・^n を上付きに、∫_a^b を積分記号に。< > はエスケープ
+  const fmtMath = str => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .split(/(∫_−?\d+\^−?\d+|\^\([^)]*\)|\^−?\d+)/).map(t => {
+      let m;
+      if ((m = t.match(/^∫_(−?\d+)\^(−?\d+)$/))) return '<span class="intg">∫<span class="lim"><sup>' + m[2] + '</sup><sub>' + m[1] + '</sub></span></span>';
+      if (t.startsWith('^(')) return '<sup>' + t.slice(2, -1) + '</sup>';
+      if (/^\^−?\d+$/.test(t)) return '<sup>' + t.slice(1) + '</sup>';
+      return t.replace(/(−?(?:\d*√\d+|\d*π|\d+))\/(\d+)/g, '<span class="fr"><span>$1</span><span>$2</span></span>');
+    }).join('');
   const icon = k => '<img class="px" src="' + iconURL(k) + '" alt="">';
   const fmtShard = x => (Number.isInteger(x) ? String(x) : x.toFixed(1));
   let drillLevel = 'A', ds = null;                   // ds：進行中のセット（セーブしない）
@@ -3355,11 +3930,33 @@
     acts.appendChild(mkBtn('時短を使う', false, openSkip));
     acts.appendChild(mkBtn('図鑑', false, openDex));
     body.appendChild(acts);
+    body.insertAdjacentHTML('beforeend', '<div class="setnote">5問＝通常3問＋復習1問（この難度で間違えたタイプ）＋挑戦1問（' + (drillLevel === 'E' ? 'Eの基本タイプ' : String.fromCharCode(drillLevel.charCodeAt(0) + 1) + 'の易しいタイプ') + '）</div>');
+    body.appendChild(specialBox());
     body.appendChild(gachaBox());
   }
+  // 復習の候補：その難度のタイプのうち、間違えた回数（出題数−正解数）が1以上のもの
+  const missedTypes = L => DRILL.LEVELS[L].types.map(id => { const r = state.drill.stats[id] || { ok: 0, n: 0 }; return [id, r.n - r.ok]; }).filter(([, w]) => w > 0);
   function startDrillSet() {
-    ds = { level: drillLevel, set: DRILL.makeSet(drillLevel, Math.random, 5), i: 0, results: [], locked: false };
+    ds = { kind: 'set', level: drillLevel, set: DRILL.makeSet(drillLevel, Math.random, 5, { missed: missedTypes(drillLevel) }), i: 0, results: [], locked: false };
     renderDrillQ();
+  }
+  // 特殊ドリル（同じタイプを5問）
+  const spToday = () => (state.drill.spDay === localDay() ? state.drill.spCount : 0);
+  function startSpecial(type) {
+    ds = { kind: 'sp', type, level: 'S', set: DRILL.makeSpecialSet(type, Math.random, 5), i: 0, results: [], locked: false };
+    renderDrillQ();
+  }
+  function specialBox() {
+    const box = document.createElement('div'); box.className = 'spbox'; box.id = 'specialBox';
+    const left = Math.max(0, SPECIAL_REWARD.perDay - spToday()), H = SPECIAL_REWARD.hi, Lo = SPECIAL_REWARD.lo;
+    box.innerHTML = '<div class="sphead"><span>特殊ドリル</span><small>1問 +' + H.sec + '秒・カケラ' + H.shards + '（1日' + SPECIAL_REWARD.perDay + '問まで。今日あと' + left + '問）／それ以降は +' + Lo.sec + '秒・カケラ' + Lo.shards + '</small></div>';
+    const g = document.createElement('div'); g.className = 'spbtns';
+    for (const id of DRILL.LEVELS.S.types) {
+      const r = state.drill.stats[id] || { ok: 0, n: 0 }, b = document.createElement('button');
+      b.className = 'tool pix'; b.dataset.sp = id; b.innerHTML = '<b>' + DRILL.TYPES[id].name + '</b><small>正解 ' + r.ok + ' / ' + r.n + '</small>';
+      b.onclick = () => startSpecial(id); g.appendChild(b);
+    }
+    box.appendChild(g); return box;
   }
   function visualSvg(v) {             // 問題の図（時計・図形・長方形・三角形）
     const S = (w, h, inner) => '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true">' + inner + '</svg>';
@@ -3398,12 +3995,14 @@
     $('drillTitle').textContent = '時計塔のドリル';
     const pips = ds.set.map((_, k) => '<i class="' + (k < ds.results.length ? (ds.results[k].correct ? 'ok' : 'ng') : k === ds.i ? 'cur' : '') + '"></i>').join('');
     const body = $('drillBody');
-    body.innerHTML = '<div class="dq-head"><span><span class="lvtag">' + L + '</span>' + DRILL.TYPES[pb.type].name + '</span>' +
+    const role = pb.role === 'review' ? '<span class="roletag review">復習</span>' : pb.role === 'challenge' ? '<span class="roletag challenge">挑戦</span>'
+      : pb.role === 'special' ? '<span class="roletag special">特殊</span>' : '';
+    body.innerHTML = '<div class="dq-head"><span><span class="lvtag">' + (L === 'S' ? '特' : pb.level) + '</span>' + DRILL.TYPES[pb.type].name + role + '</span>' +
       '<span class="pips">' + pips + '</span><span>' + (ds.i + 1) + ' / ' + ds.set.length + '問</span></div>' +
       '<div class="dq-prompt">' + fmtMath(pb.prompt) + '</div>' + (pb.visual ? '<div class="dq-vis">' + visualSvg(pb.visual) + '</div>' : '');
     const grid = document.createElement('div'); grid.className = 'choices';
     pb.choices.forEach((c, k) => {
-      const b = document.createElement('button'); b.className = 'tool pix choice'; b.innerHTML = fmtMath(c.label);
+      const b = document.createElement('button'); b.className = 'tool pix choice' + (c.label.length > 18 ? ' long' : ''); b.innerHTML = fmtMath(c.label);
       b.onclick = () => answerDrill(k); grid.appendChild(b);
     });
     body.appendChild(grid);
@@ -3429,7 +4028,8 @@
     });
     const fb = $('dqFb'), cur = ds;
     if (ok) {
-      fb.innerHTML = '<span class="fly">せいかい！ +' + res.sec + '秒　カケラ+' + fmtShard(res.shards) + (res.ticket ? '　チケット+1' : '') + '</span>';
+      fb.innerHTML = '<span class="fly">せいかい！ +' + res.sec + '秒　カケラ+' + fmtShard(res.shards) + (res.ticket ? '　チケット+1' : '') + '</span>' +
+        (res.spHigh === false ? '<br><small>今日の高効率（' + SPECIAL_REWARD.perDay + '問）は終わりました</small>' : '');
       sparkle(fb);
       if (res.ticket) toast('10問連続正解！ 即完了チケットを1枚手に入れました');
       setTimeout(() => { if (ds === cur && drillOpen()) nextDrill(); }, 950);
@@ -3454,7 +4054,8 @@
       (tk ? icon('ic_ticket') + ' 即完了チケット +' + tk + '枚<br>' : '') +
       '連続正解 ' + state.drill.streak + '問</div>' + statusHtml();
     const acts = document.createElement('div'); acts.className = 'dacts';
-    acts.appendChild(mkBtn('もう一度（5問）', false, startDrillSet));
+    const again = ds.kind === 'sp' ? (t => () => startSpecial(t))(ds.type) : startDrillSet;
+    acts.appendChild(mkBtn('もう一度（5問）', false, again));
     acts.appendChild(mkBtn('時短を使う', false, openSkip));
     acts.appendChild(mkBtn('メニューへ', false, renderDrillMenu));
     body.appendChild(acts);
@@ -3787,6 +4388,7 @@
     facPos: k => ({ x: FAC[k].x, y: FAC[k].y, top: FAC[k].top }),
     plotRectW: i => plotRect(i),
     drillAnswerIndex: () => (ds && ds.set[ds.i] ? ds.set[ds.i].answer : -1),
+    drillSetInfo: () => (ds ? { kind: ds.kind || 'set', level: ds.level, i: ds.i, set: ds.set.map(p => ({ type: p.type, level: p.level, role: p.role })) } : null),
     timers: () => timers().map(x => ({ id: x.id, remaining: x.ready - now(), dur: origDur(x) })),
     viewport: () => { const b = curBounds(); return { w: VW, h: VH, mapX0: b.x0, mapY0: b.y0, mapW: b.x1, mapH: b.y1, zoomMin: zoomMin() }; },
     camera: () => ({ x: cam.x, y: cam.y, zoom: cam.zoom }),

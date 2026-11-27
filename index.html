@@ -89,6 +89,63 @@
   .mrow .recipe small{display:block;font-size:11px;font-weight:normal;color:var(--ink-soft)}
   .mrow .short{color:#b8503c}
   .mact{margin-top:10px;display:flex;justify-content:center}
+  #drillHud{position:absolute;top:66px;left:12px;display:flex;align-items:center;gap:12px;padding:3px 12px;font-weight:bold;font-size:15px;
+    cursor:pointer;border:0;font-family:inherit;color:inherit;touch-action:manipulation}
+  #drillHud span{display:flex;align-items:center;gap:4px}
+  #drillHud img{width:20px;height:20px}
+  #drillHud.pulse{animation:hudpulse .6s ease-out}
+  @keyframes hudpulse{40%{background:#fff0b8;transform:scale(1.06)}}
+  .dbox{width:min(700px,95vw)}
+  .dstat{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;font-size:14px;font-weight:bold;margin-bottom:10px}
+  .dstat span{display:flex;align-items:center;gap:4px}
+  .dstat img{width:20px;height:20px}
+  .lvgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:6px 4px 10px}
+  .lvbtn{flex-direction:column;padding:8px 4px;gap:2px;justify-content:center;font-size:13px}
+  .lvbtn b{font-size:28px;line-height:1}
+  .lvbtn small{font-size:10px;text-align:center}
+  .tstats{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;font-size:12px;color:var(--ink-soft);text-align:left;margin:4px 8px 12px}
+  .tstats span{display:flex;justify-content:space-between}
+  .tstats b{color:var(--ink)}
+  .dacts{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+  .dq-head{display:flex;align-items:center;gap:10px;font-weight:bold;justify-content:space-between;font-size:15px}
+  .lvtag{background:#5a3a22;color:#fff6e0;padding:1px 8px;margin-right:4px}
+  .pips{display:flex;gap:6px}
+  .pips i{width:14px;height:14px;background:#d8c39a;display:block;box-shadow:inset 0 -3px 0 #0001}
+  .pips i.ok{background:#7fc24a}.pips i.ng{background:#d0705a}.pips i.cur{background:#f2d27a}
+  .dq-prompt{font-size:28px;font-weight:bold;margin:16px 4px 8px;letter-spacing:.03em;min-height:42px;line-height:1.35}
+  .dq-vis{display:flex;justify-content:center;margin-bottom:4px}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 4px 0}
+  .choice{font-size:24px;padding:10px;justify-content:center;min-height:62px}
+  .choice.ok{background:#cdeaa8}.choice.ng{background:#f3c2b4}
+  .choice:disabled{cursor:default}
+  .dfb{min-height:46px;margin-top:12px;font-weight:bold;position:relative}
+  .fly{position:absolute;left:50%;top:6px;transform:translateX(-50%);color:#3f7d2c;font-size:22px;animation:fly 1s ease-out forwards;white-space:nowrap}
+  @keyframes fly{from{opacity:1;transform:translate(-50%,6px)}to{opacity:0;transform:translate(-50%,-34px)}}
+  .spark{position:absolute;left:50%;top:18px;width:6px;height:6px;background:#ffd85a;animation:spark .7s ease-out forwards;pointer-events:none}
+  @keyframes spark{to{opacity:0;transform:translate(var(--dx),var(--dy))}}
+  .fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.05;font-size:.82em;margin:0 3px}
+  .fr span:first-child{border-bottom:2px solid currentColor;padding:0 3px 2px}
+  .fr span:last-child{padding-top:2px}
+  .dres{font-size:18px;font-weight:bold;line-height:2;margin:6px 0 8px}
+  .dres img{width:22px;height:22px;vertical-align:middle}
+  .dres .big{font-size:30px}
+  .sbox{width:min(780px,96vw)}
+  .shead{display:flex;gap:18px;justify-content:center;font-weight:bold;margin-bottom:6px;flex-wrap:wrap}
+  .shead span{display:flex;align-items:center;gap:4px}
+  .shead img{width:20px;height:20px}
+  .srow{display:flex;align-items:center;gap:12px;padding:8px 4px;border-top:3px dotted #c9ad7c;text-align:left}
+  .srow:first-child{border-top:0}
+  .srow > img{width:34px;height:34px}
+  .sinfo{flex:1;min-width:170px}
+  .sinfo b{font-size:16px}
+  .sinfo small{display:block;font-size:12px;color:var(--ink-soft)}
+  .sinfo .rush{color:#b8503c;font-weight:bold}
+  .sg{height:8px;background:#5a3a22;padding:2px;margin:3px 0}
+  .sg i{display:block;height:100%;width:0;background:#f2d27a}
+  .sbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:340px}
+  .sbtns .tool{padding:4px 10px;font-size:14px;flex-direction:column;gap:0;min-width:66px}
+  .sbtns .tool small{font-size:10px;text-align:center}
+  .sempty{padding:20px;color:var(--ink-soft)}
   #toast{position:fixed;top:86px;left:50%;transform:translateX(-50%);z-index:12;display:none;padding:8px 18px;
     font-weight:bold;letter-spacing:.06em;pointer-events:none}
 </style>
@@ -107,6 +164,11 @@
     </button>
   </div>
   <div id="palette" style="position:absolute"></div>
+  <button id="drillHud" class="pix" title="時計塔のドリル（時短ストック・カケラ・即完了チケット）">
+    <span><img class="px" data-icon="ic_hourglass" alt="時短"><span id="dhStock">0:00</span></span>
+    <span><img class="px" data-icon="ic_shard" alt="カケラ"><span id="dhShards">0</span></span>
+    <span><img class="px" data-icon="ic_ticket" alt="チケット"><span id="dhTickets">0</span></span>
+  </button>
 </div>
 <div id="popup" class="overlay"><div class="box pix">
   <div class="q">なにを植える？</div>
@@ -127,13 +189,293 @@
   <div class="panelhd"><b id="facTitle">製粉所</b><button id="facClose" aria-label="閉じる">×</button></div>
   <div id="facBody"></div>
 </div></div>
+<div id="drillPanel" class="overlay"><div class="box pix dbox">
+  <div class="panelhd"><b id="drillTitle">時計塔のドリル</b><button id="drillClose" aria-label="閉じる">×</button></div>
+  <div id="drillBody"></div>
+</div></div>
+<div id="skipPanel" class="overlay"><div class="box pix sbox">
+  <div class="panelhd"><b>時短ストックを使う</b><button id="skipClose" aria-label="閉じる">×</button></div>
+  <div id="skipHead"></div>
+  <div id="skipList"></div>
+  <div class="hint">元の所要時間の75%までは ストック1秒＝1秒短縮。残りが25%を切ると追い込み区間で、ストック2秒＝1秒短縮。即完了チケットはストックを使わずに1件を即完了します</div>
+</div></div>
 <div id="toast" class="pix"></div>
+
+<script id="drill-engine">
+/* ===================================================================
+   ときの種：ドリルエンジン（問題の自動生成）
+   - DOM・ゲーム状態に触れない純粋な関数だけで書く（window.ClockseedDrill を公開するだけ）
+   - 乱数は引数 rng（0以上1未満を返す関数）で受け取る。本体は Math.random、テストは固定シード
+   - 検証は tests/drill_engine_test.js が、この <script> だけを取り出して別実装で再計算して行う
+   出題 = { type, level, prompt, visual, choices:[{label,key}]×4, answer:正解の位置, params }
+     key は「値」を表す正規化文字列（同じ値なら同じ key）。重複・偶然の正解の判定に使う
+   =================================================================== */
+(function (root) {
+  'use strict';
+  const ri = (rng, lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
+  const pick = (rng, a) => a[Math.floor(rng() * a.length)];
+  const nz = (rng, lo, hi) => { let v; do { v = ri(rng, lo, hi); } while (v === 0); return v; };
+  const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a; };
+  const lcm = (a, b) => a / gcd(a, b) * b;
+  const MINUS = '−';
+  const sn = n => (n < 0 ? MINUS + (-n) : String(n));             // 負号は全角マイナス
+  const par = n => (n < 0 ? '(' + sn(n) + ')' : String(n));        // 負の数はかっこ書き
+
+  // ---- 選択肢の型（label＝表示、key＝値、v＝数値チェック用） ----
+  const num = (n, unit = '') => ({ label: sn(n) + unit, key: 'n:' + n, v: n });
+  const xeq = n => ({ label: 'x = ' + sn(n), key: 'n:' + n, v: n });
+  const frac = (p, q) => {                                          // 常に約分した形で表示・比較
+    const g = gcd(p, q) || 1; p /= g; q /= g; if (q < 0) { p = -p; q = -q; }
+    return { label: q === 1 ? sn(p) : sn(p) + '/' + q, key: 'f:' + p + '/' + q, v: p / q };
+  };
+  const hund = h => {                                               // 小数は100倍の整数で持つ
+    const neg = h < 0, a = Math.abs(h), i = Math.floor(a / 100), f = a % 100;
+    let s = String(i); if (f) s += '.' + String(f).padStart(2, '0').replace(/0$/, '');
+    return { label: (neg ? MINUS : '') + s, key: 'd:' + h, v: h };
+  };
+  const time = (h, m) => ({ label: m === 0 ? h + '時' : h + '時' + m + '分', key: 't:' + h + ':' + m, v: h * 60 + m });
+  const word = w => ({ label: w, key: 's:' + w, v: 0 });
+  const expr = (c, d) => {                                          // 一次式 cx + d
+    let s = c === 1 ? 'x' : c === -1 ? MINUS + 'x' : sn(c) + 'x';
+    if (d > 0) s += ' + ' + d; else if (d < 0) s += ' ' + MINUS + ' ' + (-d);
+    return { label: s, key: 'e:' + c + ',' + d, v: c, c, d };
+  };
+  const terms = arr => arr.map(([c, isX], i) => {                   // 項の並びを式の文字列に
+    const a = Math.abs(c), body = isX ? (a === 1 ? 'x' : a + 'x') : String(a);
+    return i === 0 ? (c < 0 ? MINUS + body : body) : (c < 0 ? ' ' + MINUS + ' ' : ' + ') + body;
+  }).join('');
+  // 補充用：正解の近くの値（±1, ±2, ±10, …）
+  const NEAR = [1, -1, 2, -2, 10, -10, 3, -3, 5, -5, 20, -20, 4, -4];
+  const near = k => NEAR[(k - 1) % NEAR.length] * (1 + Math.floor((k - 1) / NEAR.length));
+
+  // 正解1つ＋誤答3つを組み立てる。誤答はまず「典型的なミス」から、足りなければ近い値で補う。
+  // 同じ値（key）・同じ表示（label）・正解と同じ値の候補は捨てる。正解の位置は一様に散らす。
+  function build(rng, type, level, prompt, ans, mistakes, fill, params, visual, ok) {
+    const keys = new Set([ans.key]), labels = new Set([ans.label]), out = [];
+    const take = c => {
+      if (!c || out.length >= 3 || keys.has(c.key) || labels.has(c.label)) return;
+      if (typeof c.v === 'number' && !isFinite(c.v)) return;
+      if (ok && !ok(c)) return;
+      keys.add(c.key); labels.add(c.label); out.push(c);
+    };
+    mistakes.forEach(take);
+    for (let k = 1; out.length < 3 && k < 400; k++) take(fill(k));
+    if (out.length < 3) throw new Error('誤答が作れない: ' + type);
+    for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+    const pos = Math.floor(rng() * 4), choices = out.map(c => ({ label: c.label, key: c.key }));
+    choices.splice(pos, 0, { label: ans.label, key: ans.key });
+    return { type, level, prompt, visual: visual || null, choices, answer: pos, params };
+  }
+  const pos = c => c.v > 0;
+
+  const T = {};
+  // ================= A：算数（低中） =================
+  T.A1 = { level: 'A', name: '2けたのたし算', gen(rng) {
+    const a = ri(rng, 10, 99), b = ri(rng, 10, 99), s = a + b, carry = (a % 10) + (b % 10) >= 10;
+    return build(rng, 'A1', 'A', a + ' + ' + b + ' = ?', num(s),
+      [carry ? num(s - 10) : null, num(s + 10), num(s + 1), num(s - 1)],        // 繰り上がり忘れ／余計な繰り上がり／一の位のミス
+      k => num(s + near(k)), { a, b }, null, pos);
+  } };
+  T.A2 = { level: 'A', name: '2けたのひき算', gen(rng) {
+    const a = ri(rng, 20, 99), b = ri(rng, 10, a - 1), d = a - b, borrow = (a % 10) < (b % 10);
+    const swapDigit = (Math.floor(a / 10) - Math.floor(b / 10)) * 10 + Math.abs(a % 10 - b % 10);   // 一の位を大きい方から引く
+    return build(rng, 'A2', 'A', a + ' ' + MINUS + ' ' + b + ' = ?', num(d),
+      [borrow ? num(swapDigit) : null, borrow ? num(d + 10) : num(d - 10), num(d + 1), num(d - 1), num(a + b)],
+      k => num(d + near(k)), { a, b }, null, pos);
+  } };
+  T.A3 = { level: 'A', name: '九九・2けた×1けた', gen(rng) {
+    const kuku = rng() < 0.5, a = kuku ? ri(rng, 2, 9) : ri(rng, 11, 99), b = ri(rng, 2, 9), p = a * b;
+    const noCarry = Math.floor(a / 10) * b * 10 + (a % 10) * b % 10;        // 一の位の繰り上がり忘れ
+    return build(rng, 'A3', 'A', a + ' × ' + b + ' = ?', num(p),
+      [kuku ? null : num(noCarry), num(a * (b + 1)), num(a * (b - 1)), num(a + b)],   // 段のずれ／たし算と混同
+      k => num(p + near(k)), { a, b, kuku }, null, pos);
+  } };
+  T.A4 = { level: 'A', name: 'わり算（あまりなし）', gen(rng) {
+    const d = ri(rng, 2, 9), q = ri(rng, 2, 12), n = d * q;
+    return build(rng, 'A4', 'A', n + ' ÷ ' + d + ' = ?', num(q),
+      [num(q + 1), num(q - 1), num(d), num(n - d)],                          // 段のずれ／割る数と混同／ひき算と混同
+      k => num(q + near(k)), { n, d }, null, pos);
+  } };
+  T.A5 = { level: 'A', name: 'おつりの計算', gen(rng) {
+    const paid = pick(rng, [100, 500, 1000]), price = ri(rng, 1, paid / 10 - 1) * 10, c = paid - price;
+    return build(rng, 'A5', 'A', price + '円の品物を' + paid + '円で買いました。おつりはいくら？', num(c, '円'),
+      [num(c + 100, '円'), num(c - 100, '円'), num(c + 10, '円'), num(price, '円'), num(c - 10, '円')],   // 繰り下がりミス／代金と取り違え
+      k => num(c + near(k) * 10, '円'), { paid, price }, null, x => x.v > 0 && x.v < paid);
+  } };
+  T.A6 = { level: 'A', name: '時計の読み取り', gen(rng) {
+    const h = ri(rng, 1, 12), m = ri(rng, 0, 11) * 5, n = m === 0 ? 12 : m / 5;
+    const nextH = h % 12 + 1, prevH = (h + 10) % 12 + 1;
+    return build(rng, 'A6', 'A', 'この時計は何時何分？', time(h, m),
+      [time(h, n),                                  // 長針の数字をそのまま「分」と読む
+       m >= 30 ? time(nextH, m) : time(prevH, m),   // 短針を隣の数字で読む
+       time(n, (h * 5) % 60),                       // 長針と短針の取り違え
+       time(h, (m + 30) % 60)],
+      k => time(h, (m + 5 * k) % 60), { h, m }, { kind: 'clock', h, m }, null);
+  } };
+  T.A7 = { level: 'A', name: '単位の換算', gen(rng) {
+    const f = ri(rng, 1, 6); let q, ans, c, p;
+    if (f === 1) { const x = ri(rng, 1, 9); q = x + 'm = □cm'; ans = num(100 * x, 'cm'); c = [num(10 * x, 'cm'), num(1000 * x, 'cm'), num(x + 100, 'cm')]; p = { f, x }; }
+    else if (f === 2) { const x = ri(rng, 1, 9), y = ri(rng, 1, 19) * 5; q = x + 'm' + y + 'cm = □cm'; ans = num(100 * x + y, 'cm'); c = [num(1000 * x + y, 'cm'), num(10 * x + y, 'cm'), num(100 * x + 10 * y, 'cm')]; p = { f, x, y }; }
+    else if (f === 3) { const x = ri(rng, 1, 9) * 100; q = x + 'cm = □m'; ans = num(x / 100, 'm'); c = [num(x / 10, 'm'), num(x / 1000, 'm'), num(x, 'm')]; p = { f, x }; }
+    else if (f === 4) { const x = ri(rng, 1, 9); q = x + 'kg = □g'; ans = num(1000 * x, 'g'); c = [num(100 * x, 'g'), num(10 * x, 'g'), num(10000 * x, 'g')]; p = { f, x }; }
+    else if (f === 5) { const x = ri(rng, 1, 5), y = ri(rng, 1, 9) * 100; q = x + 'kg' + y + 'g = □g'; ans = num(1000 * x + y, 'g'); c = [num(100 * x + y, 'g'), num(10 * (1000 * x + y), 'g'), num((1000 * x + y) / 10, 'g')]; p = { f, x, y }; }
+    else { const x = ri(rng, 1, 9) * 1000; q = x + 'g = □kg'; ans = num(x / 1000, 'kg'); c = [num(x / 100, 'kg'), num(x / 10, 'kg'), num(x, 'kg')]; p = { f, x }; }
+    const unit = ans.label.replace(/^[0-9.]+/, ''), step = ans.v >= 100 ? 100 : 1;   // 係数（10・100・1000）の取り違え
+    return build(rng, 'A7', 'A', q, ans, c, k => num(ans.v + near(k) * step, unit), p, null, pos);
+  } };
+  const SHAPES = [[3, '三角形'], [4, '四角形'], [5, '五角形'], [6, '六角形'], [8, '八角形']];
+  T.A8 = { level: 'A', name: '図形の辺の数・名前', gen(rng) {
+    const [n, name] = pick(rng, SHAPES), mode = rng() < 0.5 ? 'count' : 'name';
+    const others = SHAPES.filter(s => s[0] !== n).sort((x, y) => Math.abs(x[0] - n) - Math.abs(y[0] - n));   // 辺の数が近い図形と混同
+    if (mode === 'count') return build(rng, 'A8', 'A', name + 'の辺の数は何本？', num(n, '本'), others.map(s => num(s[0], '本')),
+      k => num(n + 5 + k, '本'), { n, mode }, { kind: 'shape', sides: n }, null);
+    return build(rng, 'A8', 'A', 'この図形の名前は？', word(name), others.map(s => word(s[1])),
+      k => word(['七角形', '九角形', '十角形'][k % 3]), { n, mode }, { kind: 'shape', sides: n }, null);
+  } };
+
+  // ================= B：算数（高〜中学） =================
+  const PAIRS = [[2, 4], [2, 6], [3, 6], [2, 3], [3, 4], [2, 5], [4, 8], [3, 9], [2, 8], [4, 6], [3, 5], [4, 12], [6, 12]];
+  T.B1 = { level: 'B', name: '分数のたし算', gen(rng) {
+    let a, b, d1, d2;
+    if (rng() < 0.5) { d1 = d2 = ri(rng, 3, 12); a = ri(rng, 1, d1 - 2); b = ri(rng, 1, d1 - 1 - a); }   // 同じ分母（和は1未満）
+    else do { [d1, d2] = pick(rng, PAIRS); if (rng() < 0.5) [d1, d2] = [d2, d1]; a = ri(rng, 1, d1 - 1); b = ri(rng, 1, d2 - 1); }
+    while (a * d2 + b * d1 >= d1 * d2);                                    // 簡単な通分（和は1未満）
+    const L = lcm(d1, d2), top = a * (L / d1) + b * (L / d2);
+    // 分子・分母をそれぞれ足す／通分で分子をかけ忘れ／分子どうし・分母どうしをかける
+    // （約分忘れは値が正解と同じになるため、誤答には使わない）
+    return build(rng, 'B1', 'B', a + '/' + d1 + ' + ' + b + '/' + d2 + ' = ?', frac(top, L),
+      [frac(a + b, d1 + d2), frac(a + b, L), frac(a * b, d1 * d2)],
+      k => frac(top + near(k), L), { a, b, d1, d2 }, null, x => x.v > 0 && x.v < 2);
+  } };
+  T.B2 = { level: 'B', name: '小数の計算', gen(rng) {
+    const op = pick(rng, ['+', '−', '×']);
+    if (op === '+') {
+      const x = ri(rng, 11, 99), y = ri(rng, 101, 999), s = x * 10 + y;     // x：小数第1位まで（10倍）、y：第2位まで（100倍）
+      return build(rng, 'B2', 'B', hund(x * 10).label + ' + ' + hund(y).label + ' = ?', hund(s),
+        [hund(x + y), hund(s * 10), hund(s - 100), hund(s + 100)],          // 位をそろえ忘れ／小数点の位置ミス／繰り上がりミス
+        k => hund(s + near(k) * 10), { op, x, y }, null, pos);
+    }
+    if (op === '−') {
+      const x = ri(rng, 21, 99), y = ri(rng, 11, x - 1), d = (x - y) * 10;
+      return build(rng, 'B2', 'B', hund(x * 10).label + ' ' + MINUS + ' ' + hund(y * 10).label + ' = ?', hund(d),
+        [hund(d + 100), hund(d * 10), hund((x + y) * 10), hund(d - 10)],
+        k => hund(d + near(k) * 10), { op, x, y }, null, pos);
+    }
+    let x; do { x = ri(rng, 2, 49); } while (x % 10 === 0);
+    const k2 = ri(rng, 2, 9), p = x * k2 * 10;
+    return build(rng, 'B2', 'B', hund(x * 10).label + ' × ' + k2 + ' = ?', hund(p),
+      [hund(p * 10), hund(x * k2), hund(x * 10 + k2 * 100)],                 // 小数点の打ち忘れ／位の下げすぎ／たし算と混同
+      k => hund(p + near(k) * 10), { op, x, k: k2 }, null, pos);
+  } };
+  const BASES = [20, 40, 50, 60, 80, 100, 120, 150, 200, 250, 300, 400, 500, 600, 800], PCTS = [10, 20, 25, 30, 40, 50, 60, 75, 80];
+  T.B3 = { level: 'B', name: '割合（％）', gen(rng) {
+    let b, p; do { b = pick(rng, BASES); p = pick(rng, PCTS); } while ((b * p) % 100);
+    const v = b * p / 100;
+    if (rng() < 0.6) return build(rng, 'B3', 'B', b + 'の' + p + '%はいくつ？', num(v),
+      [num(v * 10), num(b - v), num(p), num(b * p)],                          // 桁ずれ／残りと混同／割合をそのまま／÷100忘れ
+      k => num(v + near(k)), { mode: 'of', b, p }, null, pos);
+    return build(rng, 'B3', 'B', v + 'は' + b + 'の何%？', num(p, '%'),
+      [num(100 - p, '%'), num(p * 10, '%'), num(v, '%'), num(Math.round(b / v), '%')],
+      k => num(p + near(k) * 5, '%'), { mode: 'which', b, p }, null, x => x.v > 0 && x.v <= 1000);
+  } };
+  T.B4 = { level: 'B', name: '面積（長方形・三角形）', gen(rng) {
+    const okInt = x => x.v > 0 && Number.isInteger(x.v);
+    if (rng() < 0.5) {
+      const w = ri(rng, 2, 15), h = ri(rng, 2, 15), A = w * h;
+      return build(rng, 'B4', 'B', 'たて' + h + 'cm、よこ' + w + 'cmの長方形の面積は？', num(A, 'cm²'),
+        [num(2 * (w + h), 'cm²'), num(A / 2, 'cm²'), num(w + h, 'cm²')],    // 周の長さと混同／三角形の公式と混同
+        k => num(A + near(k), 'cm²'), { shape: 'rect', w, h }, { kind: 'rect', w, h }, okInt);
+    }
+    let b, h; do { b = ri(rng, 2, 20); h = ri(rng, 2, 16); } while ((b * h) % 2);
+    const A = b * h / 2;
+    return build(rng, 'B4', 'B', '底辺' + b + 'cm、高さ' + h + 'cmの三角形の面積は？', num(A, 'cm²'),
+      [num(b * h, 'cm²'), num(b + h, 'cm²'), num(A / 2, 'cm²'), num(2 * (b + h), 'cm²')],   // ÷2忘れ／公式の混同
+      k => num(A + near(k), 'cm²'), { shape: 'tri', b, h }, { kind: 'tri', b, h }, okInt);
+  } };
+  T.B5 = { level: 'B', name: '最大公約数・最小公倍数', gen(rng) {
+    let g, m, n; do { g = ri(rng, 2, 9); m = ri(rng, 1, 7); n = ri(rng, 1, 7); } while (m === n || gcd(m, n) !== 1 || g * m > 60 || g * n > 60);
+    const a = g * m, b = g * n, L = g * m * n;
+    if (rng() < 0.5) return build(rng, 'B5', 'B', a + 'と' + b + 'の最大公約数は？', num(g),
+      [num(L), num(Math.min(a, b)), num(a * b), num(1)],                     // 最小公倍数と混同／小さい方の数
+      k => num(g + near(k)), { mode: 'gcd', a, b }, null, pos);
+    return build(rng, 'B5', 'B', a + 'と' + b + 'の最小公倍数は？', num(L),
+      [num(g), num(a * b), num(a + b), num(Math.max(a, b))],                 // 最大公約数と混同／かけただけ
+      k => num(L + near(k) * g), { mode: 'lcm', a, b }, null, pos);
+  } };
+  T.B6 = { level: 'B', name: '正負の数', gen(rng) {
+    const op = pick(rng, ['+', '−', '×', '÷']); let a, b, v;
+    for (;;) {
+      if (op === '+' || op === '−') { a = nz(rng, -20, 20); b = nz(rng, -20, 20); v = op === '+' ? a + b : a - b; }
+      else if (op === '×') { a = nz(rng, -12, 12); b = nz(rng, -9, 9); if (Math.abs(a) === 1 || Math.abs(b) === 1) continue; v = a * b; }
+      else { const q = nz(rng, -12, 12); b = nz(rng, -9, 9); if (Math.abs(b) === 1) continue; a = q * b; v = q; }
+      if (v !== 0 && (a < 0 || b < 0)) break;                                // 負の数を必ず含む・答えは0以外
+    }
+    const mist = op === '+' ? [num(-v), num(a - b), num(Math.abs(a) + Math.abs(b))]
+      : op === '−' ? [num(a + b), num(-v), num(-(a + b))]                    // ひく負の数の扱いミス／符号ミス
+      : op === '×' ? [num(-v), num(a + b), num(a - b)]
+      : [num(-v), num(b), num(a + b)];
+    return build(rng, 'B6', 'B', par(a) + ' ' + (op === '−' ? MINUS : op) + ' ' + par(b) + ' = ?', num(v), mist,
+      k => num(v + near(k)), { op, a, b }, null, null);
+  } };
+  T.B7 = { level: 'B', name: '一次式の計算', gen(rng) {
+    const f = ri(rng, 1, 3); let q, C, D, mist, p;
+    if (f === 1) {
+      let a, b, c, d; do { a = nz(rng, -9, 9); b = nz(rng, -9, 9); c = nz(rng, -9, 9); d = nz(rng, -9, 9); } while (a + c === 0);
+      q = terms([[a, 1], [b, 0], [c, 1], [d, 0]]); C = a + c; D = b + d; p = { f, a, b, c, d };
+      mist = [expr(C, -D), expr(a - c, D), expr(C + D, 0), expr(C, b - d)];   // 符号ミス／係数と定数をまとめる
+    } else if (f === 2) {
+      let k, a, b; do { k = nz(rng, -5, 5); a = nz(rng, -6, 6); b = nz(rng, -9, 9); } while (k === 1);
+      q = (k === -1 ? MINUS : sn(k)) + '(' + terms([[a, 1], [b, 0]]) + ')'; C = k * a; D = k * b; p = { f, k, a, b };
+      mist = [expr(C, b), expr(C, -D), expr(k + a, D), expr(a, D)];           // 分配のし忘れ／符号ミス
+    } else {
+      let k, a, b, c; do { k = ri(rng, 2, 5); a = nz(rng, -6, 6); b = nz(rng, -9, 9); c = nz(rng, -9, 9); } while (k * a + c === 0);
+      q = k + '(' + terms([[a, 1], [b, 0]]) + ')' + terms([[1, 0], [c, 1]]).slice(1); C = k * a + c; D = k * b; p = { f, k, a, b, c };
+      mist = [expr(C, b), expr(k * a - c, D), expr(a + c, D), expr(C, -D)];
+    }
+    return build(rng, 'B7', 'B', q + ' を計算すると？', expr(C, D), mist, k => expr(C, D + near(k)), p, null, x => x.c !== 0);
+  } };
+  T.B8 = { level: 'B', name: '一次方程式', gen(rng) {
+    const x = nz(rng, -9, 9);
+    if (rng() < 0.5) {
+      const a = ri(rng, 2, 9), b = nz(rng, -20, 20), c = a * x + b;
+      return build(rng, 'B8', 'B', a + 'x ' + (b < 0 ? MINUS : '+') + ' ' + Math.abs(b) + ' = ' + sn(c) + '　x = ?', xeq(x),
+        [(c + b) % a === 0 ? xeq((c + b) / a) : null, xeq(-x), xeq(c - b)],   // 移項の符号ミス／符号ミス／aで割り忘れ
+        k => xeq(x + near(k)), { f: 1, a, b, c }, null, null);
+    }
+    let a, c; do { a = ri(rng, 2, 9); c = ri(rng, 1, 9); } while (a === c);
+    const b = ri(rng, -15, 15), d = (a - c) * x + b;
+    const side = (co, k) => (co === 1 ? 'x' : co + 'x') + (k === 0 ? '' : ' ' + (k < 0 ? MINUS : '+') + ' ' + Math.abs(k));
+    return build(rng, 'B8', 'B', side(a, b) + ' = ' + side(c, d) + '　x = ?', xeq(x),
+      [(d - b) % (a + c) === 0 ? xeq((d - b) / (a + c)) : null, xeq(-x), xeq(d - b), (d + b) % (a - c) === 0 ? xeq((d + b) / (a - c)) : null],
+      k => xeq(x + near(k)), { f: 2, a, b, c, d }, null, null);
+  } };
+
+  const LEVELS = {
+    A: { label: '算数（低中）', ready: true, types: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8'] },
+    B: { label: '算数（高〜中学）', ready: true, types: ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8'] },
+    C: { label: '準備中', ready: false, types: [] },
+    D: { label: '準備中', ready: false, types: [] },
+    E: { label: '準備中', ready: false, types: [] },
+  };
+  const generate = (type, rng) => T[type].gen(rng || Math.random);
+  // n問セット：同じタイプが重ならないように選ぶ（8種から5種）
+  function makeSet(level, rng, n) {
+    rng = rng || Math.random; n = n || 5;
+    const ids = LEVELS[level].types.slice();
+    for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(generate(ids[i % ids.length], rng));
+    return out;
+  }
+  root.ClockseedDrill = { TYPES: T, LEVELS, generate, makeSet };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
 
 <script>
 (() => {
   'use strict';
   const SAVE_KEY = 'clockseed.save';
-  const SAVE_VERSION = 4;
+  const SAVE_VERSION = 5;
   const MAX_PLOTS = 9;                 // 区画の最大数（町Lv2で 6 → 9）
   const BASE_PLOTS = 6;
   const ORDER_COUNT = 3;               // 同時に出る注文の数
@@ -178,6 +520,15 @@
   const ITEM_KEYS = Object.keys(ITEMS);
   const BUILDING_KEYS = Object.keys(BUILDINGS);
 
+  // ドリルの報酬（正解1問ごと）。C〜E は後の段階で表のとおりに足す
+  const DRILL_REWARD = { A: { sec: 40, shards: 2 }, B: { sec: 80, shards: 3 } };
+  const DRILL_STOCK_MAX = 10800;       // 時短ストックの上限（秒）＝180分。超えた分は切り捨て
+  const DRILL_DAY_SOFTCAP = 120;       // その日の累計がこれを超えた分から、カケラは半分
+  const DRILL_TICKET_STREAK = 10;      // 連続正解がこの数に達するごとに即完了チケット1枚
+  const SKIP_RUSH = 0.25;              // 残りが元の所要時間の25%を切ると追い込み区間（ストック2秒＝1秒短縮）
+  const localDay = (t = Date.now()) => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  const freshDrill = () => ({ stock: 0, shards: 0, shardHalf: 0, tickets: 0, streak: 0, stats: {}, day: '', dayCount: 0 });
+
   const townLevelOf = exp => { let lv = 1; TOWN_LV_EXP.forEach((need, i) => { if (exp >= need) lv = i + 1; }); return lv; };
   const plotsForLevel = lv => (lv >= 2 ? MAX_PLOTS : BASE_PLOTS);
   const buildingBuilt = (bs, key, t = Date.now()) => !!(bs && bs[key] && t >= bs[key].builtAt);
@@ -192,7 +543,7 @@
   }
   function freshState() {
     const st = { saveVersion: SAVE_VERSION, plots: Array(MAX_PLOTS).fill(null),
-                 storage: {}, gold: 0, townExp: 0, orders: [], buildings: {} };
+                 storage: {}, gold: 0, townExp: 0, orders: [], buildings: {}, drill: freshDrill() };
     for (const k of ITEM_KEYS) st.storage[k] = 0;
     for (const k of BUILDING_KEYS) st.buildings[k] = null;
     while (st.orders.length < ORDER_COUNT) st.orders.push(newOrder(1, st.buildings));
@@ -216,6 +567,7 @@
         const p = d.plots && d.plots[i];
         if (p && CROPS[p.crop] && CROPS[p.crop].unlockLv <= lv && isFinite(p.plantedAt) && isFinite(p.readyAt)) {
           s.plots[i] = { crop: p.crop, plantedAt: p.plantedAt, readyAt: p.readyAt };
+          if (isFinite(p.skipMs) && p.skipMs > 0) s.plots[i].skipMs = p.skipMs;      // 時短で前倒しした量（元の所要時間を保つため）
         }
       }
       for (const k of ITEM_KEYS) s.storage[k] = nat(d.storage && d.storage[k]);
@@ -225,6 +577,18 @@
           const j = b.job, okJob = j && RECIPES[j.recipe] && RECIPES[j.recipe].building === k && isFinite(j.startedAt) && isFinite(j.readyAt);
           s.buildings[k] = { startedAt: b.startedAt, builtAt: b.builtAt,
                              job: okJob ? { recipe: j.recipe, startedAt: j.startedAt, readyAt: j.readyAt } : null };
+          if (isFinite(b.buildSkipMs) && b.buildSkipMs > 0) s.buildings[k].buildSkipMs = b.buildSkipMs;
+          if (okJob && isFinite(j.skipMs) && j.skipMs > 0) s.buildings[k].job.skipMs = j.skipMs;
+        }
+      }
+      const dd = d.drill;                             // ドリル（version 4 以前には無い → 初期値）
+      if (dd && typeof dd === 'object') {
+        const D = s.drill;
+        D.stock = Math.min(DRILL_STOCK_MAX, nat(dd.stock)); D.shards = nat(dd.shards); D.shardHalf = dd.shardHalf === 1 ? 1 : 0;
+        D.tickets = nat(dd.tickets); D.streak = nat(dd.streak); D.dayCount = nat(dd.dayCount);
+        D.day = typeof dd.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dd.day) ? dd.day : '';
+        if (dd.stats && typeof dd.stats === 'object') for (const [id, v] of Object.entries(dd.stats)) {
+          if (/^[A-E]\d{1,2}$/.test(id) && v && nat(v.n) >= nat(v.ok)) D.stats[id] = { ok: nat(v.ok), n: nat(v.n) };
         }
       }
       s.orders = [];
@@ -293,6 +657,97 @@
     state.storage[r.product.key] += r.product.qty;
     b.job = null;
     save(); return true;
+  }
+
+  // ---------- ドリルの報酬 ----------
+  // 正解1問ごとに時短ストックとカケラ。ストックは上限で切り捨て。カケラはその日の累計120問を超えた分から半分
+  // （半分にして端数0.5が出たら shardHalf に繰り越す）。連続正解10ごとに即完了チケット1枚。不正解は連続正解が0に戻るだけ
+  function drillAnswer(level, typeId, correct) {
+    const D = state.drill, day = localDay();
+    if (D.day !== day) { D.day = day; D.dayCount = 0; }       // 日付が変わったら累計をリセット
+    D.dayCount += 1;
+    const st = D.stats[typeId] || (D.stats[typeId] = { ok: 0, n: 0 });
+    st.n += 1;
+    const res = { correct, sec: 0, shards: 0, ticket: false, halved: false, capped: false, streakLost: false };
+    if (correct) {
+      st.ok += 1;
+      const R = DRILL_REWARD[level];
+      const before = D.stock;
+      D.stock = Math.min(DRILL_STOCK_MAX, D.stock + R.sec);
+      res.sec = D.stock - before; res.capped = res.sec < R.sec;
+      let halves = R.shards * 2;                               // 0.5個単位で数える
+      if (D.dayCount > DRILL_DAY_SOFTCAP) { halves = R.shards; res.halved = true; }
+      const tot = D.shardHalf + halves;
+      D.shards += Math.floor(tot / 2); D.shardHalf = tot % 2;
+      res.shards = halves / 2;
+      D.streak += 1;
+      if (D.streak % DRILL_TICKET_STREAK === 0) { D.tickets += 1; res.ticket = true; }
+    } else {
+      res.streakLost = D.streak > 0;
+      D.streak = 0;
+    }
+    save(); return res;
+  }
+
+  // ---------- 時短：進行中のタイマー（区画・建設・加工）に適用 ----------
+  // 元の所要時間 D ＝ readyAt − 開始時刻 ＋ これまでに前倒しした量（skipMs）。
+  // 残り R が D の25%より多い部分は ストック1秒＝1秒、25%を切った部分（追い込み区間）は ストック2秒＝1秒
+  function timers(t = now()) {
+    const out = [];
+    for (let i = 0; i < activePlots(); i++) {
+      const p = state.plots[i];
+      if (p && t < p.readyAt) out.push({ id: 'plot:' + i, kind: 'plot', ref: p, start: p.plantedAt, ready: p.readyAt, skip: p.skipMs || 0,
+        label: '区画' + (i + 1) + '：' + CROPS[p.crop].name, icon: CROPS[p.crop].icon });
+    }
+    for (const k of BUILDING_KEYS) {
+      const b = state.buildings[k];
+      if (!b) continue;
+      if (t < b.builtAt) out.push({ id: 'build:' + k, kind: 'build', ref: b, start: b.startedAt, ready: b.builtAt, skip: b.buildSkipMs || 0,
+        label: BUILDINGS[k].name + 'の建設', icon: k + '_wip' });
+      else if (b.job && t < b.job.readyAt) {
+        const pr = RECIPES[b.job.recipe].product;
+        out.push({ id: 'job:' + k, kind: 'job', ref: b.job, start: b.job.startedAt, ready: b.job.readyAt, skip: b.job.skipMs || 0,
+          label: BUILDINGS[k].name + '：' + pr.name, icon: pr.icon });
+      }
+    }
+    return out.sort((a, b) => a.ready - b.ready);
+  }
+  const origDur = tm => tm.ready - tm.start + tm.skip;
+  function skipCostMs(tm, cut, t) {                  // cut ミリ秒縮めるのに必要なストック（ミリ秒）
+    const R = tm.ready - t, normal = Math.max(0, Math.min(cut, R - origDur(tm) * SKIP_RUSH));
+    return normal + 2 * (cut - normal);
+  }
+  const skipCostSec = (tm, cut, t) => Math.ceil(skipCostMs(tm, cut, t) / 1000 - 1e-9);
+  function skipMaxMs(tm, stockMs, t) {               // ストックで縮められる最大量（ミリ秒）
+    const R = tm.ready - t, normalAvail = Math.max(0, R - origDur(tm) * SKIP_RUSH);
+    if (stockMs <= normalAvail) return stockMs;
+    return Math.min(R, normalAvail + (stockMs - normalAvail) / 2);
+  }
+  function shiftTimer(tm, ms) {                      // readyAt（建設は builtAt）を前倒しする
+    if (tm.kind === 'build') { tm.ref.builtAt -= ms; tm.ref.buildSkipMs = (tm.ref.buildSkipMs || 0) + ms; }
+    else { tm.ref.readyAt -= ms; tm.ref.skipMs = (tm.ref.skipMs || 0) + ms; }
+  }
+  // cut：縮めたいミリ秒、または 'max'（ストックで届くところまで）
+  function applySkip(id, cut) {
+    const t = now(), tm = timers(t).find(x => x.id === id);
+    if (!tm) return null;
+    const R = tm.ready - t, stockMs = state.drill.stock * 1000;
+    let ms = cut === 'max' ? skipMaxMs(tm, stockMs, t) : Math.min(cut, R);
+    if (R - ms < 1) ms = R;                          // 端数で残らないように、届くなら即完了
+    if (ms <= 0) return null;
+    const cost = skipCostSec(tm, ms, t);
+    if (cost > state.drill.stock) return null;
+    state.drill.stock -= cost;
+    shiftTimer(tm, ms);
+    save(); return { cost, ms, done: ms >= R };
+  }
+  function useTicket(id) {                           // 即完了チケット：ストックを使わずに1件を即完了
+    const t = now(), tm = timers(t).find(x => x.id === id);
+    if (!tm || state.drill.tickets < 1) return null;
+    state.drill.tickets -= 1;
+    const ms = tm.ready - t;
+    shiftTimer(tm, ms);
+    save(); return { ms };
   }
 
   // ---------- 注文・町経験値・売却 ----------
@@ -381,6 +836,7 @@
     W: '#cf9b60', V: '#8f6238', X: '#4f321c',
     1: '#f6a9bd', 2: '#fff6e2', 3: '#f6d55c', 4: '#b9a7f0',
     N: '#d6b27c', M: '#b08650', O: '#8a6538',
+    H: '#8a74dc', K: '#e2dbff',
   };
 
   // ---------- スプライト（文字列マップ） ----------
@@ -776,6 +1232,48 @@
       '..RRRRRRRR..',
       '...RRRRRR...',
       '...xxxxxx...',
+      '............',
+    ],
+    ic_hourglass: [
+      '.XXXXXXXXXX.',
+      '..XiiiiiiX..',
+      '..XyyyyyyX..',
+      '...XyyyyX...',
+      '....XyyX....',
+      '.....XX.....',
+      '.....XX.....',
+      '....XiyX....',
+      '...XiiyyX...',
+      '..XiyyyyyX..',
+      '..XyyyyyyX..',
+      '.XXXXXXXXXX.',
+    ],
+    ic_shard: [
+      '.....KK.....',
+      '....K44H....',
+      '...K444HH...',
+      '..K4444HHH..',
+      '.K44444HHHH.',
+      '.K4444HHHHH.',
+      '..K444HHHH..',
+      '..K44HHHHH..',
+      '...K4HHHH...',
+      '....4HHH....',
+      '.....HH.....',
+      '............',
+    ],
+    ic_ticket: [
+      '............',
+      '............',
+      '.oooooooooo.',
+      '.oyyyyYyyyo.',
+      '.oyrryYyyyo.',
+      '.oyrryYywyo.',
+      '.oyyyyYyyyo.',
+      '.oyyyyYyyyo.',
+      '.oooooooooo.',
+      '............',
+      '............',
       '............',
     ],
     ic_gold: [
@@ -1363,6 +1861,12 @@
       px(ctx, bx + 3, by + 11, '#5a3a22', 3, 1); px(ctx, bx + 4, by + 12, '#5a3a22', 1, 1);
     }
     drawFacilityMarkers(ts, t);
+    if (state.drill.day !== localDay() || state.drill.dayCount === 0) {      // 時計塔：今日まだドリルをしていなければ砂時計の吹き出し
+      const bob = Math.round(Math.sin(ts * 3 + 1) * 1.5), bx = LAYOUT.tower.x + 16, by = 56 + bob;
+      px(ctx, bx, by, '#5a3a22', 16, 16); px(ctx, bx + 1, by + 1, '#fff6e0', 14, 14);
+      ctx.drawImage(SPR.ic_hourglass, bx + 2, by + 2);
+      px(ctx, bx, by + 16, '#5a3a22', 1, 3); px(ctx, bx - 1, by + 18, '#5a3a22', 2, 1);
+    }
 
     // 区画の上のしるし（空き：＋、育成中：ゲージ、収穫可：きらめき）
     state.plots.forEach((p, i) => {
@@ -1411,6 +1915,7 @@
 
     updateHud();
     tickFac();
+    tickSkip();
     requestAnimationFrame(frame);
   }
 
@@ -1418,6 +1923,7 @@
 
   // ---------- HUD（ゴールド・町Lv・経験値ゲージ・倉庫） ----------
   let hudSig = '';
+  const fmtStock = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');   // 時短ストック（分:秒。上限は180:00）
   const stockEls = {};                  // 倉庫表示（品目定義から生成。旧テスト互換のID：sWheat / stockPotato など）
   for (const k of ITEM_KEYS) {
     const cap = k[0].toUpperCase() + k.slice(1), wrap = document.createElement('span');
@@ -1428,7 +1934,8 @@
   const itemVisible = k => ITEMS[k].building ? (bState(ITEMS[k].building) === 'built' || state.storage[k] > 0) : ITEMS[k].unlockLv <= townLevel();
   function updateHud() {
     const lv = townLevel(), exp = state.townExp, st = state.storage;
-    const sig = [lv, exp, state.gold, ITEM_KEYS.map(k => st[k] + ':' + itemVisible(k)).join()].join('|');
+    const D = state.drill;
+    const sig = [lv, exp, state.gold, ITEM_KEYS.map(k => st[k] + ':' + itemVisible(k)).join(), D.stock, D.shards, D.tickets].join('|');
     if (sig === hudSig) return;
     hudSig = sig;
     $('lvText').textContent = '町Lv' + lv;
@@ -1441,6 +1948,7 @@
     }
     $('sGold').textContent = state.gold;
     for (const k of ITEM_KEYS) { stockEls[k].num.textContent = st[k]; stockEls[k].wrap.style.display = itemVisible(k) ? '' : 'none'; }
+    $('dhStock').textContent = fmtStock(D.stock); $('dhShards').textContent = D.shards; $('dhTickets').textContent = D.tickets;
   }
   let toastTimer = 0;
   function toast(msg) {
@@ -1553,13 +2061,14 @@
       $('facTitle').textContent = B.name + '（建設中）';
       add(B.buildText);
       add(gauge, 'mline');
+      add('', 'mact').appendChild(mkBtn('時短を使う', false, () => { $('facPanel').style.display = 'none'; openSkip(); }));
     } else {
       $('facTitle').textContent = B.name;
       if (b.job) {
         const r = RECIPES[b.job.recipe], pr = r.product, done = now() >= b.job.readyAt;
         add((done ? '完成！ ' : '加工中： ') + iconImg(pr.key) + ' ' + pr.name + ' ×' + pr.qty);
         if (done) add('', 'mact').appendChild(mkBtn('受け取る', false, () => { if (collectJob(k)) renderFac(); }));
-        else add(gauge, 'mline');
+        else { add(gauge, 'mline'); add('', 'mact').appendChild(mkBtn('時短を使う', false, () => { $('facPanel').style.display = 'none'; openSkip(); })); }
       }
       for (const rk of facRecipes(k)) {
         const r = RECIPES[rk], pr = r.product, ok = canCraft(rk), busy = !!b.job;
@@ -1589,9 +2098,215 @@
   function openFac(k) { curFac = k; renderFac(); $('facPanel').style.display = 'flex'; }
   $('facClose').onclick = () => { $('facPanel').style.display = 'none'; };
 
-  for (const id of ['popup', 'ordersPanel', 'warehousePanel', 'facPanel']) {
+  // ---------- ドリル（時計塔のパネル） ----------
+  const DRILL = window.ClockseedDrill;
+  const LV_KEYS = ['A', 'B', 'C', 'D', 'E'];
+  const fmtMath = str => String(str).replace(/(−?\d+)\/(\d+)/g, '<span class="fr"><span>$1</span><span>$2</span></span>');
+  const icon = k => '<img class="px" src="' + iconURL(k) + '" alt="">';
+  const fmtShard = x => (Number.isInteger(x) ? String(x) : x.toFixed(1));
+  let drillLevel = 'A', ds = null;                   // ds：進行中のセット（セーブしない）
+  const drillOpen = () => $('drillPanel').style.display === 'flex';
+  function statusHtml() {
+    const D = state.drill;
+    return '<div class="dstat"><span title="時短ストック">' + icon('ic_hourglass') + fmtStock(D.stock) + ' / ' + fmtStock(DRILL_STOCK_MAX) + '</span>' +
+      '<span title="ガチャのカケラ">' + icon('ic_shard') + 'カケラ ' + D.shards + '</span>' +
+      '<span title="即完了チケット">' + icon('ic_ticket') + 'チケット ' + D.tickets + '枚</span>' +
+      '<span>連続正解 ' + D.streak + '</span><span>今日 ' + (D.day === localDay() ? D.dayCount : 0) + '問</span></div>';
+  }
+  function renderDrillMenu() {
+    ds = null;
+    $('drillTitle').textContent = '時計塔のドリル';
+    const body = $('drillBody'); body.innerHTML = statusHtml();
+    const grid = document.createElement('div'); grid.className = 'lvgrid';
+    for (const L of LV_KEYS) {
+      const lv = DRILL.LEVELS[L], R = DRILL_REWARD[L], ready = !!(lv.ready && R);
+      const b = document.createElement('button');
+      b.className = 'tool pix lvbtn' + (drillLevel === L ? ' sel' : '') + (ready ? '' : ' locked');
+      b.disabled = !ready;
+      b.innerHTML = '<b>' + L + '</b><span>' + (ready ? lv.label : '準備中') + '</span><small>' + (ready ? '1問 +' + R.sec + '秒・カケラ' + R.shards : '&nbsp;') + '</small>';
+      if (ready) b.onclick = () => { drillLevel = L; renderDrillMenu(); };
+      grid.appendChild(b);
+    }
+    body.appendChild(grid);
+    const ts = document.createElement('div'); ts.className = 'tstats';
+    ts.innerHTML = DRILL.LEVELS[drillLevel].types.map(id => {
+      const r = state.drill.stats[id] || { ok: 0, n: 0 };
+      return '<span>' + DRILL.TYPES[id].name + '<b>' + r.ok + ' / ' + r.n + '</b></span>';
+    }).join('');
+    body.appendChild(ts);
+    const acts = document.createElement('div'); acts.className = 'dacts';
+    acts.appendChild(mkBtn('5問セットを始める', false, startDrillSet));
+    acts.appendChild(mkBtn('時短を使う', false, openSkip));
+    body.appendChild(acts);
+  }
+  function startDrillSet() {
+    ds = { level: drillLevel, set: DRILL.makeSet(drillLevel, Math.random, 5), i: 0, results: [], locked: false };
+    renderDrillQ();
+  }
+  function visualSvg(v) {             // 問題の図（時計・図形・長方形・三角形）
+    const S = (w, h, inner) => '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true">' + inner + '</svg>';
+    const ink = '#4a3322', cream = '#fff8e4';
+    if (v.kind === 'clock') {
+      let s = '<circle cx="60" cy="60" r="52" fill="' + cream + '" stroke="' + ink + '" stroke-width="5"/>';
+      for (let k = 1; k <= 12; k++) {
+        const a = k * Math.PI / 6, x = 60 + 40 * Math.sin(a), y = 60 - 40 * Math.cos(a);
+        s += '<text x="' + x.toFixed(1) + '" y="' + (y + 5).toFixed(1) + '" text-anchor="middle" font-size="13" font-weight="bold" fill="' + ink + '">' + k + '</text>';
+      }
+      const ha = ((v.h % 12) + v.m / 60) * Math.PI / 6, ma = v.m * Math.PI / 30;
+      s += '<line x1="60" y1="60" x2="' + (60 + 24 * Math.sin(ha)).toFixed(1) + '" y2="' + (60 - 24 * Math.cos(ha)).toFixed(1) + '" stroke="' + ink + '" stroke-width="6" stroke-linecap="round"/>';
+      s += '<line x1="60" y1="60" x2="' + (60 + 36 * Math.sin(ma)).toFixed(1) + '" y2="' + (60 - 36 * Math.cos(ma)).toFixed(1) + '" stroke="#b8503c" stroke-width="3.5" stroke-linecap="round"/>';
+      return S(120, 120, s + '<circle cx="60" cy="60" r="4.5" fill="#d9ae55"/>');
+    }
+    if (v.kind === 'shape') {
+      const pts = [];
+      for (let k = 0; k < v.sides; k++) { const a = -Math.PI / 2 + k * 2 * Math.PI / v.sides; pts.push((55 + 44 * Math.cos(a)).toFixed(1) + ',' + (55 + 44 * Math.sin(a)).toFixed(1)); }
+      return S(110, 110, '<polygon points="' + pts.join(' ') + '" fill="#cfe6a8" stroke="' + ink + '" stroke-width="4" stroke-linejoin="round"/>');
+    }
+    const sc = Math.min(150 / Math.max(v.kind === 'rect' ? v.w : v.b, 1), 90 / Math.max(v.h, 1), 14);
+    if (v.kind === 'rect') {
+      const w = v.w * sc, h = v.h * sc;
+      return S(w + 70, h + 40, '<rect x="35" y="8" width="' + w + '" height="' + h + '" fill="#cfe6a8" stroke="' + ink + '" stroke-width="3"/>' +
+        '<text x="' + (35 + w / 2) + '" y="' + (h + 30) + '" text-anchor="middle" font-size="14" fill="' + ink + '">' + v.w + 'cm</text>' +
+        '<text x="30" y="' + (12 + h / 2) + '" text-anchor="end" font-size="14" fill="' + ink + '">' + v.h + 'cm</text>');
+    }
+    const w = v.b * sc, h = v.h * sc, apex = 35 + w * 0.3;
+    return S(w + 70, h + 40, '<polygon points="35,' + (h + 8) + ' ' + (35 + w) + ',' + (h + 8) + ' ' + apex + ',8" fill="#cfe6a8" stroke="' + ink + '" stroke-width="3" stroke-linejoin="round"/>' +
+      '<line x1="' + apex + '" y1="8" x2="' + apex + '" y2="' + (h + 8) + '" stroke="' + ink + '" stroke-width="2" stroke-dasharray="4 3"/>' +
+      '<text x="' + (35 + w / 2) + '" y="' + (h + 30) + '" text-anchor="middle" font-size="14" fill="' + ink + '">' + v.b + 'cm</text>' +
+      '<text x="' + (apex + 6) + '" y="' + (12 + h / 2) + '" font-size="14" fill="' + ink + '">' + v.h + 'cm</text>');
+  }
+  function renderDrillQ() {
+    const pb = ds.set[ds.i], L = ds.level;
+    $('drillTitle').textContent = '時計塔のドリル';
+    const pips = ds.set.map((_, k) => '<i class="' + (k < ds.results.length ? (ds.results[k].correct ? 'ok' : 'ng') : k === ds.i ? 'cur' : '') + '"></i>').join('');
+    const body = $('drillBody');
+    body.innerHTML = '<div class="dq-head"><span><span class="lvtag">' + L + '</span>' + DRILL.TYPES[pb.type].name + '</span>' +
+      '<span class="pips">' + pips + '</span><span>' + (ds.i + 1) + ' / ' + ds.set.length + '問</span></div>' +
+      '<div class="dq-prompt">' + fmtMath(pb.prompt) + '</div>' + (pb.visual ? '<div class="dq-vis">' + visualSvg(pb.visual) + '</div>' : '');
+    const grid = document.createElement('div'); grid.className = 'choices';
+    pb.choices.forEach((c, k) => {
+      const b = document.createElement('button'); b.className = 'tool pix choice'; b.innerHTML = fmtMath(c.label);
+      b.onclick = () => answerDrill(k); grid.appendChild(b);
+    });
+    body.appendChild(grid);
+    const fb = document.createElement('div'); fb.className = 'dfb'; fb.id = 'dqFb'; body.appendChild(fb);
+  }
+  function sparkle(el) {              // 正解の小さな演出（効果音の代わり）
+    for (let k = 0; k < 10; k++) {
+      const d = document.createElement('i'), a = k / 10 * Math.PI * 2, r = 40 + (k % 3) * 14;
+      d.className = 'spark'; d.style.setProperty('--dx', (Math.cos(a) * r).toFixed(0) + 'px'); d.style.setProperty('--dy', (Math.sin(a) * r * .6).toFixed(0) + 'px');
+      if (k % 2) d.style.background = '#c7b8ff';
+      el.appendChild(d); setTimeout(() => d.remove(), 800);
+    }
+    const hud = $('drillHud'); hud.classList.remove('pulse'); void hud.offsetWidth; hud.classList.add('pulse');
+  }
+  function answerDrill(k) {
+    if (!ds || ds.locked) return;
+    ds.locked = true;
+    const pb = ds.set[ds.i], ok = k === pb.answer, res = drillAnswer(ds.level, pb.type, ok);
+    ds.results.push(res);
+    $('drillBody').querySelectorAll('.choice').forEach((b, j) => {
+      b.disabled = true;
+      if (j === pb.answer) b.classList.add('ok'); else if (j === k) b.classList.add('ng');
+    });
+    const fb = $('dqFb'), cur = ds;
+    if (ok) {
+      fb.innerHTML = '<span class="fly">せいかい！ +' + res.sec + '秒　カケラ+' + fmtShard(res.shards) + (res.ticket ? '　チケット+1' : '') + '</span>';
+      sparkle(fb);
+      if (res.ticket) toast('10問連続正解！ 即完了チケットを1枚手に入れました');
+      setTimeout(() => { if (ds === cur && drillOpen()) nextDrill(); }, 950);
+    } else {
+      fb.innerHTML = 'ざんねん… こたえは「' + fmtMath(pb.choices[pb.answer].label) + '」' + (res.streakLost ? '<br><small>連続正解が0に戻りました</small>' : '') + '<br>';
+      const nb = mkBtn('つぎへ', false, nextDrill); nb.style.marginTop = '6px'; fb.appendChild(nb);
+    }
+  }
+  function nextDrill() {
+    if (!ds) return;
+    ds.i += 1; ds.locked = false;
+    if (ds.i >= ds.set.length) renderDrillResult(); else renderDrillQ();
+  }
+  function renderDrillResult() {
+    const r = ds.results, okN = r.filter(x => x.correct).length, sec = r.reduce((a, x) => a + x.sec, 0);
+    const sh = r.reduce((a, x) => a + x.shards, 0), tk = r.filter(x => x.ticket).length;
+    $('drillTitle').textContent = 'けっか';
+    const body = $('drillBody');
+    body.innerHTML = '<div class="dres"><span class="big">' + ds.set.length + '問中 ' + okN + '問 正解</span><br>' +
+      icon('ic_hourglass') + ' 時短ストック +' + fmtStock(sec) + (r.some(x => x.capped) ? '（上限180分で頭打ち）' : '') + '<br>' +
+      icon('ic_shard') + ' カケラ +' + fmtShard(sh) + (r.some(x => x.halved) ? '（今日は120問をこえたので半分）' : '') + '<br>' +
+      (tk ? icon('ic_ticket') + ' 即完了チケット +' + tk + '枚<br>' : '') +
+      '連続正解 ' + state.drill.streak + '問</div>' + statusHtml();
+    const acts = document.createElement('div'); acts.className = 'dacts';
+    acts.appendChild(mkBtn('もう一度（5問）', false, startDrillSet));
+    acts.appendChild(mkBtn('時短を使う', false, openSkip));
+    acts.appendChild(mkBtn('メニューへ', false, renderDrillMenu));
+    body.appendChild(acts);
+  }
+  function openDrill() { renderDrillMenu(); $('drillPanel').style.display = 'flex'; }
+  $('drillClose').onclick = () => { $('drillPanel').style.display = 'none'; ds = null; };
+  $('drillHud').onclick = openDrill;
+
+  // ---------- 時短の適用パネル（進行中のタイマーの一覧） ----------
+  let skipSig = '', skipRows = {}, skipTickAt = 0;
+  const skipOpen = () => $('skipPanel').style.display === 'flex';
+  const listSig = list => list.map(x => x.id).join() + '|' + state.drill.tickets;
+  function openSkip() {
+    $('drillPanel').style.display = 'none'; ds = null;
+    renderSkip(); $('skipPanel').style.display = 'flex';
+  }
+  function renderSkip() {
+    const list = timers();
+    skipSig = listSig(list); skipRows = {};
+    const box = $('skipList'); box.innerHTML = '';
+    if (!list.length) box.innerHTML = '<div class="sempty">進行中のタイマー（育成中の区画・建設中の建物・加工中の品）はありません</div>';
+    for (const tm of list) {
+      const row = document.createElement('div'); row.className = 'srow'; row.dataset.id = tm.id;
+      row.innerHTML = icon(tm.icon) + '<div class="sinfo"><b>' + tm.label + '</b><small>残り <span class="rem"></span>　<span class="rush"></span></small>' +
+        '<div class="sg"><i></i></div><small class="smax"></small></div>';
+      const bx = document.createElement('div'); bx.className = 'sbtns';
+      const mk = (label, fn) => { const b = document.createElement('button'); b.className = 'tool pix'; b.innerHTML = label + '<small></small>'; b.onclick = fn; bx.appendChild(b); return b; };
+      const done = (r, what) => { if (r) toast(tm.label + '：' + what); renderSkip(); };
+      skipRows[tm.id] = {
+        row,
+        b1: mk('−1分', () => { const r = applySkip(tm.id, 60000); done(r, r && ('−' + fmtTime(r.ms) + '（ストック ' + fmtStock(r.cost) + ' 消費）' + (r.done ? ' 完了！' : ''))); }),
+        b10: mk('−10分', () => { const r = applySkip(tm.id, 600000); done(r, r && ('−' + fmtTime(r.ms) + '（ストック ' + fmtStock(r.cost) + ' 消費）' + (r.done ? ' 完了！' : ''))); }),
+        bmax: mk('最大まで', () => { const r = applySkip(tm.id, 'max'); done(r, r && ('−' + fmtTime(r.ms) + '（ストック ' + fmtStock(r.cost) + ' 消費）' + (r.done ? ' 完了！' : ''))); }),
+        btk: mk('チケット', () => { const r = useTicket(tm.id); done(r, 'チケットで即完了！'); }),
+      };
+      row.appendChild(bx); box.appendChild(row);
+    }
+    tickSkip(true);
+  }
+  function tickSkip(force) {          // 表示だけを更新（状態は時刻との差分で計算）
+    if (!skipOpen()) return;
+    const t = now(), list = timers(t);
+    if (listSig(list) !== skipSig) { renderSkip(); return; }
+    if (!force && t - skipTickAt < 250) return;
+    skipTickAt = t;
+    const D = state.drill, stockMs = D.stock * 1000;
+    $('skipHead').innerHTML = '<div class="shead"><span>' + icon('ic_hourglass') + 'ストック ' + fmtStock(D.stock) + ' / ' + fmtStock(DRILL_STOCK_MAX) + '</span>' +
+      '<span>' + icon('ic_ticket') + '即完了チケット ' + D.tickets + '枚</span></div>';
+    for (const tm of list) {
+      const r = skipRows[tm.id]; if (!r) continue;
+      const R = tm.ready - t, Dur = origDur(tm), rush = R < Dur * SKIP_RUSH;
+      r.row.querySelector('.rem').textContent = fmtTime(R);
+      r.row.querySelector('.rush').textContent = rush ? '追い込み区間（ストック2秒＝1秒）' : '';
+      r.row.querySelector('.sg i').style.width = (100 * Math.min(1, Math.max(0, 1 - R / Dur))).toFixed(1) + '%';
+      const mx = skipMaxMs(tm, stockMs, t), full = R - mx < 1, mxCost = skipCostSec(tm, full ? R : mx, t);
+      r.row.querySelector('.smax').textContent = mx >= 1000
+        ? '最大 −' + fmtTime(full ? R : mx) + (full ? '（即完了）' : '') + '：ストック ' + fmtStock(mxCost) + ' 消費'
+        : 'ストックが足りません';
+      const setB = (b, cut) => { const c = skipCostSec(tm, cut, t); b.disabled = c > D.stock; b.lastChild.textContent = 'ストック' + fmtStock(c); };
+      setB(r.b1, Math.min(60000, R)); setB(r.b10, Math.min(600000, R));
+      r.b10.style.display = R > 60000 ? '' : 'none';
+      r.bmax.disabled = mx < 1000; r.bmax.lastChild.textContent = mx >= 1000 ? 'ストック' + fmtStock(mxCost) : '';
+      r.btk.disabled = D.tickets < 1; r.btk.lastChild.textContent = '即完了';
+    }
+  }
+  $('skipClose').onclick = () => { $('skipPanel').style.display = 'none'; };
+
+  for (const id of ['popup', 'ordersPanel', 'warehousePanel', 'facPanel', 'drillPanel', 'skipPanel']) {
     const el = $(id);
-    el.addEventListener('pointerdown', e => { if (e.target === el) { el.style.display = 'none'; if (id === 'popup') popupPlot = -1; } });
+    el.addEventListener('pointerdown', e => { if (e.target === el) { el.style.display = 'none'; if (id === 'popup') popupPlot = -1; if (id === 'drillPanel') ds = null; } });
   }
 
   onLevelUp = lv => {
@@ -1623,6 +2338,10 @@
   let pan = null, pinch = null;
   const mid = () => { const a = [...ptrs.values()]; return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2, d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) }; };
   function startPan(x, y, tap = false) { gesture = 'pan'; pan = { sx: x, sy: y, cx: cam.x, cy: cam.y, moved: 0, tap }; canvas.classList.add('grabbing'); }
+  function hitTower(sx, sy) {        // 時計塔（タップでドリル）
+    const w = toWorld(sx, sy), x0 = LAYOUT.tower.x - 16, y0 = LAYOUT.tower.y - SPR.tower.height - 3;
+    return w.x >= x0 && w.x < x0 + 32 && w.y >= y0 && w.y < LAYOUT.tower.y + 2;
+  }
   function hitFac(sx, sy) {         // タップした施設のキー（なければ null）
     const w = toWorld(sx, sy);
     for (const k of BUILDING_KEYS) {
@@ -1649,7 +2368,7 @@
     if (ptrs.size === 2) { startPinch(); return; }
     if (ptrs.size > 2) return;
     const i = plotAt(e.clientX, e.clientY);
-    if (i < 0) { startPan(e.clientX, e.clientY, hitBoard(e.clientX, e.clientY) ? 'board' : (hitFac(e.clientX, e.clientY) ? 'fac:' + hitFac(e.clientX, e.clientY) : false)); return; }   // 区画の外 → カメラ（掲示板の上のタップは注文パネル）
+    if (i < 0) { startPan(e.clientX, e.clientY, hitBoard(e.clientX, e.clientY) ? 'board' : (hitFac(e.clientX, e.clientY) ? 'fac:' + hitFac(e.clientX, e.clientY) : hitTower(e.clientX, e.clientY) ? 'tower' : false)); return; }   // 区画の外 → カメラ（掲示板の上のタップは注文パネル）
     gesture = 'farm';                                         // 区画の上 → なぞり優先（カメラは動かさない）
     touched = new Set();
     const p = state.plots[i];
@@ -1677,7 +2396,7 @@
     if (ptrs.size === 0) {
       const tapped = e.type === 'pointerup' && gesture === 'pan' && pan && pan.tap && pan.moved < 8 ? pan.tap : null;
       gesture = null; mode = null; touched = new Set(); canvas.classList.remove('grabbing');
-      if (tapped === 'board') openOrders(); else if (tapped && tapped.startsWith('fac:')) openFac(tapped.slice(4));
+      if (tapped === 'board') openOrders(); else if (tapped === 'tower') openDrill(); else if (tapped && tapped.startsWith('fac:')) openFac(tapped.slice(4));
     }
     else if (gesture === 'pinch' && ptrs.size === 1) { const [q] = ptrs.values(); startPan(q.x, q.y); }
   };
@@ -1698,6 +2417,9 @@
     facCenter: k => toScreen(FAC[k].x, FAC[k].y - (bState(k) === 'none' ? 8 : 20)),
     millCenter: () => window.__clockseed.facCenter('mill'),
     kitchenCenter: () => window.__clockseed.facCenter('kitchen'),
+    towerCenter: () => toScreen(LAYOUT.tower.x, LAYOUT.tower.y - 30),
+    drillAnswerIndex: () => (ds && ds.set[ds.i] ? ds.set[ds.i].answer : -1),
+    timers: () => timers().map(x => ({ id: x.id, remaining: x.ready - now(), dur: origDur(x) })),
     viewport: () => ({ w: VW, h: VH, mapW: MAP.w * T, mapH: MAP.h * T, zoomMin: zoomMin() }),
     camera: () => ({ x: cam.x, y: cam.y, zoom: cam.zoom }),
     spriteSizes: () => Object.fromEntries(Object.entries(SPR).map(([k, v]) => [k, [v.width, v.height]])),

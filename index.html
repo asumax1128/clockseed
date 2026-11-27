@@ -40,7 +40,15 @@
   .stock{display:flex;align-items:center;gap:4px}
   .stock img{width:26px;height:26px}
 
-  #palette{bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:16px}
+  #palette{bottom:12px;left:0;right:0;display:flex;gap:10px;flex-wrap:nowrap;justify-content:center;pointer-events:none}
+  #palette > *{pointer-events:auto}
+  #palette .tool span,#warehouse .ttl,.stock{white-space:nowrap}
+  #warehouse.compact{gap:6px;font-size:15px;padding:4px 10px}
+  #warehouse.compact .stock{gap:2px}
+  #warehouse.compact .stock img{width:20px;height:20px}
+  #palette .tool{padding:4px 12px 4px 8px;font-size:16px;gap:6px}
+  #palette .tool img{width:30px;height:30px}
+  #popup .row{flex-wrap:wrap;justify-content:center}
   .tool{font-family:inherit;color:var(--ink);cursor:pointer;touch-action:manipulation;border:0;
     padding:6px 16px 6px 10px;font-size:18px;font-weight:bold;display:flex;align-items:center;gap:8px;
     transition:transform .12s}
@@ -683,12 +691,11 @@
 (() => {
   'use strict';
   const SAVE_KEY = 'clockseed.save';
-  const SAVE_VERSION = 6;
-  const MAX_PLOTS = 9;                 // 区画の最大数（町Lv2で 6 → 9）
-  const BASE_PLOTS = 6;
+  const SAVE_VERSION = 7;
+  const MAX_PLOTS = 24;                // 区画の最大数（町Lv8で24）
   const ORDER_COUNT = 3;               // 同時に出る注文の数
   const ORDER_MIN = 3, ORDER_MAX = 9;  // 生の作物の注文の個数の範囲
-  const TOWN_LV_EXP = [0, 30];         // 町経験値の累計がこの値に達するとLv(添字+1)。Lv2が現在の最大
+  const TOWN_LV_EXP = [0, 30, 120, 300, 600, 1100, 1800, 2800];   // 町経験値の累計がこの値に達するとLv(添字+1)。Lv8が最大
 
   // デバッグ：?fast=N で育成・建設・加工の時間をN分の1に（開始時点の倍速で終了時刻を確定）
   const FAST = (() => {
@@ -701,6 +708,11 @@
     wheat:  { name: '小麦',      icon: 'ic_wheat',  growMs: 2 * 60 * 1000, yield: 3, price: 10, orderExp: 10, unlockLv: 1 },
     carrot: { name: 'にんじん',  icon: 'ic_carrot', growMs: 4 * 60 * 1000, yield: 3, price: 16, orderExp: 10, unlockLv: 1 },
     potato: { name: 'じゃがいも', icon: 'ic_potato', growMs: 6 * 60 * 1000, yield: 2, price: 30, orderExp: 14, unlockLv: 2 },
+    tomato:     { name: 'トマト',       icon: 'ic_tomato',     growMs: 8 * 60 * 1000,  yield: 3, price: 28,  orderExp: 11, unlockLv: 3 },
+    corn:       { name: 'とうもろこし', icon: 'ic_corn',       growMs: 10 * 60 * 1000, yield: 4, price: 26,  orderExp: 11, unlockLv: 3 },
+    strawberry: { name: 'いちご',       icon: 'ic_strawberry', growMs: 15 * 60 * 1000, yield: 2, price: 55,  orderExp: 12, unlockLv: 4 },
+    pumpkin:    { name: 'かぼちゃ',     icon: 'ic_pumpkin',    growMs: 30 * 60 * 1000, yield: 1, price: 130, orderExp: 14, unlockLv: 5 },
+    grape:      { name: 'ぶどう',       icon: 'ic_grape',      growMs: 45 * 60 * 1000, yield: 2, price: 100, orderExp: 13, unlockLv: 6 },
   };
   const CROP_KEYS = Object.keys(CROPS);
 
@@ -708,6 +720,12 @@
   const BUILDINGS = {
     mill:    { name: '製粉所',   unlockLv: 2, cost: 100, buildMs: 3 * 60 * 1000, buildText: '石を積んでいます…' },
     kitchen: { name: 'キッチン', unlockLv: 2, cost: 150, buildMs: 5 * 60 * 1000, buildText: '板を打っています…' },
+    bakery:     { name: 'パン屋',     unlockLv: 3, cost: 300,  buildMs: 10 * 60 * 1000,  buildText: 'かまどを据えています…' },
+    ranch:      { name: '牧場',       unlockLv: 4, cost: 400,  buildMs: 15 * 60 * 1000,  buildText: '牛舎を建てています…' },
+    dairy:      { name: '乳製品工房', unlockLv: 4, cost: 500,  buildMs: 20 * 60 * 1000,  buildText: '樽を運び込んでいます…' },
+    jam:        { name: 'ジャム工房', unlockLv: 5, cost: 800,  buildMs: 30 * 60 * 1000,  buildText: '大鍋を据えています…' },
+    restaurant: { name: 'レストラン', unlockLv: 6, cost: 1500, buildMs: 60 * 60 * 1000,  buildText: 'テーブルを並べています…' },
+    cake:       { name: 'ケーキ屋',   unlockLv: 7, cost: 2500, buildMs: 120 * 60 * 1000, buildText: 'ショーケースを磨いています…' },
   };
   // レシピデータ（材料・個数・加工時間・製品・単価）。UIはこの定義から生成する
   const RECIPES = {
@@ -717,13 +735,35 @@
              product: { key: 'juice', name: 'にんじんジュース', icon: 'ic_juice', qty: 1, price: 75, orderExp: 20, orderQty: [2, 6] } },
     fries: { building: 'kitchen', inputs: { potato: 2 }, ms: 4 * 60 * 1000,
              product: { key: 'fries', name: 'ポテトフライ', icon: 'ic_fries', qty: 1, price: 95, orderExp: 20, orderQty: [2, 6] } },
+    tsauce:   { building: 'kitchen', unlockLv: 3, inputs: { tomato: 3 }, ms: 5 * 60 * 1000,
+                product: { key: 'tsauce', name: 'トマトソース', icon: 'ic_tsauce', qty: 1, price: 130, orderExp: 25, orderQty: [2, 6] } },
+    bread:    { building: 'bakery', inputs: { flour: 2 }, ms: 6 * 60 * 1000,
+                product: { key: 'bread', name: 'パン', icon: 'ic_bread', qty: 1, price: 110, orderExp: 30, orderQty: [2, 5] } },
+    jambread: { building: 'bakery', unlockLv: 5, inputs: { flour: 1, sjam: 1 }, ms: 6 * 60 * 1000,
+                product: { key: 'jambread', name: 'ジャムパン', icon: 'ic_jambread', qty: 1, price: 290, orderExp: 40, orderQty: [2, 5] } },
+    milk:     { building: 'ranch', inputs: {}, ms: 12 * 60 * 1000,                           // 材料なしレシピ（牧場）
+                product: { key: 'milk', name: '牛乳', icon: 'ic_milk', qty: 3, price: 35, orderExp: 12, orderQty: [3, 9] } },
+    cheese:   { building: 'dairy', inputs: { milk: 2 }, ms: 10 * 60 * 1000,
+                product: { key: 'cheese', name: 'チーズ', icon: 'ic_cheese', qty: 1, price: 110, orderExp: 25, orderQty: [2, 6] } },
+    butter:   { building: 'dairy', inputs: { milk: 2 }, ms: 6 * 60 * 1000,
+                product: { key: 'butter', name: 'バター', icon: 'ic_butter', qty: 1, price: 95, orderExp: 25, orderQty: [2, 6] } },
+    sjam:     { building: 'jam', inputs: { strawberry: 3 }, ms: 8 * 60 * 1000,
+                product: { key: 'sjam', name: 'いちごジャム', icon: 'ic_sjam', qty: 1, price: 220, orderExp: 30, orderQty: [2, 5] } },
+    gjam:     { building: 'jam', unlockLv: 7, inputs: { grape: 3 }, ms: 15 * 60 * 1000,
+                product: { key: 'gjam', name: 'ぶどうジャム', icon: 'ic_gjam', qty: 1, price: 390, orderExp: 35, orderQty: [2, 5] } },
+    pizza:    { building: 'restaurant', inputs: { flour: 1, cheese: 1, tsauce: 1 }, ms: 10 * 60 * 1000,
+                product: { key: 'pizza', name: 'ピザ', icon: 'ic_pizza', qty: 1, price: 340, orderExp: 45, orderQty: [1, 3] } },
+    ppie:     { building: 'restaurant', inputs: { flour: 1, pumpkin: 1, butter: 1 }, ms: 12 * 60 * 1000,
+                product: { key: 'ppie', name: 'かぼちゃパイ', icon: 'ic_ppie', qty: 1, price: 380, orderExp: 45, orderQty: [1, 3] } },
+    gcake:    { building: 'cake', inputs: { flour: 2, butter: 1, gjam: 1 }, ms: 15 * 60 * 1000,
+                product: { key: 'gcake', name: 'ぶどうケーキ', icon: 'ic_gcake', qty: 1, price: 620, orderExp: 50, orderQty: [1, 3] } },
   };
   // 倉庫に入るもの全て（作物＋加工品）
   const ITEMS = {};
   for (const k of CROP_KEYS) ITEMS[k] = Object.assign({ orderQty: [ORDER_MIN, ORDER_MAX] }, CROPS[k]);
-  for (const r of Object.values(RECIPES)) {
+  for (const [rk, r] of Object.entries(RECIPES)) {
     const pr = r.product;
-    ITEMS[pr.key] = { name: pr.name, icon: pr.icon, price: pr.price, orderExp: pr.orderExp, orderQty: pr.orderQty, building: r.building };
+    ITEMS[pr.key] = { name: pr.name, icon: pr.icon, price: pr.price, orderExp: pr.orderExp, orderQty: pr.orderQty, building: r.building, recipe: rk };
   }
   const ITEM_KEYS = Object.keys(ITEMS);
   const BUILDING_KEYS = Object.keys(BUILDINGS);
@@ -738,10 +778,43 @@
   const freshDrill = () => ({ stock: 0, shards: 0, shardHalf: 0, tickets: 0, streak: 0, stats: {}, day: '', dayCount: 0 });
 
   const townLevelOf = exp => { let lv = 1; TOWN_LV_EXP.forEach((need, i) => { if (exp >= need) lv = i + 1; }); return lv; };
-  const plotsForLevel = lv => (lv >= 2 ? MAX_PLOTS : BASE_PLOTS);
+  const PLOTS_BY_LV = [6, 9, 12, 14, 16, 18, 20, 24];                     // 町Lvごとの畑の上限
+  const plotsForLevel = lv => PLOTS_BY_LV[Math.max(1, Math.min(lv, PLOTS_BY_LV.length)) - 1];
   const buildingBuilt = (bs, key, t = Date.now()) => !!(bs && bs[key] && t >= bs[key].builtAt);
-  // 注文・倉庫に出せるか：作物は町Lv、加工品は施設の完成が条件
-  const itemAvailable = (k, lv, bs) => { const it = ITEMS[k]; return it.building ? buildingBuilt(bs, it.building) : it.unlockLv <= lv; };
+  // 注文・倉庫に出せるか：作物は町Lv。加工品は「施設が完成」「レシピが町Lvで解放済み」「材料が全て手に入る」の3つ
+  // （材料までさかのぼって確かめるので、作れない品物の注文は出ない）
+  function itemAvailable(k, lv, bs) {
+    const it = ITEMS[k];
+    if (!it.recipe) return it.unlockLv <= lv;
+    const r = RECIPES[it.recipe];
+    return buildingBuilt(bs, r.building) && (r.unlockLv || 1) <= lv && Object.keys(r.inputs).every(i => itemAvailable(i, lv, bs));
+  }
+
+  // ---------- 町の配置（タイル座標）。描画と隣接ルールの両方で使う ----------
+  const PLOT_TILES = [[9, 5], [12, 5], [15, 5], [9, 8], [12, 8], [15, 8], [9, 11], [12, 11], [15, 11],   // Lv1〜2
+                      [18, 5], [18, 8], [18, 11],                // Lv3：畑を東へ1列
+                      [9, 14], [12, 14],                         // Lv4：畑を南へ
+                      [9, 19], [12, 19],                         // Lv5：川沿い
+                      [15, 14], [18, 14],                        // Lv6
+                      [15, 19], [18, 19],                        // Lv7：川沿い
+                      [3, 19], [6, 19], [21, 19], [24, 19]];     // Lv8：川沿い
+  const RIVER = { y: 21, h: 2, lv: 5 };                         // 川（Lv5〜）：タイル行21〜22の全幅
+  // 施設の敷地（2×2タイルの左上）
+  const FACILITY_TILES = { mill: { tx: 15, ty: 2 }, kitchen: { tx: 12, ty: 2 }, bakery: { tx: 22, ty: 4 }, jam: { tx: 24, ty: 4 },
+                           restaurant: { tx: 22, ty: 9 }, cake: { tx: 27, ty: 9 }, ranch: { tx: 9, ty: -5 }, dairy: { tx: 13, ty: -5 } };
+  // ---------- 隣接ルール（10%短縮）----------
+  // 所要時間 × 0.9。ミリ秒未満は切り上げ（＝短縮は10%を超えない）。例：120000 → 108000、?fast=7 の 17142.86 → 15429
+  const ADJ_RATE = 0.9;
+  const shorten = ms => Math.ceil(ms * ADJ_RATE);
+  // 川に隣接する区画：区画（2×2）の上下どちらかの辺が川の行に接する
+  const plotNearRiver = (i, lv) => lv >= RIVER.lv && (PLOT_TILES[i][1] + 2 === RIVER.y || PLOT_TILES[i][1] === RIVER.y + RIVER.h);
+  // 施設どうしが隣り合う：敷地（2×2）が辺で接する（角だけの接触は含まない）。相手は完成済みの施設に限る
+  function tilesTouch(a, b) {
+    const ax2 = a.tx + 2, ay2 = a.ty + 2, bx2 = b.tx + 2, by2 = b.ty + 2;
+    const ovX = a.tx < bx2 && b.tx < ax2, ovY = a.ty < by2 && b.ty < ay2;
+    return (ovY && (ax2 === b.tx || bx2 === a.tx)) || (ovX && (ay2 === b.ty || by2 === a.ty));
+  }
+  const facNeighbors = (k, bs, t) => BUILDING_KEYS.filter(o => o !== k && buildingBuilt(bs, o, t) && tilesTouch(FACILITY_TILES[k], FACILITY_TILES[o]));
 
   // ---------- セーブ ----------
   function newOrder(lv, bs) {
@@ -770,7 +843,7 @@
       const s = freshState();
       s.townExp = nat(d.townExp);
       s.gold = nat(d.gold);
-      const lv = townLevelOf(s.townExp), open = plotsForLevel(lv);
+      const lv = townLevelOf(s.townExp), open = plotsForLevel(lv);   // version 6 以前の plots（9要素）はそのまま先頭に入る
       for (let i = 0; i < open; i++) {
         const p = d.plots && d.plots[i];
         if (p && CROPS[p.crop] && CROPS[p.crop].unlockLv <= lv && isFinite(p.plantedAt) && isFinite(p.readyAt)) {
@@ -828,7 +901,9 @@
   function plant(i, crop) {
     if (i < 0 || i >= activePlots() || state.plots[i] || !CROPS[crop] || CROPS[crop].unlockLv > townLevel()) return false;
     const t = now();
-    state.plots[i] = { crop, plantedAt: t, readyAt: t + CROPS[crop].growMs / FAST };
+    let dur = CROPS[crop].growMs / FAST;
+    if (plotNearRiver(i, townLevel())) dur = shorten(dur);        // 隣接ルール：川沿いは育成時間10%短縮（植え付け時に readyAt へ反映）
+    state.plots[i] = { crop, plantedAt: t, readyAt: t + dur };
     save(); return true;
   }
   function harvest(i) {
@@ -853,10 +928,12 @@
   const canCraft = rk => Object.entries(RECIPES[rk].inputs).every(([k, n]) => state.storage[k] >= n);
   function startJob(key, rk) {                       // 加工は1施設につき同時に1件。材料は開始時に消費
     const r = RECIPES[rk], b = state.buildings[key];
-    if (!r || r.building !== key || bState(key) !== 'built' || b.job || !canCraft(rk)) return false;
+    if (!r || r.building !== key || bState(key) !== 'built' || b.job || (r.unlockLv || 1) > townLevel() || !canCraft(rk)) return false;
     for (const [k, n] of Object.entries(r.inputs)) state.storage[k] -= n;
     const t = now();
-    b.job = { recipe: rk, startedAt: t, readyAt: t + r.ms / FAST };
+    let ms = r.ms / FAST;
+    if (facNeighbors(key, state.buildings, t).length) ms = shorten(ms);   // 隣接ルール：他の施設と隣り合うと加工時間10%短縮（建設には効かない）
+    b.job = { recipe: rk, startedAt: t, readyAt: t + ms };
     save(); return true;
   }
   function collectJob(key) {                         // 完了した製品は施設に留まり、受け取ると倉庫へ
@@ -1034,24 +1111,38 @@
 
   // ---------- 設定値（将来の町レベルで拡張） ----------
   const T = 16;                       // 1タイル = 16ドット
-  const MAP = { w: 24, h: 18 };       // タイル数
+  // マップ：全レベルを含む最大の範囲（タイル）と、町Lvごとの表示範囲（外側へ広がる）
+  const WORLD = { x0: 0, y0: -6, x1: 32, y1: 24 };
+  const BOUNDS = lv => ({ x0: 0, y0: lv >= 4 ? -6 : 0, x1: lv >= 3 ? 32 : 24, y1: lv >= RIVER.lv ? 24 : 18 });   // Lv3 東の加工エリア／Lv4 北の丘／Lv5 南の川
   const WORLD_SEED = 20261127;        // 自然物の配置シード（セーブには含めない）
   const ZOOM_MIN = 0.7, ZOOM_MAX = 1.5;
   const LAYOUT = {
-    plaza: { x: 1, y: 5, w: 5, h: 4 },                 // 広場（タイル）
-    path:  [{ x: 6, y: 7, w: 3, h: 1 }],               // 石畳の道
-    aisle: [{ x: 9, y: 7, w: 8, h: 1, lv: 1 }, { x: 9, y: 10, w: 8, h: 1, lv: 2 }], // 畑の中の土の通路
+    plaza: { x: 1, y: 5, w: 5, h: 4 },                 // 広場（タイル）。Lv8で祭り広場
+    festLv: 8,
+    path:  [{ x: 6, y: 7, w: 3, h: 1, lv: 1 },        // 石畳の道
+            { x: 21, y: 7, w: 10, h: 1, lv: 3 }, { x: 26, y: 3, w: 1, h: 4, lv: 3 }, { x: 26, y: 8, w: 1, h: 4, lv: 3 },   // 東の加工エリア
+            { x: 7, y: 0, w: 1, h: 7, lv: 4 }],       // 北の丘への道
+    aisle: [{ x: 9, y: 7, w: 8, h: 1, lv: 1 }, { x: 9, y: 10, w: 8, h: 1, lv: 2 },     // 畑の中の土の通路
+            { x: 9, y: 7, w: 12, h: 1, lv: 3 }, { x: 9, y: 10, w: 11, h: 1, lv: 3 }, { x: 9, y: 13, w: 11, h: 1, lv: 4 },
+            { x: 2, y: 18, w: 26, h: 1, lv: 5 }],     // 川沿いの畑の通路
+    hill: { y0: -6, y1: -1, stairsX: 7, lv: 4 },       // 北の丘（y=-1 は崖、stairsX に石段）
+    bridge: { x: 15, w: 2 },
     tower: { x: 56, y: 118 },                          // 時計塔の足元（ドット座標）
     board: { x: 82, y: 138 },                          // 注文掲示板の足元（ドット座標）
-    facilities: {                                      // 施設（建設予定地）の足元。bubble＝完成品の吹き出しを出す側
-      mill:    { x: 256, y: 62, bubble: 1 },             // 畑の北東
-      kitchen: { x: 204, y: 62, bubble: -1 },            // 製粉所の隣（西）
-    },
-    fence: lv => ({ x0: 136, x1: 280, y0: 76, y1: lv >= 2 ? 220 : 172, gateFrom: 108, gateTo: 140 }),
-    plots: [[9, 5], [12, 5], [15, 5], [9, 8], [12, 8], [15, 8],      // 区画左上（タイル）、2×2。
-            [9, 11], [12, 11], [15, 11]],                            // 末尾3つは町Lv2で現れる
-    keepClear: [{ x: 0, y: 4, w: 7, h: 6 }, { x: 6, y: 6, w: 3, h: 3 }, { x: 7, y: 4, w: 12, h: 10 }, { x: 11, y: 0, w: 8, h: 4 }],
+    facBubble: { kitchen: -1, bakery: -1 },            // 完成品の吹き出しを出す側（既定は右）
+    fence: lv => ({ x0: 136, x1: lv >= 3 ? 328 : 280, y0: 76, y1: lv >= 4 ? 268 : lv >= 2 ? 220 : 172, gates: { w: [108, 140], e: lv >= 3 ? [108, 140] : null } }),
+    plots: PLOT_TILES,
+    // 家：町Lvが上がるたびにマップの縁に1〜2軒（プレイヤーは建てない）
+    houses: [{ tx: 30, ty: 1, lv: 3, v: 0 }, { tx: 30, ty: 13, lv: 3, v: 1 }, { tx: 2, ty: -4, lv: 4, v: 2 },
+             { tx: 3, ty: 23, lv: 5, v: 1 }, { tx: 28, ty: 23, lv: 5, v: 0 }, { tx: 1, ty: 12, lv: 6, v: 2 },
+             { tx: 22, ty: -4, lv: 7, v: 0 }, { tx: 29, ty: -4, lv: 7, v: 1 }, { tx: 1, ty: 15, lv: 8, v: 1 }, { tx: 30, ty: 17, lv: 8, v: 2 }],
+    pasture: { x0: 82, x1: 142, y0: -78, y1: -18 },    // 牧場の放牧柵（ドット座標）
   };
+  // 木を置かない範囲（タイル）：広場・道・畑・川沿いの畑・施設・家のまわり
+  LAYOUT.keepClear = [{ x: 0, y: 4, w: 7, h: 6 }, { x: 6, y: 0, w: 3, h: 9 }, { x: 7, y: 4, w: 15, h: 14 }, { x: 0, y: 17, w: 32, h: 4 },
+                      { x: 20, y: 2, w: 12, h: 11 }, { x: 4, y: -6, w: 14, h: 6 }]
+    .concat(Object.values(FACILITY_TILES).map(f => ({ x: f.tx - 1, y: f.ty - 1, w: 4, h: 4 })))
+    .concat(LAYOUT.houses.map(h => ({ x: h.tx - 1, y: h.ty - 2, w: 4, h: 4 })));
   const PLOT_PX = 2 * T;
   const plotRect = i => ({ x: LAYOUT.plots[i][0] * T, y: LAYOUT.plots[i][1] * T, w: PLOT_PX, h: PLOT_PX });
 
@@ -1084,6 +1175,9 @@
     1: '#f6a9bd', 2: '#fff6e2', 3: '#f6d55c', 4: '#b9a7f0',
     N: '#d6b27c', M: '#b08650', O: '#8a6538',
     H: '#8a74dc', K: '#e2dbff',
+    A: '#5d8ed4', D: '#35609c', L: '#f8f4ea', Q: '#eea3bf', Z: '#b9507c', I: '#cc4836',
+    5: '#8e2b25', 6: '#7b56b8', 7: '#4e3580', 8: '#f0d45a', 9: '#c79b2c', 0: '#2b2b2b',
+    '#': '#e2453c', '@': '#e0503a', '%': '#e98a2c', '&': '#b8611e', '~': '#b9b4a8',
   };
 
   // ---------- スプライト（文字列マップ） ----------
@@ -1726,6 +1820,146 @@
   })();
   SPR_SRC.kitchen_site = SPR_SRC.mill_site;
 
+  // ======== 段階5：作物5種（3段階）・品目アイコン・施設6棟・家・屋台・牛 ========
+  Object.assign(SPR_SRC, {
+    tomato1: ['..j.j..', '.jejej.', '..eEe..', 'j.eEe.j', '.jjEjj.', '...E...', '...E...'],
+    tomato2: ['.....V.....', '..e..V..e..', '.eEe.VeeEe.', 'eEjEeVEjEe.', '.eEEjVjEEe.', '..eEeVeEe..', '.eEjEVEjEe.',
+              'eEeEeVeEeEe', '.eEeEVEeEe.', '..eEeVeEe..', '....eVe....', '.....V.....', '.....V.....'],
+    tomato3: ['.....V.....', '..e..V..e..', '.eEe.VeeEe.', 'e@@EeVE@@e.', '.@w@jVj@w@.', '.e@@eVe@@e.', '.eEjEVEjEe.',
+              'e@@EeV@@eEe', '@w@@EV@w@E.', '.@@eeV@@e..', '....eVe....', '.....V.....', '.....V.....'],
+    corn1: ['...j...', '..jj...', '..jGj..', '...Gjj.', 'jj.G...', '..jG...', '...G...'],
+    corn2: ['....j....', '....G....', '...jG....', '....Gj...', '..jjG....', '.j..Gjj..', '....G..j.', 'jjj.G....', '...jG....',
+            '....Gjjj.', '..jjG...j', '.j..G....', '....Gjj..', '...jG..j.', '..j.G....', '....G....', '...gGg...'],
+    corn3: ['...yYy...', '....Y....', '...jG....', '....Gj...', '..jjG88..', '.j..G898.', '....G988.', 'jjj.G898.', '...jG989.',
+            '....G88j.', '..jjGj..j', '.j..G....', '....Gjj..', '...jG..j.', '..j.G....', '....G....', '...gGg...'],
+    strawberry1: ['.j.j.j.', 'jJjJjJj', '.j.j.j.', '..jgj..', '...g...'],
+    strawberry2: ['..jJj.jJj..', '.jJ2Jj.jJj.', '.j232j.j.j.', 'jJj2jjJjJjJ', '.jJjgjjJ2Jj', 'jJjjgjj232j', '.jj.g.jj2j.', '..ggggg....'],
+    strawberry3: ['..jJj.jJj..', '.jJjJj.jJj.', 'jJjJjjJjJjJ', '.jJjgjjJjJj', '.jj#gjj#jj.', '.#y#g.#y#..', '.###g.###j#', '..#.g..#.#y', '....g....#.'],
+    pumpkin1: ['jj...jj', 'jJj.jJj', '.jjgjj.', '...g...', '...g...', '...g...'],
+    pumpkin2: ['...jj....jj..', '..jJJj..jJJj.', '.jJjJJjjJjJJj', 'jJjgjjggjjgJj', '.jjggggggggj.', 'jJjg..g...gJj', '.jj...g....j.', '......g......'],
+    pumpkin3: ['..jj.....jj..', '.jJJj...jJJj.', 'jJjJJj.jJjJJj', '.jjg..t..gjj.', '..&%%%t%%%&..', '.&%%w%%%%%%&.', '&%%w%%&%%%%%&',
+               '&%%%%&%%%&%%&', '&%%%%&%%%&%%&', '.&%%%&%%%&%&.', '..&&&&&&&&&..'],
+    grape1: ['...V...', '..jV...', '.jJVj..', '..jVJj.', '...Vj..', '...V...', '...V...', '...V...', '..VVV..'],
+    grape2: ['XWWWWWWWWWWWX', 'XVVVVVVVVVVVX', 'XjJjejjjJjejX', 'XJjeEjjJjeEjX', 'X.jEjJ.jjEj.X', 'X..jj...jj..X', 'X...j....j..X',
+             'X...........X', 'X...........X', 'X...........X', 'X...........X', 'X...........X', 'X...........X', 'X...........X'],
+    grape3: ['XWWWWWWWWWWWX', 'XVVVVVVVVVVVX', 'XjJjejjjJjejX', 'XJjeEjjJjeEjX', 'X.j66j.jj66.X', 'X.6766..6766X', 'X.6676..6676X',
+             'X..666...666X', 'X...76....76X', 'X....6.....6X', 'X...........X', 'X...........X', 'X...........X', 'X...........X'],
+    // 品目アイコン（12×12）
+    ic_tomato: ['............', '.....jj.....', '...jjJJjj...', '...@@jj@@...', '..@@@@@@@@..', '.@@w@@@@@@@.', '.@ww@@@@@@@.', '.@@@@@@@@@5.', '.@@@@@@@@55.', '..@@@@@@55..', '...555555...', '............'],
+    ic_corn: ['.....88.....', '....8898....', '....8988....', '...j8898j...', '...j8988j...', '..jj8898jj..', '..jj8988jj..', '..jjj889jj..', '...jjj8jj...', '....jjjj....', '.....GG.....', '.....GG.....'],
+    ic_strawberry: ['....j..j....', '...jjjjjj...', '..#jjjjjj#..', '.##########.', '.#y##y##y##.', '.##########.', '..#y##y##y..', '..########..', '...#y##y#...', '....####....', '.....##.....', '............'],
+    ic_pumpkin: ['.....tt.....', '.....tj.....', '...&%%%%&...', '..&%w%%%%&..', '.&%w%&%%&%&.', '.&%%%&%%&%&.', '.&%%%&%%&%&.', '.&%%%&%%&%&.', '..&%%&%%&&..', '...&&&&&&...', '............', '............'],
+    ic_grape: ['......jj....', '.....Vj.....', '...666666...', '..66766676..', '..67666766..', '...666666...', '...676676...', '....6666....', '....6766....', '.....66.....', '............', '............'],
+    ic_milk: ['.....AA.....', '....BAAB....', '....BLLB....', '...BLLLLB...', '..BLLLLLLB..', '..BLAAAALB..', '..BLAAAALB..', '..BLLLLLLB..', '..BLLLLLLB..', '..BL~LLLLB..', '..BL~~LLLB..', '...BBBBBB...'],
+    ic_bread: ['............', '............', '....oooo....', '..ooyyyyoo..', '.oyywyyyyyo.', '.oyoyyoyyoo.', '.oyyyyyyyyo.', '.oyyyyyyyyo.', '.oYYYYYYYYo.', '..oooooooo..', '............', '............'],
+    ic_jambread: ['............', '............', '....oooo....', '..ooyyyyoo..', '.oyywyyyyyo.', '.oy####yyyo.', '.oy####yyyo.', '.oyyyyyyyyo.', '.oYYYYYYYYo.', '..oooooooo..', '............', '............'],
+    ic_cheese: ['............', '............', '........88..', '......8888..', '....888888..', '..88888888..', '..89888988..', '..88898888..', '..88888898..', '..99999999..', '............', '............'],
+    ic_butter: ['............', '............', '....wwwww...', '...wwwwwwy..', '..wwwwwwwyy.', '..wwwwwwwyy.', '..yyyyyyyyy.', '.LLLLLLLLLLL', '.L~~~~~~~~~L', '..LLLLLLLLL.', '............', '............'],
+    ic_pizza: ['............', '....oooo....', '..ooyyyyoo..', '.oy@yy@yyyo.', '.oyyy8yy@yo.', 'oy@yyyy8yyyo', 'oyy8y@yyy@yo', 'oyyyyyy@yyyo', '.oy@yy8yyyo.', '.oyyy@yy@yo.', '..ooyyyyoo..', '....oooo....'],
+    ic_ppie: ['............', '............', '...oooooo...', '..o%%%%%%o..', '.o%%w%%%%%o.', '.o%%%%%%%%o.', '.o%%%%%%%%o.', '..o%%%%%%o..', '..oooooooo..', '...YYYYYY...', '............', '............'],
+    ic_gcake: ['............', '.....66.....', '....6776....', '..66666666..', '..6L6LL6L6..', '..LLLLLLLL..', '..yyyyyyyy..', '..LLLLLLLL..', '..yyyyyyyy..', '.~~~~~~~~~~.', '............', '............'],
+    // 牛（牧場が完成すると放牧柵の中に）
+    cow: ['.........0.', '.L00LLLLL0Q', 'LLLL00LLLL.', 'L00LLLLLL..', 'LLLLL00L...', '.0.0..0.0..'],
+  });
+  // ジャム・ソースの瓶（中身の色だけ違う）
+  const jar = (c, C) => ['............', '...XXXXXX...', '...XWWWWX...', '...XXXXXX...', '..FiiiiiiF..', '..F' + c.repeat(6) + 'F..', '..F' + c + 'w' + c.repeat(4) + 'F..',
+    '..F' + c + c + 'LL' + c + c + 'F..', '..F' + c + c + 'LL' + c + c + 'F..', '..F' + c.repeat(6) + 'F..', '..F' + C.repeat(6) + 'F..', '...FFFFFF...'];
+  SPR_SRC.ic_tsauce = jar('@', '5'); SPR_SRC.ic_sjam = jar('#', 'Z'); SPR_SRC.ic_gjam = jar('6', '7');
+
+  // 店の建物（36×40）：切妻屋根・壁・扉・窓。色と看板・日よけ・煙突を変えて各施設に
+  function makeShop(o) {
+    const W = 36, H = 40, g = mkGrid(W, H);
+    const rect = (x, y, w, h, c) => { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (j >= 0 && j < H && i >= 0 && i < W) g[j][i] = c; };
+    const [w1, w2, w3] = o.wall, [r1, r2, r3, ro] = o.roof;
+    rect(6, 20, 24, 18, w1); rect(20, 20, 10, 18, w2); rect(26, 20, 4, 18, w3);                 // 壁（左が明るく右が影）
+    if (o.beam) { rect(6, 20, 1, 18, o.beam); rect(17, 20, 1, 8, o.beam); rect(29, 20, 1, 18, o.beam); rect(6, 28, 24, 1, o.beam); }
+    for (let y = 8; y <= 19; y++) {                                                             // 屋根
+      const hw = Math.round(2 + (y - 8) * 14 / 11);
+      for (let x = 18 - hw; x < 18 + hw; x++) { const u = (x - (18 - hw)) / (2 * hw); g[y][x] = (y % 3 === 0) ? r3 : u < .3 ? r1 : u < .65 ? r2 : r3; }
+      g[y][18 - hw] = ro; g[y][18 + hw - 1] = ro;
+    }
+    rect(2, 19, 32, 1, ro);
+    if (o.chimney) { rect(24, 4, 6, 12, 'n'); rect(24, 4, 2, 12, 'b'); rect(29, 4, 1, 12, 'm'); for (let y = 6; y <= 15; y += 3) rect(24, y, 6, 1, 'B'); rect(23, 2, 8, 2, 'm'); rect(23, 2, 8, 1, 'B'); }
+    rect(9, 28, 6, 10, 'm'); rect(10, 29, 4, 9, o.door || 'u'); rect(12, 29, 1, 9, 'U'); g[34][13] = 'z';   // 扉
+    rect(19, 25, 9, 7, 'W'); rect(20, 26, 7, 5, 'v'); rect(23, 26, 1, 5, 'W'); rect(20, 28, 7, 1, 'W'); g[27][21] = 'i';   // 窓
+    if (o.awning) for (let x = 18; x < 30; x++) {                                               // 日よけ
+      const c = ((x >> 1) % 2) ? o.awning[0] : o.awning[1];
+      g[22][x] = c; g[23][x] = c; if (x % 2 === 0) g[24][x] = o.awning[0];
+    }
+    if (o.sign) {                                                                               // 看板（扉の上）
+      rect(7, 21, 8, 6, 'X'); rect(8, 22, 6, 4, 'W');
+      o.sign.forEach((row, j) => { for (let i = 0; i < row.length; i++) if (row[i] !== '.') g[22 + j][8 + i] = row[i]; });
+    }
+    if (o.extra) o.extra(g, rect);
+    rect(4, 38, 28, 1, 'B'); rect(4, 39, 28, 1, 'm');
+    return gridRows(g);
+  }
+  SPR_SRC.bakery = makeShop({ wall: ['a', 'b', 'B'], roof: ['q', 'c', 'C', 'x'], chimney: true, awning: ['I', 'L'],
+    sign: ['.oooo.', 'oyyyyo', 'oYyYyo', '.oooo.'] });
+  SPR_SRC.dairy = makeShop({ wall: ['L', '2', '~'], roof: ['i', 'A', 'D', 'm'], beam: 'A', chimney: true,
+    sign: ['..AA..', '.LLLL.', '.LAAL.', '.LLLL.'] });
+  SPR_SRC.jam = makeShop({ wall: ['a', 'b', 'B'], roof: ['Q', 'Z', '5', 'x'], beam: 'V', chimney: true, awning: ['Z', 'L'],
+    sign: ['.XXXX.', '.F##F.', '.F##F.', '.FFFF.'] });
+  SPR_SRC.restaurant = makeShop({ wall: ['a', 'b', 'B'], roof: ['J', 'j', 'e', 'E'], chimney: true, awning: ['e', 'L'],
+    sign: ['.~~~~.', '~L@8L~', '~L8@L~', '.~~~~.'],
+    extra: (g, rect) => { rect(2, 34, 3, 4, 'W'); rect(1, 33, 5, 1, 'I'); rect(31, 34, 3, 4, 'W'); rect(30, 33, 5, 1, 'I'); } });   // 外のテーブル
+  SPR_SRC.cake = makeShop({ wall: ['L', '2', 'Q'], roof: ['Q', 'Q', 'Z', 'x'], chimney: true, awning: ['Q', 'L'],
+    sign: ['..6...', '.6666.', '.LLLL.', '.yyyy.'],
+    extra: (g, rect) => { for (let x = 4; x < 32; x += 2) g[19][x] = 'L'; } });   // 屋根のふちに白いレース
+  // 牧場（赤い牛舎・腰折れ屋根）
+  SPR_SRC.ranch = (() => {
+    const W = 36, H = 40, g = mkGrid(W, H);
+    const rect = (x, y, w, h, c) => { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (j >= 0 && j < H && i >= 0 && i < W) g[j][i] = c; };
+    rect(5, 18, 26, 20, 'I'); rect(24, 18, 7, 20, '5');
+    for (let y = 4; y <= 17; y++) {
+      const hw = y < 10 ? Math.round(4 + (y - 4) * 1.4) : Math.round(12 + (y - 10) * 0.55);
+      for (let x = 18 - hw; x < 18 + hw; x++) g[y][x] = x < 18 ? (y % 3 === 0 ? 'R' : 'r') : (y % 3 === 0 ? 'x' : 'R');
+      g[y][18 - hw] = 'x'; g[y][18 + hw - 1] = 'x';
+    }
+    rect(3, 17, 30, 1, 'L');
+    rect(15, 11, 6, 4, 'L'); rect(16, 12, 4, 2, '8');                                     // 干し草の窓
+    rect(11, 25, 14, 13, 'L'); rect(12, 26, 12, 12, 'I');                                 // 大きな扉と白いX
+    for (let k = 0; k < 12; k++) { g[26 + k][12 + k] = 'L'; g[26 + k][23 - k] = 'L'; }
+    rect(4, 38, 28, 1, 'B'); rect(4, 39, 28, 1, 'm');
+    return gridRows(g);
+  })();
+  // 新しい施設の建設中・予定地は共通の絵
+  for (const k of ['bakery', 'ranch', 'dairy', 'jam', 'restaurant', 'cake']) { SPR_SRC[k + '_wip'] = SPR_SRC.kitchen_wip; SPR_SRC[k + '_site'] = SPR_SRC.mill_site; }
+  // 家（32×32）：町Lvで増える。屋根と壁の色で3種
+  function makeHouse(roof, wall) {
+    const W = 32, H = 32, g = mkGrid(W, H);
+    const rect = (x, y, w, h, c) => { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (j >= 0 && j < H && i >= 0 && i < W) g[j][i] = c; };
+    const [r1, r2, r3, ro] = roof, [w1, w2, w3] = wall;
+    rect(5, 16, 22, 14, w1); rect(18, 16, 9, 14, w2); rect(24, 16, 3, 14, w3);
+    for (let y = 4; y <= 15; y++) {
+      const hw = Math.round(2 + (y - 4) * 12 / 11);
+      for (let x = 16 - hw; x < 16 + hw; x++) { const u = (x - (16 - hw)) / (2 * hw); g[y][x] = (y % 3 === 1) ? r3 : u < .3 ? r1 : u < .65 ? r2 : r3; }
+      g[y][16 - hw] = ro; g[y][16 + hw - 1] = ro;
+    }
+    rect(2, 15, 28, 1, ro);
+    rect(8, 21, 5, 9, 'm'); rect(9, 22, 3, 8, 'u'); g[26][11] = 'z';
+    rect(17, 19, 7, 6, 'W'); rect(18, 20, 5, 4, 'v'); rect(20, 20, 1, 4, 'W'); g[21][18] = 'i';
+    rect(17, 25, 7, 1, 'X'); g[24][18] = '1'; g[24][20] = '3'; g[24][22] = '1';
+    rect(3, 30, 26, 1, 'B'); rect(3, 31, 26, 1, 'm');
+    return gridRows(g);
+  }
+  SPR_SRC.house0 = makeHouse(['l', 'r', 'R', 'x'], ['a', 'b', 'B']);
+  SPR_SRC.house1 = makeHouse(['i', 'A', 'D', 'm'], ['L', '2', '~']);
+  SPR_SRC.house2 = makeHouse(['J', 'j', 'e', 'E'], ['a', 'b', 'B']);
+  // 祭りの屋台（24×22）
+  function makeStall(c1, c2, goods) {
+    const W = 24, H = 22, g = mkGrid(W, H);
+    const rect = (x, y, w, h, c) => { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) g[j][i] = c; };
+    for (let y = 1; y < 7; y++) for (let x = 1 + (6 - y) % 2; x < 23; x++) g[y][x] = ((x >> 1) % 2) ? c1 : c2;
+    for (let x = 1; x < 23; x += 2) g[7][x] = c1;
+    rect(2, 8, 2, 13, 'V'); rect(20, 8, 2, 13, 'V');
+    rect(1, 13, 22, 2, 'W'); rect(1, 15, 22, 6, 'V'); rect(1, 15, 22, 1, 'X');
+    for (let i = 0; i < goods.length; i++) g[12][5 + i * 3] = goods[i];
+    return gridRows(g);
+  }
+  SPR_SRC.stall0 = makeStall('I', 'L', '@#8%6');
+  SPR_SRC.stall1 = makeStall('A', 'L', 'y6#@8');
+
   // 注文掲示板：小さな屋根つきのコルクボードに紙が3枚
   SPR_SRC.board = (() => {
     const W = 24, H = 24, g = Array.from({ length: H }, () => Array(W).fill('.'));
@@ -1761,25 +1995,37 @@
   document.querySelectorAll('img[data-icon]').forEach(im => { im.src = iconURL(im.dataset.icon); });
 
   // ---------- 地面タイル ----------
-  const TILE = { GRASS: 0, PLAZA: 1, STONE: 2, DIRT: 3, FIELD: 4 };
-  const ground = [];
-  const fillT = (r, v) => { for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) ground[y][x] = v; };
+  const TILE = { GRASS: 0, PLAZA: 1, STONE: 2, DIRT: 3, FIELD: 4, HILL: 5, CLIFF: 6, STAIRS: 7, WATER: 8, BRIDGE: 9, FEST: 10 };
+  // 地面のタイル表（最大範囲 WORLD。負の座標も持てるようにずらして持つ）
+  const ground = { x0: WORLD.x0, y0: WORLD.y0, w: WORLD.x1 - WORLD.x0, h: WORLD.y1 - WORLD.y0, a: [] };
+  const tileAt = (x, y) => (x < ground.x0 || y < ground.y0 || x >= ground.x0 + ground.w || y >= ground.y0 + ground.h) ? -1 : ground.a[(y - ground.y0) * ground.w + (x - ground.x0)];
+  const setTile = (x, y, v) => { if (tileAt(x, y) !== -1) ground.a[(y - ground.y0) * ground.w + (x - ground.x0)] = v; };
+  const fillT = (r, v) => { for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) setTile(x, y, v); };
   function layoutGround(lv) {
-    ground.length = 0;
-    for (let y = 0; y < MAP.h; y++) ground.push(new Array(MAP.w).fill(TILE.GRASS));
-    fillT(LAYOUT.plaza, TILE.PLAZA);
-    LAYOUT.path.forEach(r => fillT(r, TILE.STONE));
+    ground.a = new Array(ground.w * ground.h).fill(TILE.GRASS);
+    const H = LAYOUT.hill;
+    if (lv >= H.lv) {                                                     // 北の丘
+      fillT({ x: WORLD.x0, y: H.y0, w: ground.w, h: H.y1 - H.y0 }, TILE.HILL);
+      fillT({ x: WORLD.x0, y: H.y1, w: ground.w, h: 1 }, TILE.CLIFF);
+      setTile(H.stairsX, H.y1, TILE.STAIRS);
+    }
+    fillT(LAYOUT.plaza, lv >= LAYOUT.festLv ? TILE.FEST : TILE.PLAZA);
+    LAYOUT.path.forEach(r => { if (r.lv <= lv) fillT(r, TILE.STONE); });
     LAYOUT.aisle.forEach(r => { if (r.lv <= lv) fillT(r, TILE.DIRT); });
+    if (lv >= RIVER.lv) {                                                 // 南の川と橋
+      fillT({ x: WORLD.x0, y: RIVER.y, w: ground.w, h: RIVER.h }, TILE.WATER);
+      fillT({ x: LAYOUT.bridge.x, y: RIVER.y, w: LAYOUT.bridge.w, h: RIVER.h }, TILE.BRIDGE);
+    }
     LAYOUT.plots.slice(0, plotsForLevel(lv)).forEach(([x, y]) => fillT({ x, y, w: 2, h: 2 }, TILE.FIELD));
   }
-  layoutGround(townLevel());
+  layoutGround(8);                    // 木・花の配置は最大レベルの地面で決める（レベルが上がっても位置が変わらない）
 
   const px = (c, x, y, col, w = 1, h = 1) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
-  function paintGrass(c, ox, oy, r) {
-    const v = Math.floor(r() * 3);                   // 3種のバリエーション
-    px(c, ox, oy, '#86b552', T, T);
-    for (let k = 0; k < 16; k++) px(c, ox + Math.floor(r() * T), oy + Math.floor(r() * T), '#76a547');
-    for (let k = 0; k < 9; k++) px(c, ox + Math.floor(r() * T), oy + Math.floor(r() * T), '#9cc862');
+  function paintGrass(c, ox, oy, r, hill) {
+    const v = Math.floor(r() * 3);                   // 3種のバリエーション（丘は少し明るい黄緑）
+    px(c, ox, oy, hill ? '#9cc35c' : '#86b552', T, T);
+    for (let k = 0; k < 16; k++) px(c, ox + Math.floor(r() * T), oy + Math.floor(r() * T), hill ? '#8ab04f' : '#76a547');
+    for (let k = 0; k < 9; k++) px(c, ox + Math.floor(r() * T), oy + Math.floor(r() * T), hill ? '#b6d977' : '#9cc862');
     if (v === 1) for (let k = 0; k < 2; k++) {        // 草の房
       const x = ox + 2 + Math.floor(r() * 11), y = oy + 3 + Math.floor(r() * 10);
       px(c, x, y, '#5f8d3c'); px(c, x + 2, y, '#5f8d3c'); px(c, x + 1, y + 1, '#5f8d3c'); px(c, x + 1, y - 1, '#b3d874');
@@ -1813,18 +2059,56 @@
     px(c, ox + 8, oy + 1, '#b2a487', 1, 7); px(c, ox + 1, oy + 8, '#b2a487', T - 1, 1);
     px(c, ox + 1, oy + 1, '#e2d7be', 6, 1);
   }
-  function bakeGround() {
-    const cv = document.createElement('canvas'); cv.width = MAP.w * T; cv.height = MAP.h * T;
+  function paintFest(c, ox, oy, r, x, y) {           // 祭り広場：色タイルの市松と紙吹雪
+    const cols = ['#f1d6b0', '#e8c3c8', '#cfe0b8', '#f3e1a6'];
+    for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) px(c, ox + i * 8, oy + j * 8, cols[(x * 2 + i + (y * 2 + j) * 3) % 4], 8, 8);
+    px(c, ox, oy, '#b8a27e', T, 1); px(c, ox, oy, '#b8a27e', 1, T);
+    for (let k = 0; k < 5; k++) px(c, ox + 1 + Math.floor(r() * 14), oy + 1 + Math.floor(r() * 14), ['#e2453c', '#5d8ed4', '#f0d45a', '#9a63d6'][k % 4]);
+  }
+  function paintCliff(c, ox, oy, r) {                // 丘の崖：上は草、下は岩肌
+    paintGrass(c, ox, oy, r, true);
+    px(c, ox, oy + 6, '#7a684f', T, 10); px(c, ox, oy + 5, '#4f6b30', T, 1); px(c, ox, oy + 6, '#5a4a36', T, 1);
+    for (let k = 0; k < 6; k++) px(c, ox + Math.floor(r() * 14), oy + 8 + Math.floor(r() * 6), '#a89a7e', 2, 1);
+    for (let k = 0; k < 4; k++) px(c, ox + Math.floor(r() * 15), oy + 8 + Math.floor(r() * 7), '#5d5342', 1, 2);
+    px(c, ox, oy + 15, '#4f4636', T, 1);
+  }
+  function paintStairs(c, ox, oy) {
+    px(c, ox, oy, '#8d8068', T, T);
+    for (let k = 0; k < 4; k++) { px(c, ox + 2, oy + k * 4, '#d8ceb6', 12, 3); px(c, ox + 2, oy + k * 4 + 3, '#9a8e76', 12, 1); }
+  }
+  function paintWater(c, ox, oy, r, x, y) {
+    px(c, ox, oy, '#5ea7d6', T, T);
+    for (let k = 0; k < 3; k++) px(c, ox + Math.floor(r() * 12), oy + 2 + Math.floor(r() * 12), '#8fc7e8', 3 + Math.floor(r() * 3), 1);
+    for (let k = 0; k < 2; k++) px(c, ox + Math.floor(r() * 12), oy + 2 + Math.floor(r() * 12), '#4a93c8', 4, 1);
+    const isW = (xx, yy) => tileAt(xx, yy) === TILE.WATER || tileAt(xx, yy) === TILE.BRIDGE;
+    if (!isW(x, y - 1)) { px(c, ox, oy, '#c9b07c', T, 2); px(c, ox, oy + 2, '#3f86bd', T, 1); }   // 岸
+    if (!isW(x, y + 1)) { px(c, ox, oy + T - 2, '#c9b07c', T, 2); }
+  }
+  function paintBridge(c, ox, oy, r, x, y) {
+    paintWater(c, ox, oy, r, x, y);
+    px(c, ox, oy, '#b98a5c', T, T);
+    for (let k = 0; k < T; k += 4) px(c, ox, oy + k, '#8f6238', T, 1);
+    px(c, ox, oy, '#6b4a2c', 1, T); px(c, ox + T - 1, oy, '#6b4a2c', 1, T);
+  }
+  // 地面を焼く（表示範囲だけ）。戻り値は { cv, x, y }（x, y はドット座標の左上）
+  function bakeGround(lv) {
+    const B = BOUNDS(lv), cv = document.createElement('canvas');
+    cv.width = (B.x1 - B.x0) * T; cv.height = (B.y1 - B.y0) * T;
     const c = cv.getContext('2d');
-    for (let y = 0; y < MAP.h; y++) for (let x = 0; x < MAP.w; x++) {
-      const r = hash2(x, y), t = ground[y][x], ox = x * T, oy = y * T;
-      if (t === TILE.GRASS) paintGrass(c, ox, oy, r);
+    for (let y = B.y0; y < B.y1; y++) for (let x = B.x0; x < B.x1; x++) {
+      const r = hash2(x, y), t = tileAt(x, y), ox = (x - B.x0) * T, oy = (y - B.y0) * T;
+      if (t === TILE.GRASS || t === TILE.HILL) paintGrass(c, ox, oy, r, t === TILE.HILL);
       else if (t === TILE.PLAZA) paintPlaza(c, ox, oy, r);
+      else if (t === TILE.FEST) paintFest(c, ox, oy, r, x, y);
       else if (t === TILE.STONE) paintStone(c, ox, oy, r);
+      else if (t === TILE.CLIFF) paintCliff(c, ox, oy, r);
+      else if (t === TILE.STAIRS) paintStairs(c, ox, oy);
+      else if (t === TILE.WATER) paintWater(c, ox, oy, r, x, y);
+      else if (t === TILE.BRIDGE) paintBridge(c, ox, oy, r, x, y);
       else paintDirt(c, ox, oy, r);
       // 草との境目をギザギザにして馴染ませる
-      if (t !== TILE.GRASS && t !== TILE.FIELD) {
-        const isG = (xx, yy) => xx >= 0 && yy >= 0 && xx < MAP.w && yy < MAP.h && ground[yy][xx] === TILE.GRASS;
+      if (t === TILE.PLAZA || t === TILE.FEST || t === TILE.STONE || t === TILE.DIRT) {
+        const isG = (xx, yy) => tileAt(xx, yy) === TILE.GRASS;
         for (let k = 0; k < T; k++) {
           const d = () => (r() < .45 ? 1 : r() < .35 ? 2 : 0);
           if (isG(x, y - 1)) px(c, ox + k, oy, '#86b552', 1, d());
@@ -1834,15 +2118,15 @@
         }
       }
     }
-    // 地面の小物（花・草）：固定シードで散らす
+    // 地面の小物（花・草）：固定シードで最大範囲に散らし、表示範囲の分だけ描く
     const r = rngFrom(WORLD_SEED + 7);
-    for (let k = 0; k < 95; k++) {
-      const x = Math.floor(r() * MAP.w * T), y = Math.floor(r() * MAP.h * T);
-      if (ground[Math.floor(y / T)][Math.floor(x / T)] !== TILE.GRASS || reserved(x / T, y / T, 0)) continue;
-      const s = SPR[['fl1', 'fl2', 'fl3', 'tuft', 'tuft'][Math.floor(r() * 5)]];
-      c.drawImage(s, x, y);
+    for (let k = 0; k < 170; k++) {
+      const x = WORLD.x0 * T + Math.floor(r() * ground.w * T), y = WORLD.y0 * T + Math.floor(r() * ground.h * T), kind = Math.floor(r() * 5);
+      const tx = Math.floor(x / T), ty = Math.floor(y / T), t = tileAt(tx, ty);
+      if ((t !== TILE.GRASS && t !== TILE.HILL) || reserved(x / T, y / T, 0) || tx < B.x0 || ty < B.y0 || tx >= B.x1 || ty >= B.y1) continue;
+      c.drawImage(SPR[['fl1', 'fl2', 'fl3', 'tuft', 'tuft'][kind]], x - B.x0 * T, y - B.y0 * T);
     }
-    return cv;
+    return { cv, x: B.x0 * T, y: B.y0 * T };
   }
   function reserved(tx, ty, margin) {
     return LAYOUT.keepClear.some(z => tx >= z.x - margin && tx < z.x + z.w + margin && ty >= z.y - margin && ty < z.y + z.h + margin);
@@ -1897,42 +2181,53 @@
     statics.push({ y: B.y, shadow: [B.x, B.y - 1, 11, 3], draw: c => c.drawImage(sp, x, y) });
     return { x: x - 3, y: y - 3, w: sp.width + 6, h: sp.height + 6, cx: B.x, top: y };
   })();
-  // 柵（町レベルで広がる）
+  // 柵（町レベルで広がる。西と、Lv3からは東にも入口）
   let fenceObjs = [];
-  function buildFence(lv) {
-    const out = [], F = LAYOUT.fence(lv), P = SPR.post, RH = SPR.railH, RV = SPR.railV;
-    const inGate = y => y > F.gateFrom && y < F.gateTo;
+  function fenceRing(F, out) {
+    const P = SPR.post, RH = SPR.railH, RV = SPR.railV, g = F.gates || {};
+    const inG = (gate, y) => gate && y > gate[0] && y < gate[1];
+    const gateAt = (xx, y) => (xx === F.x0 && inG(g.w, y)) || (xx === F.x1 && inG(g.e, y));
     for (let x = F.x0; x <= F.x1; x += T) for (const yy of [F.y0, F.y1]) {
       out.push({ y: yy, shadow: [x, yy, 3, 1], draw: c => c.drawImage(P, x - 2, yy - 10) });
       if (x < F.x1) out.push({ y: yy - .1, draw: c => c.drawImage(RH, x + 2, yy - 9, T - 4, 7) });
     }
     for (const xx of [F.x0, F.x1]) for (let y = F.y0 + T; y < F.y1; y += T) {
-      const gate = xx === F.x0 && inGate(y);
-      if (!gate) out.push({ y, shadow: [xx, y, 3, 1], draw: c => c.drawImage(P, xx - 2, y - 10) });
+      if (!gateAt(xx, y)) out.push({ y, shadow: [xx, y, 3, 1], draw: c => c.drawImage(P, xx - 2, y - 10) });
     }
     for (const xx of [F.x0, F.x1]) for (let y = F.y0; y < F.y1; y += T) {
-      const y2 = y + T;
-      if (xx === F.x0 && (inGate(y) || inGate(y2) || (y === F.gateFrom && y2 > F.gateFrom))) continue;
+      const y2 = y + T, gate = xx === F.x0 ? g.w : xx === F.x1 ? g.e : null;
+      if (gate && (inG(gate, y) || inG(gate, y2) || (y === gate[0] && y2 > gate[0]))) continue;
       out.push({ y: y2 - .2, draw: c => c.drawImage(RV, xx - 2, y - 2, 4, T - 8) });
     }
     return out;
   }
-  // 木・草むら（固定シード）
+  const buildFence = lv => fenceRing(LAYOUT.fence(lv), []);
+  // 木・草むら（固定シード。最大範囲に置き、表示範囲の分だけ描く）
   {
     const r = rngFrom(WORLD_SEED + 3), placed = [];
     const tryPlace = (kind, n, minD) => {
-      for (let tries = 0; tries < 400 && n > 0; tries++) {
-        const tx = Math.floor(r() * MAP.w), ty = 1 + Math.floor(r() * (MAP.h - 1));
-        if (ground[ty][tx] !== TILE.GRASS || reserved(tx, ty, kind === 'bush' ? 0 : 1)) continue;
+      for (let tries = 0; tries < 900 && n > 0; tries++) {
+        const tx = WORLD.x0 + Math.floor(r() * ground.w), ty = WORLD.y0 + 1 + Math.floor(r() * (ground.h - 1)), t = tileAt(tx, ty);
+        if ((t !== TILE.GRASS && t !== TILE.HILL) || reserved(tx, ty, kind === 'bush' ? 0 : 1)) continue;
         if (placed.some(p => Math.hypot(p[0] - tx, p[1] - ty) < minD)) continue;
         placed.push([tx, ty]); n--;
         const s = SPR[kind], fx = tx * T + 8 + Math.floor(r() * 5) - 2, fy = ty * T + 14;
         const big = kind !== 'bush' && kind !== 'bushB';
-        statics.push({ y: fy, shadow: [fx + 1, fy - 1, big ? 9 : 5, big ? 3 : 2],
+        statics.push({ y: fy, fx, fy, shadow: [fx + 1, fy - 1, big ? 9 : 5, big ? 3 : 2],
           draw: c => c.drawImage(s, fx - (s.width >> 1), fy - s.height) });
       }
     };
-    tryPlace('oak', 9, 2.4); tryPlace('pine', 9, 2.2); tryPlace('bush', 6, 1.5); tryPlace('bushB', 5, 1.5);
+    tryPlace('oak', 18, 2.4); tryPlace('pine', 18, 2.2); tryPlace('bush', 11, 1.5); tryPlace('bushB', 9, 1.5);
+  }
+  // 家（町Lvで増える）
+  for (const h of LAYOUT.houses) {
+    const s = SPR['house' + h.v], fx = (h.tx + 1) * T, fy = (h.ty + 1) * T - 1;
+    statics.push({ y: fy, fx, fy, minLv: h.lv, house: true, shadow: [fx + 2, fy - 1, 15, 3.5], draw: c => c.drawImage(s, fx - (s.width >> 1), fy - s.height) });
+  }
+  // 祭り広場（Lv8）：屋台2軒
+  for (const [fx, fy, v] of [[40, 136, 0], [78, 102, 1]]) {
+    const s = SPR['stall' + v];
+    statics.push({ y: fy, fx, fy, minLv: LAYOUT.festLv, shadow: [fx, fy - 1, 12, 3], draw: c => c.drawImage(s, fx - (s.width >> 1), fy - s.height) });
   }
 
   // 区画の株の配置（3×3＝9株）
@@ -1969,19 +2264,19 @@
   // ---------- 漂う花びら・光の粒 ----------
   const particles = (() => {
     const r = rngFrom(WORLD_SEED + 11), list = [];
-    for (let k = 0; k < 44; k++) list.push({
-      x: r() * MAP.w * T, y: r() * MAP.h * T, ph: r() * 6.28,
-      kind: k < 22 ? 'petal' : 'mote', sp: .6 + r() * .8, col: r() < .7 ? '#f8b7c6' : '#fff1d6',
+    for (let k = 0; k < 80; k++) list.push({
+      x: WORLD.x0 * T + r() * ground.w * T, y: WORLD.y0 * T + r() * ground.h * T, ph: r() * 6.28,
+      kind: k < 40 ? 'petal' : 'mote', sp: .6 + r() * .8, col: r() < .7 ? '#f8b7c6' : '#fff1d6',
     });
     return list;
   })();
   function stepParticles(dt, t) {
-    const W = MAP.w * T, H = MAP.h * T;
+    const X0 = WORLD.x0 * T, Y0 = WORLD.y0 * T, W = ground.w * T, H = ground.h * T;
     for (const p of particles) {
       if (p.kind === 'petal') { p.x += (5 + 3 * Math.sin(t * .7 + p.ph)) * p.sp * dt; p.y += (2.2 + 1.5 * Math.sin(t * 1.3 + p.ph)) * p.sp * dt; }
       else { p.x += Math.sin(t * .3 + p.ph) * 1.6 * dt; p.y -= 1.2 * p.sp * dt; }
-      if (p.x > W + 4) p.x -= W + 8; if (p.x < -4) p.x += W + 8;
-      if (p.y > H + 4) p.y -= H + 8; if (p.y < -4) p.y += H + 8;
+      if (p.x > X0 + W + 4) p.x -= W + 8; if (p.x < X0 - 4) p.x += W + 8;
+      if (p.y > Y0 + H + 4) p.y -= H + 8; if (p.y < Y0 - 4) p.y += H + 8;
     }
   }
 
@@ -1991,14 +2286,15 @@
   const cam = { x: 150, y: 85, zoom: 1 };
   const scale = () => BASE * cam.zoom;
   // 下限倍率：マップが画面の幅・高さをちょうど覆う倍率（左右・上下に余白を出さない）
-  const zoomMin = () => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, VW / (MAP.w * T * BASE), VH / (MAP.h * T * BASE)));
+  const curBounds = () => { const b = BOUNDS(townLevel()); return { x0: b.x0 * T, y0: b.y0 * T, x1: b.x1 * T, y1: b.y1 * T }; };
+  const zoomMin = () => { const b = curBounds(); return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, VW / ((b.x1 - b.x0) * BASE), VH / ((b.y1 - b.y0) * BASE))); };
   const toWorld = (sx, sy) => ({ x: (sx - VW / 2) / scale() + cam.x, y: (sy - VH / 2) / scale() + cam.y });
   const toScreen = (wx, wy) => ({ x: (wx - cam.x) * scale() + VW / 2, y: (wy - cam.y) * scale() + VH / 2 });
   function clampCam() {
     cam.zoom = Math.min(ZOOM_MAX, Math.max(zoomMin(), cam.zoom));
-    const S = scale(), hw = VW / 2 / S, hh = VH / 2 / S, mw = MAP.w * T, mh = MAP.h * T;
-    cam.x = hw * 2 >= mw ? mw / 2 : Math.min(mw - hw, Math.max(hw, cam.x));
-    cam.y = hh * 2 >= mh ? mh / 2 : Math.min(mh - hh, Math.max(hh, cam.y));
+    const S = scale(), hw = VW / 2 / S, hh = VH / 2 / S, b = curBounds();
+    cam.x = hw * 2 >= b.x1 - b.x0 ? (b.x0 + b.x1) / 2 : Math.min(b.x1 - hw, Math.max(b.x0 + hw, cam.x));
+    cam.y = hh * 2 >= b.y1 - b.y0 ? (b.y0 + b.y1) / 2 : Math.min(b.y1 - hh, Math.max(b.y0 + hh, cam.y));
   }
   function resize() {
     DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -2010,8 +2306,8 @@
   }
   function framing() {            // 時計塔と畑の両方が入るカメラ（現在のカメラは変えずに目標値だけ返す）
     const keep = { x: cam.x, y: cam.y, zoom: cam.zoom };
-    // 時計塔と畑の両方が入る範囲（上下は UI の分だけ余白）
-    const x0 = 30, x1 = 290, y0 = townLevel() >= 2 ? FAC.mill.top - 6 : LAYOUT.tower.y - SPR.tower.height - 4, y1 = LAYOUT.fence(townLevel()).y1 + 6, padTop = 64, padBot = 84;
+    // 時計塔・畑・解放済みの施設が入る範囲（上下は UI の分だけ余白）。広すぎるときは下限倍率で中央を映す
+    const { x0, y0, x1, y1 } = contentBox(), padTop = 64, padBot = 84;
     const S = Math.min((VW - 32) / (x1 - x0), (VH - padTop - padBot) / (y1 - y0));
     cam.zoom = S / BASE;
     clampCam();
@@ -2022,6 +2318,13 @@
     const r = { x: cam.x, y: cam.y, zoom: cam.zoom };
     Object.assign(cam, keep);
     return r;
+  }
+  function contentBox() {
+    const lv = townLevel(), F = LAYOUT.fence(lv);
+    let x0 = LAYOUT.tower.x - 26, y0 = LAYOUT.tower.y - SPR.tower.height - 4, x1 = F.x1 + 10, y1 = F.y1 + 6;
+    for (const k of BUILDING_KEYS) if (facUnlocked(k)) { const f = FAC[k]; x0 = Math.min(x0, f.left - 4); x1 = Math.max(x1, f.left + 40); y0 = Math.min(y0, f.top - 6); y1 = Math.max(y1, f.y + 8); }
+    for (let i = 0; i < activePlots(); i++) { const R = plotRect(i); x0 = Math.min(x0, R.x - 6); x1 = Math.max(x1, R.x + R.w + 6); y0 = Math.min(y0, R.y - 8); y1 = Math.max(y1, R.y + R.h + 8); }
+    return { x0, y0, x1, y1 };
   }
   const initialCamera = () => Object.assign(cam, framing());
   let camTarget = null;           // 町Lvアップ時に、広がった畑が入る位置へゆっくり寄せる
@@ -2042,14 +2345,14 @@
     LIGHT = { warm, sun, vig, haze };
   }
 
-  // ---------- 施設（製粉所・キッチン）の描画 ----------
+  // ---------- 施設の描画（敷地 FACILITY_TILES から足元を決める） ----------
   const FAC = {};
   for (const k of BUILDING_KEYS) {
-    const F = LAYOUT.facilities[k], H = SPR[k].height;
-    FAC[k] = { x: F.x, y: F.y, left: F.x - (SPR[k].width >> 1), top: F.y - H, bubble: F.bubble };
+    const F = FACILITY_TILES[k], x = (F.tx + 1) * T, y = (F.ty + 2) * T - 2, H = SPR[k].height;
+    FAC[k] = { x, y, left: x - (SPR[k].width >> 1), top: y - H, bubble: LAYOUT.facBubble[k] || 1 };
   }
   const MILL_HUB = { x: 18, y: 19 };                              // 風車の羽根の中心（製粉所スプライト内）
-  const KITCHEN_CHIMNEY = { x: 27, y: 2 };                        // 煙突の口（キッチンスプライト内）
+  const CHIMNEY = { kitchen: { x: 27, y: 2 }, bakery: { x: 27, y: 2 }, restaurant: { x: 27, y: 2 }, cake: { x: 27, y: 2 }, dairy: { x: 27, y: 2 }, jam: { x: 27, y: 2 } };
   let millAngle = 0;
   const facUnlocked = k => townLevel() >= BUILDINGS[k].unlockLv;
   const facRunning = (k, t) => { const b = state.buildings[k]; return !!(b && t >= b.builtAt && b.job && t < b.job.readyAt); };
@@ -2057,6 +2360,12 @@
     const f = FAC[k];
     return bState(k) === 'none' ? { x: f.left - 2, y: f.y - 32, w: 40, h: 36 } : { x: f.left - 2, y: f.top - 2, w: 40, h: f.y - f.top + 6 };
   }
+  // 牧場の放牧柵と牛（牧場が完成したら）
+  const ranchExtras = (() => {
+    const P = LAYOUT.pasture, out = fenceRing({ x0: P.x0, x1: P.x1, y0: P.y0, y1: P.y1 }, []);
+    for (const [cx, cy, ph] of [[102, -44, 0], [124, -30, 2]]) out.push({ y: cy, shadow: [cx, cy, 6, 2], draw: c => c.drawImage(SPR.cow, cx - 5, cy - 6 + (Math.sin(performance.now() / 600 + ph) > .6 ? -1 : 0)) });
+    return out;
+  })();
   function pushFacilities(objs, t) {
     for (const k of BUILDING_KEYS) {
       if (!facUnlocked(k)) continue;
@@ -2071,6 +2380,7 @@
             c.drawImage(SPR.blades, -15.5, -15.5); c.restore();
           }
         } });
+      if (k === 'ranch' && st === 'built') for (const o of ranchExtras) objs.push(o);
     }
   }
   function gaugeBar(x, y, w, frac) {
@@ -2104,19 +2414,39 @@
           px(ctx, tx, by + 16, '#5a3a22', 4, 1); px(ctx, tx + 1, by + 17, '#5a3a22', 2, 1);
         } else {
           gaugeBar(f.x - 14, f.y + 4, 28, (t - b.job.startedAt) / (b.job.readyAt - b.job.startedAt));
-          if (k === 'kitchen') drawSmoke(f.left + KITCHEN_CHIMNEY.x, f.top + KITCHEN_CHIMNEY.y, ts);
+          if (CHIMNEY[k]) drawSmoke(f.left + CHIMNEY[k].x, f.top + CHIMNEY[k].y, ts);
         }
       }
     }
   }
+  // 祭り広場（Lv8）：旗の連なりとちょうちん
+  function drawFestival(ts) {
+    const poles = [[18, 82], [94, 82], [94, 142], [18, 142]];
+    for (const [x, y] of poles) { px(ctx, x, y - 26, '#6b4a2c', 2, 26); px(ctx, x - 1, y - 28, '#e9c055', 4, 3); }
+    const cols = ['#e2453c', '#f0d45a', '#5d8ed4', '#7fc24a', '#eea3bf'];
+    for (let s = 0; s < 4; s++) {
+      const [ax, ay] = poles[s], [bx, by] = poles[(s + 1) % 4], n = Math.max(4, Math.round(Math.hypot(bx - ax, by - ay) / 7));
+      for (let i = 0; i <= n; i++) {
+        const u = i / n, x = Math.round(ax + (bx - ax) * u + 1), y = Math.round(ay - 26 + (by - ay) * u + Math.sin(u * Math.PI) * 6);
+        px(ctx, x, y, '#5a3a22');
+        if (i < n && i % 1 === 0) { const sw = Math.round(Math.sin(ts * 3 + i) * .8); px(ctx, x, y + 1, cols[(i + s) % 5], 3, 2); px(ctx, x + 1 + sw, y + 3, cols[(i + s) % 5]); }
+      }
+    }
+    for (const [x, y] of [[40, 94], [66, 94], [40, 126], [66, 126]]) {   // ちょうちん
+      const a = .55 + .25 * Math.sin(ts * 2 + x);
+      ctx.globalAlpha = a; px(ctx, x - 3, y - 3, '#ffd27a', 8, 8); ctx.globalAlpha = 1;
+      px(ctx, x - 1, y - 1, '#d9503a', 4, 5); px(ctx, x, y - 2, '#5a3a22', 2, 1);
+    }
+  }
 
   // ---------- 描画 ----------
-  let GROUND = null, builtLevel = 0;
-  function rebuildWorld() {            // 町レベルが変わったとき：地面・柵を作り直す
-    const lv = townLevel();
+  let GROUND = null, builtLevel = 0, visStatics = [];
+  function rebuildWorld() {            // 町レベルが変わったとき：地面・柵・見える物（木・家・屋台）を作り直す
+    const lv = townLevel(), B = curBounds();
     layoutGround(lv);
-    GROUND = bakeGround();
+    GROUND = bakeGround(lv);
     fenceObjs = buildFence(lv);
+    visStatics = statics.filter(o => (o.minLv || 1) <= lv && (o.fx === undefined || (o.fx >= B.x0 - 4 && o.fx <= B.x1 + 4 && o.fy >= B.y0 + 8 && o.fy <= B.y1 + 4)));
     builtLevel = lv;
   }
   rebuildWorld();
@@ -2148,10 +2478,10 @@
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#2f4a2c'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     setWorldTransform();
-    ctx.drawImage(GROUND, 0, 0);
+    ctx.drawImage(GROUND.cv, GROUND.x, GROUND.y);
 
     // 区画の土
-    const objs = statics.concat(fenceObjs);
+    const objs = visStatics.concat(fenceObjs);
     pushFacilities(objs, t);
     state.plots.forEach((p, i) => {
       if (i >= AP) return;
@@ -2178,6 +2508,11 @@
       px(ctx, bx + 3, by + 11, '#5a3a22', 3, 1); px(ctx, bx + 4, by + 12, '#5a3a22', 1, 1);
     }
     drawFacilityMarkers(ts, t);
+    if (builtLevel >= LAYOUT.festLv) drawFestival(ts);
+    if (builtLevel >= RIVER.lv) for (let k = 0; k < 14; k++) {          // 川のきらめき
+      const x = ((k * 37 + ts * 9) % (ground.w * T)) + WORLD.x0 * T, y = RIVER.y * T + 4 + (k * 7) % 22;
+      if (Math.sin(ts * 2 + k) > .3) px(ctx, Math.round(x), y, '#d8f0ff', 2, 1);
+    }
     if (state.drill.day !== localDay() || state.drill.dayCount === 0) {      // 時計塔：今日まだドリルをしていなければ砂時計の吹き出し
       const bob = Math.round(Math.sin(ts * 3 + 1) * 1.5), bx = LAYOUT.tower.x + 16, by = 56 + bob;
       px(ctx, bx, by, '#5a3a22', 16, 16); px(ctx, bx + 1, by + 1, '#fff6e0', 14, 14);
@@ -2189,6 +2524,9 @@
     state.plots.forEach((p, i) => {
       if (i >= AP) return;
       const R = plotRect(i), st = stageOf(p, t);
+      if (plotNearRiver(i, builtLevel)) {                          // 川沿い（育成10%短縮）のしるし
+        px(ctx, R.x + 26, R.y + 2, '#3f86bd', 3, 4); px(ctx, R.x + 27, R.y + 1, '#3f86bd'); px(ctx, R.x + 27, R.y + 3, '#d8f0ff');
+      }
       if (!p) {
         ctx.globalAlpha = .55 + .25 * Math.sin(ts * 2.4 + i);
         const cx = R.x + 16, cy = R.y + 16;
@@ -2246,9 +2584,14 @@
     const cap = k[0].toUpperCase() + k.slice(1), wrap = document.createElement('span');
     wrap.className = 'stock'; wrap.id = 'stock' + cap; wrap.title = ITEMS[k].name;
     wrap.innerHTML = '<img class="px" src="' + iconURL(ITEMS[k].icon) + '" alt="' + ITEMS[k].name + '"><span id="s' + cap + '">0</span>';
-    $('stocks').appendChild(wrap); stockEls[k] = { wrap, num: wrap.lastChild };
+    $('stocks').appendChild(wrap); stockEls[k] = { wrap, num: wrap.lastChild, proc: !!ITEMS[k].recipe && k !== 'milk' };
   }
-  const itemVisible = k => ITEMS[k].building ? (bState(ITEMS[k].building) === 'built' || state.storage[k] > 0) : ITEMS[k].unlockLv <= townLevel();
+  const procChip = document.createElement('span');
+  procChip.className = 'stock'; procChip.id = 'stockProc'; procChip.title = '加工品（倉庫パネルで一覧）';
+  procChip.innerHTML = '<img class="px" src="' + iconURL('ic_bread') + '" alt="加工品"><span>0</span>';
+  $('stocks').appendChild(procChip);
+  // 倉庫に表示する品目：作物は町Lvで解放済み、加工品は注文に出せる（施設完成・レシピ解放・材料あり）か、在庫がある
+  const itemVisible = k => (ITEMS[k].recipe ? itemAvailable(k, townLevel(), state.buildings) : ITEMS[k].unlockLv <= townLevel()) || state.storage[k] > 0;
   function updateHud() {
     const lv = townLevel(), exp = state.townExp, st = state.storage;
     const D = state.drill;
@@ -2264,14 +2607,23 @@
       $('expText').textContent = exp + '/' + need;
     }
     $('sGold').textContent = state.gold;
-    for (const k of ITEM_KEYS) { stockEls[k].num.textContent = st[k]; stockEls[k].wrap.style.display = itemVisible(k) ? '' : 'none'; }
+    // 見える品目が7つまでなら全て並べる。それより多いときは作物・牛乳だけ並べ、加工品は「加工品 ×合計」にまとめる
+    const vis = ITEM_KEYS.filter(itemVisible), compact = vis.length > 7;
+    let procSum = 0;
+    for (const k of ITEM_KEYS) {
+      const e = stockEls[k], show = vis.includes(k) && !(compact && e.proc);
+      e.num.textContent = st[k]; e.wrap.style.display = show ? '' : 'none';
+      if (compact && e.proc && vis.includes(k)) procSum += st[k];
+    }
+    procChip.style.display = compact ? '' : 'none'; procChip.lastChild.textContent = '加工品 ' + procSum;
+    $('warehouse').classList.toggle('compact', compact);
     $('dexHudNum').textContent = GA.dexCount(state.gacha) + '/' + GA.ITEMS.length;
     $('dhStock').textContent = fmtStock(D.stock); $('dhShards').textContent = D.shards; $('dhTickets').textContent = D.tickets;
   }
   let toastTimer = 0;
-  function toast(msg) {
+  function toast(msg, ms) {
     const el = $('toast'); el.textContent = msg; el.style.display = 'block';
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.style.display = 'none'; }, 4200);
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.style.display = 'none'; }, ms || 4200);
   }
 
   // ---------- 作物パレット／作物選択ポップアップ ----------
@@ -2288,15 +2640,17 @@
     if (!locked) b.onclick = onclick;
     return b;
   }
+  // 作物パレットに並べる作物：解放済み＋次に解放される1種（町Lvで並び順どおりに増える）
+  function paletteCrops() { const lv = townLevel(), open = CROP_KEYS.filter(k => CROPS[k].unlockLv <= lv), next = CROP_KEYS.find(k => CROPS[k].unlockLv > lv); return next ? open.concat(next) : open; }
   function buildPalette() {
     pal.innerHTML = '';
-    for (const k of CROP_KEYS) pal.appendChild(cropBtn(k, () => { selected = selected === k ? null : k; buildPalette(); }, selected === k));
+    for (const k of paletteCrops()) pal.appendChild(cropBtn(k, () => { selected = selected === k ? null : k; buildPalette(); }, selected === k));
   }
   const popup = $('popup');
   let popupPlot = -1;
   function buildPopupRow() {
     const row = $('popupRow'); row.innerHTML = '';
-    for (const k of CROP_KEYS) row.appendChild(cropBtn(k, () => {
+    for (const k of paletteCrops()) row.appendChild(cropBtn(k, () => {
       const i = popupPlot; closePopup();
       selected = k; buildPalette();
       if (i >= 0) plant(i, k);
@@ -2355,12 +2709,13 @@
 
   // ---------- 施設パネル（建設予定地／建設中／加工）。建物・レシピ定義から生成 ----------
   const fmtTime = ms => { const sec = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
+  const fmtDur = ms => { const sec = Math.round(ms / 1000), m = Math.floor(sec / 60), x = sec % 60; return m + '分' + (x ? x + '秒' : ''); };
   const facRecipes = k => Object.keys(RECIPES).filter(rk => RECIPES[rk].building === k);
   let curFac = 'mill', facRenderedSig = '';
   function facSig(k) {
     const st = bState(k), b = state.buildings[k], t = now();
     const job = b && b.job ? (t >= b.job.readyAt ? 'done' : 'run') : 'none';
-    return [k, st, job, state.gold >= BUILDINGS[k].cost, facRecipes(k).map(canCraft).join()].join('|');
+    return [k, st, job, state.gold >= BUILDINGS[k].cost, facRecipes(k).map(canCraft).join(), townLevel(), facNeighbors(k, state.buildings, t).join()].join('|');
   }
   function mkBtn(label, disabled, onclick) {
     const b = document.createElement('button'); b.className = 'tool pix act'; b.textContent = label; b.disabled = disabled;
@@ -2395,11 +2750,13 @@
       }
       for (const rk of facRecipes(k)) {
         const r = RECIPES[rk], pr = r.product, ok = canCraft(rk), busy = !!b.job;
-        const ins = Object.entries(r.inputs).map(([ik, n]) => iconImg(ik) + ITEMS[ik].name + ' <span class="' +
+        const lockedR = (r.unlockLv || 1) > townLevel(), adj = facNeighbors(k, state.buildings, now()).length > 0;
+        const ins = !Object.keys(r.inputs).length ? '<span>材料なし</span>' : Object.entries(r.inputs).map(([ik, n]) => iconImg(ik) + ITEMS[ik].name + ' <span class="' +
           (state.storage[ik] >= n ? '' : 'short') + '">' + state.storage[ik] + '/' + n + '</span>').join(' ＋ ');
         const row = document.createElement('div'); row.className = 'mrow';
         row.innerHTML = '<div class="recipe">' + ins + ' → ' + iconImg(pr.key) + '<span>' + pr.name + ' ×' + pr.qty +
-          '<small>加工 ' + (r.ms / 60000) + '分 ／ 単価 ' + pr.price + 'G</small></span></div>';
+          '<small>加工 ' + fmtDur(r.ms) + (adj ? '→' + fmtDur(shorten(r.ms)) + '（隣接 −10%）' : '') + ' ／ 単価 ' + pr.price + 'G ／ 経験値 ' + pr.orderExp + '</small></span></div>';
+        if (lockedR) { row.appendChild(mkBtn('町Lv' + r.unlockLv + 'で解放', true)); body.appendChild(row); continue; }
         row.appendChild(mkBtn(busy ? (now() >= b.job.readyAt ? '受け取り待ち' : '加工中') : ok ? '加工開始' : '材料が足りません', busy || !ok, () => { if (startJob(k, rk)) renderFac(); }));
         body.appendChild(row);
       }
@@ -2737,11 +3094,27 @@
     el.addEventListener('pointerdown', e => { if (e.target === el) { el.style.display = 'none'; if (id === 'popup') popupPlot = -1; if (id === 'drillPanel') ds = null; } });
   }
 
+  const REGION_TEXT = { 3: '東の加工エリア', 4: '北の丘', 5: '南の川', 8: '祭り広場' };
+  function levelUpText(lv) {
+    const names = a => a.join('・');
+    const crops = CROP_KEYS.filter(k => CROPS[k].unlockLv === lv).map(k => CROPS[k].name);
+    const facs = BUILDING_KEYS.filter(k => BUILDINGS[k].unlockLv === lv).map(k => BUILDINGS[k].name);
+    const recs = Object.values(RECIPES).filter(r => r.unlockLv === lv).map(r => r.product.name);
+    const plots = plotsForLevel(lv) - plotsForLevel(lv - 1), houses = LAYOUT.houses.filter(h => h.lv === lv).length;
+    const parts = [];
+    if (crops.length) parts.push('作物：' + names(crops));
+    if (facs.length) parts.push('施設：' + names(facs));
+    if (recs.length) parts.push('レシピ：' + names(recs));
+    if (plots) parts.push('畑 +' + plots + '区画（計' + plotsForLevel(lv) + '）');
+    if (REGION_TEXT[lv]) parts.push(REGION_TEXT[lv] + 'が広がりました');
+    if (houses) parts.push('家が' + houses + '軒ふえました');
+    return '町Lv' + lv + '！ ' + parts.join('／');
+  }
   onLevelUp = lv => {
     hudSig = '';
     buildPalette(); buildPopupRow();
     rebuildWorld(); camTarget = framing();
-    toast('町Lv' + lv + '！ じゃがいも・畑の3区画・製粉所とキッチンの建設予定地が解放されました');
+    toast(levelUpText(lv), 7000);
   };
 
   // ---------- 操作：区画のなぞり／カメラ移動／ズーム ----------
@@ -2847,9 +3220,15 @@
     kitchenCenter: () => window.__clockseed.facCenter('kitchen'),
     lastGacha: () => JSON.parse(JSON.stringify(lastGacha)),
     towerCenter: () => toScreen(LAYOUT.tower.x, LAYOUT.tower.y - 30),
+    overview: () => { const b = curBounds(), padT = 110, padB = 70; camTarget = null; cam.zoom = Math.min(VW / (b.x1 - b.x0), (VH - padT - padB) / (b.y1 - b.y0)) / BASE; cam.x = (b.x0 + b.x1) / 2; cam.y = (b.y0 + b.y1) / 2 - (padT - padB) / 2 / scale(); },   // 検品用：表示範囲全体を映す（見た目だけ）
+    lookAt: (x, y, z) => { camTarget = null; cam.zoom = z; cam.x = x; cam.y = y; },                                                                                                          // 検品用：指定の位置を映す（見た目だけ）
+    mapInfo: () => ({ level: townLevel(), bounds: curBounds(), plots: activePlots(), houses: visStatics.filter(o => o.house).length, festival: builtLevel >= LAYOUT.festLv, river: builtLevel >= RIVER.lv, hill: builtLevel >= LAYOUT.hill.lv,
+      riverPlots: LAYOUT.plots.map((_, i) => i).filter(i => i < activePlots() && plotNearRiver(i, townLevel())), facilities: BUILDING_KEYS.filter(k => facUnlocked(k)), crops: paletteCrops().filter(k => CROPS[k].unlockLv <= townLevel()) }),
+    facPos: k => ({ x: FAC[k].x, y: FAC[k].y, top: FAC[k].top }),
+    plotRectW: i => plotRect(i),
     drillAnswerIndex: () => (ds && ds.set[ds.i] ? ds.set[ds.i].answer : -1),
     timers: () => timers().map(x => ({ id: x.id, remaining: x.ready - now(), dur: origDur(x) })),
-    viewport: () => ({ w: VW, h: VH, mapW: MAP.w * T, mapH: MAP.h * T, zoomMin: zoomMin() }),
+    viewport: () => { const b = curBounds(); return { w: VW, h: VH, mapX0: b.x0, mapY0: b.y0, mapW: b.x1, mapH: b.y1, zoomMin: zoomMin() }; },
     camera: () => ({ x: cam.x, y: cam.y, zoom: cam.zoom }),
     spriteSizes: () => Object.fromEntries(Object.entries(SPR).map(([k, v]) => [k, [v.width, v.height]])),
   };

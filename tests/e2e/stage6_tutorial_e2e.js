@@ -13,7 +13,7 @@ async function follow(note){const t=await tut();if(t.dom){const hl=await pg.$eva
   else log('   ['+t.step+'] '+t.text+'（目印なし）'+(note||''));await pg.waitForTimeout(250);await gfxSkip();}
 // 段階7：ガチャの演出（カプセル）はタップで早送りして閉じる
 async function gfxSkip(){for(let k=0;k<30&&(await pg.evaluate(()=>window.__clockseed.gachaFx().active));k++){await pg.mouse.click(10,400);await pg.waitForTimeout(60);}}
-async function answer5(){for(let k=0;k<5;k++){const i=await pg.evaluate(()=>window.__clockseed.drillAnswerIndex());await pg.locator('.choice').nth(i).click();await pg.waitForTimeout(1100);}}
+async function answer5(){for(let k=0;k<5;k++){const i=await pg.evaluate(()=>window.__clockseed.drillAnswerIndex());await pg.locator('.choice').nth(i).click();await pg.waitForTimeout(1000);await pg.waitForFunction(()=>document.querySelector('.dres')||document.querySelector('.choice:not([disabled])'),null,{timeout:10000});}}   // 段階7：つぎの問題が出るまで待つ（負荷で遅れても安定）
 const close=async id=>{if(await pg.isVisible('#'+id)){const c=await pg.$('#'+id+' .panelhd button, #'+id+' button[id$="Close"]');if(c)await c.click();else await pg.keyboard.press('Escape');await pg.waitForTimeout(150);}};
 // ===== 1. 新規セーブで通しで進める（?debug=1&fast=4：育成・建設・加工が4倍速） =====
 await fresh('?debug=1&fast=4');
@@ -68,7 +68,7 @@ for(const at of [1,4,6]){
   await fresh('?debug=1&fast=4');
   if(at>=4){await pg.evaluate(at=>{const s=JSON.parse(localStorage.getItem('clockseed.save'));s.storage.wheat=3;s.tutorial.step=at;s.tutorial.sets=1;s.drill.shards=10;s.drill.stock=40;if(at===6){s.tutorial.tickets=2;s.tutorial.granted=true;s.tutorial.flags={d1:true,pull:true};s.gacha.items.sd01=1;s.gacha.dex.sd01=1;s.gacha.firstUsed=true;s.townExp=10;s.gold=39;s.storage.wheat=0;}localStorage.setItem('clockseed.save',JSON.stringify(s));},at);await pg.reload();await pg.waitForTimeout(400);}
   else {await follow();await follow();}
-  const before=await st();await pg.locator('#tutSkip').click();await pg.waitForTimeout(150);await pg.locator('#skipYes').click();await pg.waitForTimeout(200);const after=await st();   // 段階7：確認の「スキップする」t=await tut();
+  const before=await st();await pg.locator('#tutSkip').click();await pg.waitForTimeout(150);await pg.locator('#skipYes').click();await pg.waitForTimeout(200);const after=await st();t=await tut();   // 段階7：確認の「スキップする」を押す
   const c=await pg.evaluate(()=>window.__clockseed.towerCenter());await pg.mouse.click(c.x,c.y);await pg.waitForTimeout(200);
   const gb=(await pg.locator('.gbox').innerText()).replace(/\s+/g,' ').slice(0,70);
   await pg.locator('#drillStartBtn').click();await answer5();const s5=await st();await close('drillPanel');

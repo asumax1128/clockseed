@@ -222,6 +222,15 @@
   .trow .tool{font-size:14px;padding:6px 12px}
   .tseeds{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}.tseed{font-size:12px;padding:3px 8px 3px 4px;gap:4px}.tseed img{width:22px;height:22px}
   .tmsg{font-size:13px;min-height:18px;margin-top:4px}.tmsg.ng{color:#b0402a}.tmsg.ok{color:#2f7d32;font-weight:bold}
+  #tutBar{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:10px;padding:6px 8px 6px 12px;
+    max-width:min(640px,calc(100% - 24px));font-weight:bold;font-size:15px;background:#fff6e0;box-shadow:0 0 0 3px #ff9a5c}
+  body:has(#variantBar[style*="flex"]) #tutBar{bottom:132px}
+  #tutStep{background:#ff7b5c;color:#fff;border-radius:10px;padding:1px 8px;font-size:12px;flex-shrink:0}
+  #tutText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  #tutSkip{flex-shrink:0;font-size:12px;padding:3px 10px;border:2px solid #b8946a;background:#fff;border-radius:6px;cursor:pointer;color:#5a3a22}
+  .tut-hl{outline:4px solid #ff7b5c!important;outline-offset:2px;animation:tutPulse 1s ease-in-out infinite;position:relative;z-index:2}
+  @keyframes tutPulse{0%,100%{outline-color:#ff7b5c}50%{outline-color:#ffd54a}}
+  .glock{font-size:13px;color:var(--ink-soft)}.gbtns .gticket{background:#ffe8c8}
   #visitBar{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:12px;align-items:center;padding:8px 10px 8px 16px;font-weight:bold;font-size:15px;background:#fff6e0}
   #visitBar small{font-weight:normal;font-size:12px;margin-left:6px;color:var(--ink-soft)}#visitBar .tool{font-size:15px;padding:6px 14px;white-space:nowrap}
   body.visiting #gold,body.visiting #warehouse,body.visiting #palette,body.visiting #variantBar,body.visiting #subHud,body.visiting #title{display:none!important}
@@ -350,6 +359,7 @@
   <div id="popupVarWrap" style="display:none"><div class="vlabel">変種（ガチャで解放した種）</div><div class="row" id="popupVar"></div></div>
   <button class="cancel" id="popupCancel">やめる</button>
 </div></div>
+<div id="tutBar" class="pix" style="display:none"><span id="tutStep"></span><span id="tutText"></span><button id="tutSkip">スキップ</button></div>
 <div id="tradePanel" class="overlay"><div class="box pix tradebox">
   <div class="panelhd"><b>交換掲示板</b><button id="tradeClose" aria-label="閉じる">×</button></div>
   <div id="tradeBody"></div>
@@ -1646,14 +1656,17 @@
 (() => {
   'use strict';
   const SAVE_KEY = 'clockseed.save';
-  const SAVE_VERSION = 11;
+  const SAVE_VERSION = 12;
   const MAX_PLOTS = 24;                // 区画の最大数（町Lv8で24）
   const ORDER_COUNT = 3;               // 同時に出る注文の数
   const ORDER_MIN = 3, ORDER_MAX = 9;  // 生の作物の注文の個数の範囲
   const TOWN_LV_EXP = [0, 30, 120, 300, 600, 1100, 1800, 2800];   // 町経験値の累計がこの値に達するとLv(添字+1)。Lv8が最大
 
   // デバッグ：?fast=N で育成・建設・加工の時間をN分の1に（開始時点の倍速で終了時刻を確定）
+  // デバッグ（検品用）：?debug=1 のときだけ ?fast と window.__clockseed（正解の位置などを読む API）を有効にする
+  const DEBUG = new URLSearchParams(location.search).get('debug') === '1';
   const FAST = (() => {
+    if (!DEBUG) return 1;
     const v = parseFloat(new URLSearchParams(location.search).get('fast'));
     return isFinite(v) && v > 0 ? v : 1;
   })();
@@ -1806,14 +1819,20 @@
     return o;
   }
   const freshBuffs = () => ({ fert: 0, fertPlus: 0, double: 0, boost: 0 });     // 消耗品の予約数
+  // チュートリアル：step＝いまの手順（1〜9）、done＝終了（完了またはスキップ）、sets＝チュートリアル中に終えたドリルのセット数、
+  // mark＝手順8に入ったときの sets、flags＝順番に関係なく満たした条件（小麦の納品・チケットでのガチャ）、tickets＝チュートリアルチケット（終了後も残る）
+  const freshTutorial = () => ({ done: false, step: 1, sets: 0, mark: 0, flags: {}, tickets: 0, granted: false });
   const freshHelpers = () => ({ keeperDay: '', peddlerDay: '', peddler: null, crowSeen: [] });
   function freshState() {
     const st = { saveVersion: SAVE_VERSION, plots: Array(MAX_PLOTS).fill(null),
                  storage: {}, gold: 0, townExp: 0, orders: [], orderIds: [], nextOrder: null, buildings: {}, drill: freshDrill(), gacha: window.ClockseedGacha.freshState(),
                  buffs: freshBuffs(), helpers: freshHelpers(), decor: { treeAt: 0 },
-                 trade: { uid: window.ClockseedCode.randomId(6), stock: {}, received: [] } };
+                 trade: { uid: window.ClockseedCode.randomId(6), stock: {}, received: [] },
+                 tutorial: freshTutorial() };
     for (const k of ITEM_KEYS) st.storage[k] = 0;
     for (const k of BUILDING_KEYS) st.buildings[k] = null;
+    // 新しいセーブ：チュートリアル用に最初の2件を固定（小麦×3・にんじん×3）。3件目はふつうの注文
+    st.orders = [{ crop: 'wheat', qty: 3 }, { crop: 'carrot', qty: 3 }]; st.orderIds = [newOrderId(), newOrderId()];
     while (st.orders.length < ORDER_COUNT) { st.orders.push(takeOrder(st, 1)); st.orderIds.push(newOrderId()); }
     return st;
   }
@@ -1867,6 +1886,12 @@
       // 世界樹の苗の初回入手日時（version 8 以前には無い。すでに持っていれば移行した時刻を入手日とする）
       if (d.decor && isFinite(d.decor.treeAt) && d.decor.treeAt > 0) s.decor.treeAt = d.decor.treeAt;
       else if (s.gacha.items.dc14) s.decor.treeAt = Date.now();
+      // チュートリアル（version 11 以前には無い → すでに遊んでいるセーブなので「チュートリアル済み」として扱う。チケットは0枚）
+      const tu = d.tutorial;
+      if (tu && typeof tu === 'object') {
+        s.tutorial = { done: !!tu.done, step: Math.min(10, Math.max(1, nat(tu.step) || 1)), sets: nat(tu.sets), mark: nat(tu.mark),
+          flags: { d1: !!(tu.flags && tu.flags.d1), pull: !!(tu.flags && tu.flags.pull) }, tickets: Math.min(99, nat(tu.tickets)), granted: !!tu.granted };
+      } else s.tutorial = Object.assign(freshTutorial(), { done: true, step: 10 });
       // 交換掲示板（version 10 以前には無い → 新しい発行元ID・ストック0・受け取り記録なし）
       const dt = d.trade || {};
       if (typeof dt.uid === 'string' && /^[0-9A-Z]{6}$/.test(dt.uid)) s.trade.uid = dt.uid;
@@ -2026,6 +2051,21 @@
     if (state.gacha.items.dc14 && !state.decor.treeAt) state.decor.treeAt = now();   // 世界樹の苗：初めて入手した日時
     lastGacha = out; save(); return out;
   }
+  function ticketPull() {
+    const T = state.tutorial, g = state.gacha;
+    if (T.tickets < 1) return null;
+    T.tickets -= 1;
+    let r;
+    if (!T.done && !T.flags.pull) {                          // チュートリアルの1回目：まる小麦に固定。天井カウント（pity）は進めない
+      const it = GA.byId[GA.FIRST_ID], isNew = !g.dex[it.id];
+      g.dex[it.id] = 1; g.firstUsed = true; g.total += 1;
+      r = { id: it.id, cat: it.cat, rarity: it.r, isNew, fixed: true, forced: null, dup: null, fert: 0, shards: 0, units: 0, tutorial: true };
+      if (g.items[it.id]) { g.items[GA.FERT_ID] += GA.DUP_FERT; r.dup = 'fert'; r.fert = GA.DUP_FERT; } else g.items[it.id] = 1;
+      T.flags.pull = true;
+    } else { r = GA.pullOnce(g, Math.random); state.drill.shards += r.shards; }   // ふつうの1回（カケラの代わりにチケット）
+    if (g.items.dc14 && !state.decor.treeAt) state.decor.treeAt = now();
+    lastGacha = [r]; save(); return [r];
+  }
   const ownedCount = id => state.gacha.items[id] || 0;
   // 使える消耗品（今回の範囲）：時の砂は時短ストックに加算（上限で頭打ち）、即完成券は即完了チケット+1
   const CONS_USE = { cs02: { sec: 600 }, cs05: { sec: 1800 }, cs06: { ticket: 1 },
@@ -2163,13 +2203,16 @@
     return (it.vBonus || 0) + Math.min(MOD_CAP, mod);
   }
   const unitPrice = k => Math.floor((ITEMS[k].price * (100 + priceBonus(k)) + 99) / 100);
-  const orderReward = o => ({ gold: Math.floor((unitPrice(o.crop) * o.qty * 13 + 9) / 10), exp: charmExp(ITEMS[o.crop].orderExp) });   // 魅力 → ブーストの順
+  // チュートリアル中（町Lv1）のにんじんの注文は、納品すると町Lv2にちょうど届く経験値にする（2件目の納品でLv2）
+  const tutExp = (o, exp) => (state.tutorial && !state.tutorial.done && o.crop === 'carrot' && townLevelOf(state.townExp) === 1 ? Math.max(exp, TOWN_LV_EXP[1] - state.townExp) : exp);
+  const orderReward = o => ({ gold: Math.floor((unitPrice(o.crop) * o.qty * 13 + 9) / 10), exp: tutExp(o, charmExp(ITEMS[o.crop].orderExp)) });   // 魅力 → ブーストの順
   const BOOST_RATE = 1.5;                            // 注文ブースト券：次の納品1件だけ町経験値+50%（端数切り上げ）
   function useBoost(exp) { if (state.buffs.boost > 0) { state.buffs.boost -= 1; return { exp: Math.ceil(exp * BOOST_RATE), boosted: true }; } return { exp, boosted: false }; }
   function deliver(i) {
     const o = state.orders[i];
     if (!o || state.storage[o.crop] < o.qty) return false;
     const r = orderReward(o), b = useBoost(r.exp);
+    if (!state.tutorial.done && o.crop === 'wheat') state.tutorial.flags.d1 = true;   // チュートリアル：小麦の注文を納品した
     state.storage[o.crop] -= o.qty;
     state.gold += r.gold;
     gainExp(b.exp);                                  // 先に経験値を加算（Lvが上がれば新作物も注文に出る）
@@ -3608,7 +3651,7 @@
   function framing() {            // 時計塔と畑の両方が入るカメラ（現在のカメラは変えずに目標値だけ返す）
     const keep = { x: cam.x, y: cam.y, zoom: cam.zoom };
     // 時計塔・畑・解放済みの施設が入る範囲（上下は UI の分だけ余白）。広すぎるときは下限倍率で中央を映す
-    const { x0, y0, x1, y1 } = contentBox(), padTop = 64, padBot = 84;
+    const { x0, y0, x1, y1 } = contentBox(), padTop = state.tutorial && !state.tutorial.done ? 150 : 64, padBot = 84;   // チュートリアル中は案内の帯の分だけ上を空ける
     const S = Math.min((VW - 32) / (x1 - x0), (VH - padTop - padBot) / (y1 - y0));
     cam.zoom = S / BASE;
     clampCam();
@@ -3975,6 +4018,7 @@
       }
     });
     drawLampLight(ctx, ts, t);
+    drawTutArrow(ctx, ts);
     // 花びら
     for (const p of particles) if (p.kind === 'petal') {
       const flip = Math.sin(ts * 3 + p.ph) > 0;
@@ -3998,6 +4042,7 @@
     ctx.globalCompositeOperation = 'source-over';
 
     if (!visit) helperTick(t);                         // 見学中はお手伝い（自動の受け取り・通知）も止める
+    tutTick(t);
     updateHud();
     tickFac();
     tickSkip();
@@ -4081,7 +4126,7 @@
   const iconImg = k => `<img class="px" src="${iconURL(ITEMS[k].icon)}" alt="">`;
   function cropBtn(k, onclick, isSel) {
     const c = CROPS[k], locked = c.unlockLv > townLevel();
-    const b = document.createElement('button');
+    const b = document.createElement('button'); b.dataset.crop = k;
     b.className = 'tool pix' + (isSel ? ' sel' : '') + (locked ? ' locked' : '');
     b.disabled = locked;
     b.innerHTML = iconImg(k) + '<span>' + c.name + '<small>' +
@@ -4153,7 +4198,7 @@
     }
     state.orders.forEach((o, i) => {
       const have = state.storage[o.crop], r = orderReward(o), short = o.qty - have;
-      const row = document.createElement('div'); row.className = 'orow';
+      const row = document.createElement('div'); row.className = 'orow'; row.dataset.crop = o.crop; row.dataset.i = i;
       row.innerHTML = '<div class="ocrop">' + iconImg(o.crop) + '<span>' + ITEMS[o.crop].name + ' ×' + o.qty +
         '<small>倉庫に ' + have + '個</small></span></div>' +
         '<div class="orew"><span>' + goldImg + r.gold + '</span><span class="xp">町経験値 +' + r.exp + '</span></div>';
@@ -4227,7 +4272,7 @@
       add('建設費 ' + goldImg + B.cost + 'G ／ 建設時間 ' + (B.buildMs / 60000) + '分');
       add('所持金 ' + goldImg + state.gold + 'G', 'mline sub');
       const act = add('', 'mact');
-      act.appendChild(state.gold >= B.cost ? mkBtn('建設開始', false, () => { if (startBuild(k)) renderFac(); })
+      act.appendChild(state.gold >= B.cost ? Object.assign(mkBtn('建設開始', false, () => { if (startBuild(k)) renderFac(); }), { id: 'facBuildBtn' })
                                            : mkBtn('あと' + (B.cost - state.gold) + 'G 必要', true));
     } else if (st === 'building') {
       $('facTitle').textContent = B.name + '（建設中）';
@@ -4251,7 +4296,7 @@
         row.innerHTML = '<div class="recipe">' + ins + ' → ' + iconImg(pr.key) + '<span>' + pr.name + ' ×' + pr.qty +
           '<small>加工 ' + fmtDur(r.ms) + (adj ? '→' + fmtDur(shorten(r.ms)) + '（隣接 −10%）' : '') + ' ／ 単価 ' + pr.price + 'G ／ 経験値 ' + pr.orderExp + '</small></span></div>';
         if (lockedR) { row.appendChild(mkBtn('町Lv' + r.unlockLv + 'で解放', true)); body.appendChild(row); continue; }
-        row.appendChild(mkBtn(busy ? (now() >= b.job.readyAt ? '受け取り待ち' : '加工中') : ok ? '加工開始' : '材料が足りません', busy || !ok, () => { if (startJob(k, rk)) renderFac(); }));
+        row.appendChild(Object.assign(mkBtn(busy ? (now() >= b.job.readyAt ? '受け取り待ち' : '加工中') : ok ? '加工開始' : '材料が足りません', busy || !ok, () => { if (startJob(k, rk)) renderFac(); }), { id: 'facJob_' + rk }));
         body.appendChild(row);
       }
     }
@@ -4317,8 +4362,8 @@
     }).join('');
     body.appendChild(ts);
     const acts = document.createElement('div'); acts.className = 'dacts';
-    acts.appendChild(mkBtn('5問セットを始める', false, startDrillSet));
-    acts.appendChild(mkBtn('時短を使う', false, openSkip));
+    const sb_ = mkBtn('5問セットを始める', false, startDrillSet); sb_.id = 'drillStartBtn'; acts.appendChild(sb_);
+    const kb_ = mkBtn('時短を使う', false, openSkip); kb_.id = 'drillSkipBtn'; acts.appendChild(kb_);
     acts.appendChild(mkBtn('図鑑', false, openDex));
     body.appendChild(acts);
     body.insertAdjacentHTML('beforeend', '<div class="setnote">5問＝通常3問＋復習1問（この難度で間違えたタイプ）＋挑戦1問（' + (drillLevel === 'E' ? 'Eの基本タイプ' : String.fromCharCode(drillLevel.charCodeAt(0) + 1) + 'の易しいタイプ') + '）</div>');
@@ -4432,6 +4477,7 @@
     if (ds.i >= ds.set.length) renderDrillResult(); else renderDrillQ();
   }
   function renderDrillResult() {
+    if (!state.tutorial.done) { state.tutorial.sets += 1; save(); }   // チュートリアル：ドリル5問のセットを終えた
     const r = ds.results, okN = r.filter(x => x.correct).length, sec = r.reduce((a, x) => a + x.sec, 0);
     const sh = r.reduce((a, x) => a + x.shards, 0), tk = r.filter(x => x.ticket).length;
     $('drillTitle').textContent = 'けっか';
@@ -4443,8 +4489,8 @@
       '連続正解 ' + state.drill.streak + '問</div>' + statusHtml();
     const acts = document.createElement('div'); acts.className = 'dacts';
     acts.appendChild(mkBtn('もう一度（5問）', false, startDrillSet));
-    acts.appendChild(mkBtn('時短を使う', false, openSkip));
-    acts.appendChild(mkBtn('メニューへ', false, renderDrillMenu));
+    acts.appendChild(Object.assign(mkBtn('時短を使う', false, openSkip), { id: 'drillSkipBtn' }));
+    acts.appendChild(Object.assign(mkBtn('メニューへ', false, renderDrillMenu), { id: 'drillMenuBtn' }));
     body.appendChild(acts);
   }
   function openDrill() { renderDrillMenu(); $('drillPanel').style.display = 'flex'; }
@@ -4675,6 +4721,123 @@
     buildPalette(); renderTrade(); $('tradePanel').style.display = 'flex';   // 掲示板に戻る
   }
   $('visitEnd').onclick = exitVisit;
+
+  // ---------- チュートリアル：1行の案内＋次に触る場所の目印。実際の操作で条件を満たすと次へ。いつでもスキップ ----------
+  const TUT_STEPS = 9;
+  const tutActive = () => !!state.tutorial && !state.tutorial.done && !visit;
+  function tutGachaLocked() { return !!state.tutorial && !state.tutorial.done && state.tutorial.step < 5; }   // ガチャは手順5で解放
+  const panelOpen = id => $(id).style.display === 'flex';
+  const firstPlot = pred => { for (let i = 0; i < activePlots(); i++) if (pred(state.plots[i], i)) return i; return -1; };
+  const hasCrop = c => state.plots.some((p, i) => i < activePlots() && p && p.crop === c);
+  const readyPlot = c => firstPlot(p => p && p.crop === c && isReady(p, now()));
+  const plotPt = i => { const R = plotRect(i); return { x: R.x + R.w / 2, y: R.y - 2 }; };
+  const towerPt = () => ({ x: LAYOUT.tower.x, y: LAYOUT.tower.y - SPR.tower.height - 6, below: LAYOUT.tower.y + 4 });
+  const boardPt = () => ({ x: BOARD.cx, y: BOARD.top - 4 });
+  const millPt = () => ({ x: FAC.mill.x, y: FAC.mill.top - 4, below: FAC.mill.y + 6 });   // 画面の上端に近いときは下から指す
+  // 納品できる注文の「納品」ボタン（同じ作物の注文が2件あっても、いま納品できる方）
+  const deliverSel = c => { const i = state.orders.findIndex(o => o.crop === c && state.storage[c] >= o.qty); return '#orderList .orow[data-i="' + Math.max(0, i) + '"] .act'; };
+  // 植える案内：作物をえらぶ → 空いた区画
+  const plantGuide = (c, text) => (selected !== c ? { text, dom: '#palette [data-crop="' + c + '"]' } : { text, world: plotPt(Math.max(0, firstPlot(p => !p))) });
+  // ドリルの案内：時計塔 → 5問セットを始める
+  const drillGuide = text => (ds && ds.i < ds.set.length ? { text: '5問に答えよう（' + (ds.i + 1) + '/5）' } : panelOpen('drillPanel') ? { text, dom: '#drillStartBtn' } : { text, world: towerPt() });
+  function tutGuide() {
+    const T = state.tutorial, st = state.storage, mill = state.buildings.mill;
+    switch (T.step) {
+      case 1: return plantGuide('wheat', '小麦をえらんで、畑に植えよう');
+      case 2: return drillGuide('時計塔でドリル5問（難度A）に挑戦しよう');
+      case 3: { const i = firstPlot(p => p && p.crop === 'wheat'), text = '時計塔の「時短を使う」で、小麦を「最大まで」進めよう';
+        if (panelOpen('skipPanel')) return { text, dom: '#skipList .srow[data-id="plot:' + i + '"] .bmax' };
+        return panelOpen('drillPanel') && (!ds || ds.i >= ds.set.length) ? { text, dom: '#drillSkipBtn' } : { text, world: towerPt() }; }
+      case 4: {
+        const r = readyPlot('wheat');
+        if (!T.flags.d1 && st.wheat < 3 && r >= 0) return { text: '育った小麦をタップして収穫しよう', world: plotPt(r) };
+        if (!T.flags.d1) return panelOpen('ordersPanel') ? { text: '小麦の注文を納品しよう', dom: deliverSel('wheat') } : { text: '注文掲示板で、小麦の注文を納品しよう', world: boardPt() };
+        return plantGuide('carrot', '次は にんじん を植えよう'); }
+      case 5: if (panelOpen('drillPanel') && ds && ds.i >= ds.set.length) return { text: 'ガチャが解放！ メニューへ戻って、チケットで引いてみよう', dom: '#drillMenuBtn' };
+        return panelOpen('drillPanel') && !ds ? { text: 'ガチャが解放！ チュートリアルチケットで引いてみよう', dom: '#gachaTicketBtn' }
+        : { text: 'ガチャが解放！ 時計塔でチュートリアルチケットを使おう', world: towerPt() };
+      case 6: {
+        if (st.carrot >= 3) return panelOpen('ordersPanel') ? { text: 'にんじんの注文を納品すると、町Lv2に！', dom: deliverSel('carrot') } : { text: 'にんじんの注文を納品すると、町Lv2に！', world: boardPt() };
+        const r = readyPlot('carrot'); if (r >= 0) return { text: '育った にんじん を収穫しよう', world: plotPt(r) };
+        if (!hasCrop('carrot')) return plantGuide('carrot', 'にんじんを植えよう');
+        return { text: 'にんじんが育つのを待とう（時計塔の「時短を使う」でも進められます）' }; }
+      case 7: return panelOpen('facPanel') ? { text: '製粉所を建てよう（100G）', dom: '#facBuildBtn' } : { text: '町Lv2で製粉所が建てられる！ 建設予定地をタップしよう', world: millPt() };
+      case 8: return drillGuide('もう1セット、ドリル5問に挑戦しよう');
+      case 9: {
+        const r = readyPlot('wheat');
+        if (st.wheat < 2 && r >= 0) return { text: '育った小麦を収穫しよう（小麦粉の材料）', world: plotPt(r) };
+        if (st.wheat < 2 && !hasCrop('wheat')) return plantGuide('wheat', '小麦粉の材料に、小麦を植えよう');
+        if (st.wheat < 2) return { text: '小麦が育つのを待とう（時短でも進められます）' };
+        if (bState('mill') !== 'built') return { text: '製粉所の完成を待とう（時計塔の「時短を使う」で早められます）' };
+        return panelOpen('facPanel') ? { text: '製粉所で小麦粉を作ろう', dom: '#facJob_flour' } : { text: '製粉所をタップして、小麦粉を作ろう', world: millPt() }; }
+    }
+    return { text: '' };
+  }
+  function tutDone(T) {                                   // いまの手順の条件を満たしたか（実際の状態で判定）
+    const st = state.storage, b = state.buildings.mill;
+    switch (T.step) {
+      case 1: return hasCrop('wheat') || st.wheat > 0 || T.flags.d1;
+      case 2: return T.sets >= 1;
+      case 3: return readyPlot('wheat') >= 0 || st.wheat >= 3 || T.flags.d1;
+      case 4: return T.flags.d1 && (hasCrop('carrot') || st.carrot > 0 || townLevel() >= 2);
+      case 5: return T.flags.pull;
+      case 6: return townLevel() >= 2;
+      case 7: return !!b;
+      case 8: return T.sets >= T.mark + 1;
+      case 9: return !!(b && b.job && b.job.recipe === 'flour') || st.flour > 0;
+    }
+    return true;
+  }
+  function tutEnter(T) {                                  // 手順に入ったときの準備
+    if (T.step === 5 && !T.granted) { T.tickets += 3; T.granted = true; toast('ガチャが解放されました！ チュートリアルチケットを3枚もらいました', 5200); }
+    if (T.step === 8) T.mark = T.sets;
+  }
+  let tutHl = null, tutTickAt = 0;
+  function tutTick(t, force) {
+    const bar = $('tutBar');
+    if (!tutActive() || (fxf && fxfOpen()) || (tpz && tpOpen())) { bar.style.display = 'none'; tutMark(null); return null; }
+    if (!force && t - tutTickAt < 150) return state.tutorial._g || null;
+    tutTickAt = t;
+    const T = state.tutorial;
+    let moved = false;
+    while (!T.done && tutDone(T)) {
+      T.step += 1; moved = true;
+      if (T.step > TUT_STEPS) { T.done = true; T.step = TUT_STEPS + 1; toast('チュートリアル完了！ ここからは自由に町を育てよう（チュートリアルチケット 残り' + T.tickets + '枚）', 7000); break; }
+      tutEnter(T);
+    }
+    if (moved) { save(); hudSig = ''; if (panelOpen('drillPanel') && !ds) renderDrillMenu(); }
+    if (T.done) { bar.style.display = 'none'; tutMark(null); return null; }
+    const g = tutGuide(); Object.defineProperty(T, '_g', { value: g, enumerable: false, configurable: true, writable: true });
+    $('tutStep').textContent = T.step + '/' + TUT_STEPS; $('tutText').textContent = g.text; bar.style.display = 'flex';
+    tutMark(g.dom || null);
+    return g;
+  }
+  function tutMark(sel) {                                 // DOM の目印（光る枠）
+    const el = sel ? document.querySelector(sel) : null;
+    if (el === tutHl) return;
+    if (tutHl) tutHl.classList.remove('tut-hl');
+    tutHl = el; if (el) el.classList.add('tut-hl');
+  }
+  function drawTutArrow(c, ts) {                          // 町の中の目印（下向きの矢印）
+    const g = tutActive() && state.tutorial._g; if (!g || !g.world) return;
+    const { x, y } = g.world, bob = Math.round(Math.sin(ts * 5) * 2.5), X = Math.round(x);
+    if (g.world.below !== undefined && toScreen(x, y).y < 170) {          // 上が HUD で隠れるときは、下から上向きの矢印
+      const Y = Math.round(g.world.below + 6 - bob);
+      c.fillStyle = '#5a1e10'; c.fillRect(X - 5, Y + 5, 10, 9); c.fillRect(X - 8, Y + 4, 16, 2); c.fillRect(X - 6, Y + 2, 12, 2); c.fillRect(X - 4, Y, 8, 2); c.fillRect(X - 2, Y - 2, 4, 2);
+      c.fillStyle = '#ff9a5c'; c.fillRect(X - 3, Y + 5, 6, 8); c.fillRect(X - 6, Y + 5, 12, 1); c.fillRect(X - 4, Y + 3, 8, 1); c.fillRect(X - 2, Y + 1, 4, 1);
+      return;
+    }
+    const Y = Math.round(y - 6 + bob);
+    c.fillStyle = '#5a1e10'; c.fillRect(X - 5, Y - 14, 10, 9); c.fillRect(X - 8, Y - 6, 16, 2); c.fillRect(X - 6, Y - 4, 12, 2); c.fillRect(X - 4, Y - 2, 8, 2); c.fillRect(X - 2, Y, 4, 2);
+    c.fillStyle = '#ff9a5c'; c.fillRect(X - 3, Y - 13, 6, 8); c.fillRect(X - 6, Y - 5, 12, 1); c.fillRect(X - 4, Y - 3, 8, 1); c.fillRect(X - 2, Y - 1, 4, 1);
+    c.fillStyle = '#ffe1b8'; c.fillRect(X - 2, Y - 12, 2, 5);
+  }
+  $('tutSkip').onclick = () => {                          // スキップ：その時点までの報酬・解放はそのまま
+    const T = state.tutorial; if (T.done) return;
+    T.done = true; save(); tutMark(null); $('tutBar').style.display = 'none'; hudSig = '';
+    if (panelOpen('drillPanel') && !ds) renderDrillMenu();
+    toast('チュートリアルをスキップしました。ここからは自由に遊べます');
+  };
   // ---------- テンパズル（移植版）：ドリルメニューから開く全画面のモジュール ----------
   // 町の Canvas・セーブ構造には触らない。報酬だけ drillAnswer('S', 'S5', 正誤) で特殊ドリルと同じに払う（1問ごとにすぐ保存）
   //   解けた → 報酬あり／ギブアップ（答えを見る）→ 報酬なし・連続正解0（問題数には数える）／
@@ -4797,6 +4960,13 @@
       '<div class="gpity">レア以上まであと' + left(P.r, g.pity.r) + '回で確定／SR以上まであと' + left(P.sr, g.pity.sr) + '回／激レアまであと' + left(P.ur, g.pity.ur) + '回　' +
       '（引いた回数 ' + g.total + '回・肥料 ' + ownedCount(GA.FERT_ID) + '個）</div>';
     const row = document.createElement('div'); row.className = 'gbtns';
+    if (tutGachaLocked()) { box.innerHTML = '<b>ガチャ</b>　<span class="glock">チュートリアルの途中で解放されます</span>'; return box; }
+    if (state.tutorial.tickets > 0) {
+      const tb = document.createElement('button'); tb.className = 'tool pix gticket'; tb.id = 'gachaTicketBtn';
+      tb.innerHTML = 'チケットで引く<small>チュートリアルチケット 残り' + state.tutorial.tickets + '枚</small>';
+      tb.onclick = () => { const res = ticketPull(); if (res) { hudSig = ''; renderGachaResult(res); } };
+      row.appendChild(tb);
+    }
     for (const n of [1, 10]) {
       const b = document.createElement('button'); b.className = 'tool pix';
       b.innerHTML = (n === 1 ? '1回引く' : '10連') + '<small>カケラ' + (GA.COST * n) + '個' + (D.shards < GA.COST * n ? '（あと' + (GA.COST * n - D.shards) + '個）' : '') + '</small>';
@@ -4930,7 +5100,7 @@
         row,
         b1: mk('−1分', () => { const r = applySkip(tm.id, 60000); done(r, r && ('−' + fmtTime(r.ms) + '（ストック ' + fmtStock(r.cost) + ' 消費）' + (r.done ? ' 完了！' : ''))); }),
         b10: mk('−10分', () => { const r = applySkip(tm.id, 600000); done(r, r && ('−' + fmtTime(r.ms) + '（ストック ' + fmtStock(r.cost) + ' 消費）' + (r.done ? ' 完了！' : ''))); }),
-        bmax: mk('最大まで', () => { const r = applySkip(tm.id, 'max'); done(r, r && ('−' + fmtTime(r.ms) + '（ストック ' + fmtStock(r.cost) + ' 消費）' + (r.done ? ' 完了！' : ''))); }),
+        bmax: mk('<span class="bmax">最大まで</span>', () => { const r = applySkip(tm.id, 'max'); done(r, r && ('−' + fmtTime(r.ms) + '（ストック ' + fmtStock(r.cost) + ' 消費）' + (r.done ? ' 完了！' : ''))); }),
         btk: mk('チケット', () => { const r = useTicket(tm.id); done(r, 'チケットで即完了！'); }),
       };
       if (ownsHelper('hp11')) { skipRows[tm.id].bkp = mk('時の番人の即完了（1日1回）', () => { const r = useKeeper(tm.id); done(r, '時の番人が即完了してくれました！'); }); skipRows[tm.id].bkp.classList.add('keeper'); }
@@ -5098,7 +5268,7 @@
   window.addEventListener('resize', resize);
 
   // 検品用（読み取り専用の座標変換。ゲーム状態は触らない）
-  window.__clockseed = {
+  if (DEBUG) window.__clockseed = {
     plotCenter: i => { const R = plotRect(i); return toScreen(R.x + R.w / 2, R.y + R.h / 2); },
     worldToScreen: toScreen,
     boardCenter: () => toScreen(BOARD.cx, BOARD.top + 10),
@@ -5118,6 +5288,12 @@
       const pair = []; g.q.tiles.forEach((a, i) => g.q.tiles.forEach((b, j) => { if (i < j && FXF.polyEqual(FXF.multiply(a.factor, b.factor), g.q.poly)) pair.push([a.id, b.id]); }));
       return { stage: fxf.stage, phase: g.phase, hp: g.hp, score: g.score, combo: g.combo, caught: g.caught, misses: g.misses, timeouts: g.timeouts, level: g.q.level, target: g.q.target,
         tiles: g.q.tiles.map(t => ({ id: t.id, label: t.label })), pairs: pair, cleared: g.cleared, clearBonus: g.clearBonus, playMs: g.playMs, earned: Object.assign({}, fxf.earned) }; },
+    tutorial: () => { const T = state.tutorial, g = tutActive() ? tutTick(now(), true) : null;
+      return { done: T.done, step: T.step, sets: T.sets, tickets: T.tickets, flags: Object.assign({}, T.flags), text: g ? g.text : '', dom: g && g.dom || null, world: g && g.world ? toScreen(g.world.x, g.world.y) : null,
+        level: townLevel(), plots: activePlots(), shards: state.drill.shards, pity: Object.assign({}, state.gacha.pity), total: state.gacha.total, gold: state.gold }; },
+    constants: () => JSON.parse(JSON.stringify({ CROPS, RECIPES, BUILDINGS, TOWN_LV_EXP, PLOTS_BY_LV, DRILL_REWARD, SPECIAL_REWARD, DRILL_STOCK_MAX, DRILL_DAY_SOFTCAP, SKIP_RUSH, ORDER_COUNT,
+      ITEMS: Object.fromEntries(ITEM_KEYS.filter(k => !ITEMS[k].seed).map(k => [k, { price: ITEMS[k].price, orderExp: ITEMS[k].orderExp, orderQty: ITEMS[k].orderQty, recipe: ITEMS[k].recipe || null, unlockLv: ITEMS[k].unlockLv }])),
+      GACHA_COST: GA.COST, ADJ_RATE })),
     trade: () => ({ visiting: !!visit, visit: visit ? visit.data : null, level: townLevel(), uid: state.trade.uid, stock: Object.assign({}, state.trade.stock), received: state.trade.received.slice(),
       decor: Object.fromEntries(CODE.DECOR.map(id => [id, state.gacha.items[id] || 0])), treeStage: treeStage(), charm: charmPoints(), myCode: myTownCode(),
       buildings: BUILDING_KEYS.filter(k => state.buildings[k]), plots: activePlots(), houses: visStatics.filter(o => o.house).length }),

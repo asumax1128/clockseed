@@ -141,12 +141,13 @@ for(const lv of [2,5]){const s=done(clone(FRESH));s.townExp=LV[lv-1];for(const [
     const pl=[...Array(C.mapInfo().plots).keys()].map(i=>C.plotCenter(i)),tw=C.towerCenter();
     const covered=[...pl,tw].filter(inside).map(p=>document.elementFromPoint(p.x,p.y)).filter(e=>e&&e.id!=='world').length;
     return {tb:{top:tb.top,bottom:tb.bottom},bb:{top:bb.top,bottom:bb.bottom},cv:{top:cv.top,bottom:cv.bottom,h:cv.height},v,inside:[...pl,tw].filter(inside).length,total:pl.length+1,covered,ih:innerHeight};});
-  // 端までのパン：ドラッグで左上・右下の端へ動かして、地図の端が町の帯の端と一致する（帯の下に隠れたままの場所がない）
+  // 端まで：左上・右下の端へ動かして、地図の端が町の帯の端と一致する（帯の下に隠れたままの場所がない）
   const v=r.v,x0=w*.2,x1=w*.8,y0=r.cv.top+r.cv.h*.2,y1=r.cv.bottom-r.cv.h*.2;
   const drag=async(sx,sy,ex,ey)=>{await p2.mouse.move(sx,sy);await p2.mouse.down();for(let k=1;k<=6;k++)await p2.mouse.move(sx+(ex-sx)*k/6,sy+(ey-sy)*k/6);await p2.mouse.up();await p2.waitForTimeout(60);};
   await p2.evaluate(()=>{const C=window.__clockseed;C.lookAt(C.camera().x,C.camera().y,C.viewport().zoomMin);});
-  for(let k=0;k<24;k++)await drag(x0,y0,x1,y1);const tl=await p2.evaluate(()=>{const C=window.__clockseed,b=C.mapInfo().bounds;return C.worldToScreen(b.x0,b.y0);});
-  for(let k=0;k<24;k++)await drag(x1,y1,x0,y0);const br=await p2.evaluate(()=>{const C=window.__clockseed,b=C.mapInfo().bounds;return C.worldToScreen(b.x1,b.y1);});
+  const pushTo=async(x,y)=>{await p2.evaluate(([x,y])=>window.__clockseed.lookAt(x,y,window.__clockseed.viewport().zoomMin),[x,y]);await p2.mouse.move(w/2,(r.cv.top+r.cv.bottom)/2);await p2.mouse.wheel(0,0.001);await p2.waitForTimeout(80);};   // カメラを地図の外へ押しやり、ホイール（ズームほぼ0）で本物のカメラ制限をかける
+  await pushTo(-1e4,-1e4);const tl=await p2.evaluate(()=>{const C=window.__clockseed,b=C.mapInfo().bounds;return C.worldToScreen(b.x0,b.y0);});
+  await pushTo(1e4,1e4);const br=await p2.evaluate(()=>{const C=window.__clockseed,b=C.mapInfo().bounds;return C.worldToScreen(b.x1,b.y1);});
   const fit=Math.abs(r.cv.top-r.tb.bottom)<1.5&&Math.abs(r.cv.bottom-r.bb.top)<1.5&&Math.abs(r.bb.bottom-h)<1&&r.tb.top===0&&Math.abs(v.h-r.cv.h)<1.5;
   const edges=Math.abs(tl.y-r.cv.top)<1.5&&Math.abs(br.y-r.cv.bottom)<1.5&&Math.abs(tl.x)<1.5&&Math.abs(br.x-w)<1.5;
   ok(fit&&edges&&r.covered===0,'[画面割り] 町Lv'+lv+' '+name+' '+w+'×'+h+'：上の帯 0〜'+Math.round(r.tb.bottom)+'／町 '+Math.round(r.cv.top)+'〜'+Math.round(r.cv.bottom)+'／下の帯 '+Math.round(r.bb.top)+'〜'+h+'・カメラの端＝町の帯の端・最小ズーム '+v.zoomMin.toFixed(3)+'・初期表示で見える区画と時計塔 '+r.inside+'/'+r.total+'（帯にかぶるもの '+r.covered+'）',JSON.stringify({tl,br}));

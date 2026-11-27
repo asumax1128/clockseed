@@ -89,10 +89,11 @@
   .mrow .recipe small{display:block;font-size:11px;font-weight:normal;color:var(--ink-soft)}
   .mrow .short{color:#b8503c}
   .mact{margin-top:10px;display:flex;justify-content:center}
-  #drillHud{position:absolute;top:66px;left:12px;display:flex;align-items:center;gap:12px;padding:3px 12px;font-weight:bold;font-size:15px;
+  #subHud{position:absolute;top:66px;left:12px;display:flex;gap:6px;align-items:flex-start}
+  #drillHud,#dexHud{display:flex;align-items:center;gap:12px;padding:3px 12px;font-weight:bold;font-size:15px;
     cursor:pointer;border:0;font-family:inherit;color:inherit;touch-action:manipulation}
-  #drillHud span{display:flex;align-items:center;gap:4px}
-  #drillHud img{width:20px;height:20px}
+  #drillHud span,#dexHud span{display:flex;align-items:center;gap:4px}
+  #drillHud img,#dexHud img{width:20px;height:20px}
   #drillHud.pulse{animation:hudpulse .6s ease-out}
   @keyframes hudpulse{40%{background:#fff0b8;transform:scale(1.06)}}
   .dbox{width:min(700px,95vw)}
@@ -146,6 +147,59 @@
   .sbtns .tool{padding:4px 10px;font-size:14px;flex-direction:column;gap:0;min-width:66px}
   .sbtns .tool small{font-size:10px;text-align:center}
   .sempty{padding:20px;color:var(--ink-soft)}
+  /* レア度の色：C コモン／R レア／SR／UR 激レア */
+  :root{--rC:#a89a7c;--rR:#4f86d6;--rSR:#9a63d6;--rUR:#e0a21c}
+  .rtag{display:inline-block;font-size:11px;font-weight:bold;color:#fff;padding:0 7px;letter-spacing:.05em;vertical-align:middle}
+  .rtag.C{background:var(--rC)}.rtag.R{background:var(--rR)}.rtag.SR{background:var(--rSR)}.rtag.UR{background:linear-gradient(90deg,#e0a21c,#f4cf5a,#e0a21c)}
+  .gbox{margin:10px 4px 4px;padding:10px;background:#efe0bd;box-shadow:inset 0 0 0 2px #fff8e4;text-align:center}
+  .gbox b{letter-spacing:.1em}
+  .gpity{font-size:11px;color:var(--ink-soft);margin:4px 0 8px}
+  .gbtns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .gbtns .tool{flex-direction:column;gap:0;padding:6px 20px;font-size:17px}
+  .gbtns .tool small{font-size:11px}
+  .gcard{position:relative;background:#fff8e4;border:4px solid var(--rC);padding:10px 8px 8px;text-align:center;animation:gpop .35s ease-out}
+  .gcard.r-R{border-color:var(--rR)}.gcard.r-SR{border-color:var(--rSR);background:#f6f0ff}
+  .gcard.r-UR{border-color:var(--rUR);background:#fff4cf;animation:gpop .35s ease-out,gglow 1.4s ease-in-out .35s infinite}
+  @keyframes gpop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes gglow{50%{box-shadow:0 0 14px 3px #ffd85acc}}
+  .gcard .gic{width:48px;height:48px;display:block;margin:4px auto}
+  .gcard .gname{font-weight:bold}
+  .gcard .gfx{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.35}
+  .gcard .gcat{font-size:10px;color:var(--ink-soft)}
+  .gnew{display:inline-block;background:#d9503a;color:#fff;font-weight:bold;font-size:12px;padding:0 6px;margin-right:4px;animation:gnew 1s ease-in-out infinite}
+  @keyframes gnew{50%{transform:scale(1.12)}}
+  .gdup{font-size:11px;color:#3f7d2c;font-weight:bold;margin-top:3px}
+  .gcard.big{width:min(320px,80vw);margin:12px auto;padding:14px 12px}
+  .gcard.big .gic{width:84px;height:84px}
+  .gcard.big .gname{font-size:24px}
+  .gcard.big .gfx{font-size:14px}
+  .gdex{font-size:13px;font-weight:bold;color:#3f7d2c;margin-top:6px}
+  .ggrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0}
+  .ggrid .gcard{padding:6px 3px;border-width:3px}
+  .ggrid .gname{font-size:12px}
+  .ggrid .gic{width:34px;height:34px}
+  .ggrid .gnew{font-size:10px;padding:0 4px;margin:0}
+  .gsum{font-size:13px;line-height:1.7;margin:4px 0 6px}
+  .dexbox{width:min(820px,96vw)}
+  .dexhead{display:flex;justify-content:center;gap:16px;align-items:center;font-weight:bold;margin-bottom:6px;flex-wrap:wrap}
+  .dexrate{font-size:22px}
+  .dexbar{width:160px;height:12px;background:#5a3a22;padding:2px}
+  .dexbar i{display:block;height:100%;background:#7fc24a}
+  .dextabs{display:flex;gap:8px;justify-content:center;margin:6px 4px 10px;flex-wrap:wrap}
+  .dextabs .tool{padding:4px 14px;font-size:15px;gap:6px}
+  .dexgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:46vh;overflow:auto;padding:2px 4px}
+  .dexcard{display:flex;align-items:center;gap:10px;background:#fff8e4;border-left:6px solid var(--rC);padding:6px 8px;text-align:left}
+  .dexcard.r-R{border-left-color:var(--rR)}.dexcard.r-SR{border-left-color:var(--rSR)}.dexcard.r-UR{border-left-color:var(--rUR)}
+  .dexcard img{width:36px;height:36px;flex:none}
+  .dexcard.unk{background:#e6dcc3;color:#8a7a5c}
+  .dexcard.unk img{filter:brightness(0) opacity(.35)}
+  .dexcard .dn{font-weight:bold;font-size:15px}
+  .dexcard .df{font-size:11px;color:var(--ink-soft);line-height:1.35}
+  .dexcard .dc{font-size:12px;font-weight:bold;color:#3f7d2c}
+  .dexcard .dinfo{flex:1;min-width:0}
+  .dexcard .tool{padding:3px 10px;font-size:13px}
+  .dexfoot{font-size:12px;color:var(--ink-soft);margin-top:8px}
+  .rrbtn{padding:3px 8px;font-size:12px;min-width:0}
   #toast{position:fixed;top:86px;left:50%;transform:translateX(-50%);z-index:12;display:none;padding:8px 18px;
     font-weight:bold;letter-spacing:.06em;pointer-events:none}
 </style>
@@ -164,11 +218,16 @@
     </button>
   </div>
   <div id="palette" style="position:absolute"></div>
-  <button id="drillHud" class="pix" title="時計塔のドリル（時短ストック・カケラ・即完了チケット）">
-    <span><img class="px" data-icon="ic_hourglass" alt="時短"><span id="dhStock">0:00</span></span>
-    <span><img class="px" data-icon="ic_shard" alt="カケラ"><span id="dhShards">0</span></span>
-    <span><img class="px" data-icon="ic_ticket" alt="チケット"><span id="dhTickets">0</span></span>
-  </button>
+  <div id="subHud">
+    <button id="drillHud" class="pix" title="時計塔のドリル（時短ストック・カケラ・即完了チケット）">
+      <span><img class="px" data-icon="ic_hourglass" alt="時短"><span id="dhStock">0:00</span></span>
+      <span><img class="px" data-icon="ic_shard" alt="カケラ"><span id="dhShards">0</span></span>
+      <span><img class="px" data-icon="ic_ticket" alt="チケット"><span id="dhTickets">0</span></span>
+    </button>
+    <button id="dexHud" class="pix" title="図鑑（変種の種・町の飾り・お手伝い・消耗品）">
+      <span><img class="px" data-icon="ic_book" alt="図鑑">図鑑 <span id="dexHudNum">0/50</span></span>
+    </button>
+  </div>
 </div>
 <div id="popup" class="overlay"><div class="box pix">
   <div class="q">なにを植える？</div>
@@ -198,6 +257,10 @@
   <div id="skipHead"></div>
   <div id="skipList"></div>
   <div class="hint">元の所要時間の75%までは ストック1秒＝1秒短縮。残りが25%を切ると追い込み区間で、ストック2秒＝1秒短縮。即完了チケットはストックを使わずに1件を即完了します</div>
+</div></div>
+<div id="dexPanel" class="overlay"><div class="box pix dexbox">
+  <div class="panelhd"><b>図鑑</b><button id="dexClose" aria-label="閉じる">×</button></div>
+  <div id="dexBody"></div>
 </div></div>
 <div id="toast" class="pix"></div>
 
@@ -471,11 +534,156 @@
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 
+<script id="gacha-engine">
+/* ===================================================================
+   ときの種：ガチャエンジン（50種のデータ・抽選・天井・被り変換）
+   - DOM・ゲーム状態に触れない純粋な関数だけで書く（window.ClockseedGacha を公開するだけ）
+   - 乱数は引数 rng（0以上1未満を返す関数）で受け取る。本体は Math.random、テストは固定シード
+   - ガチャの状態 g は { pity:{r,sr,ur}, total, firstUsed, items:{id:所持}, dex:{id:1} }
+       items：種・お手伝いは入手フラグ(0/1)、飾り・消耗品は所持数
+       dex  ：図鑑の登録（一度でも引いたもの）。消耗品は使い切っても登録は残る
+   - 検証は tests/gacha_engine_test.js が、この <script> だけを取り出して行う
+   =================================================================== */
+(function (root) {
+  'use strict';
+  const RARITIES = ['C', 'R', 'SR', 'UR'];
+  const RARITY_LABEL = { C: 'コモン', R: 'レア', SR: 'SR', UR: '激レア' };
+  const RATES = { C: 55, R: 30, SR: 12, UR: 3 };              // 排出率（％）。レア度の中では均等に選ぶ
+  const COST = 20;                                              // 1回に必要なカケラ
+  // 天井：「該当レア度以上が出ない回数」がこの値に【達したら】次の1回は確定。
+  // （Nに達した次＝N+1回目が確定。「N回目に確定」にしたい場合は 9/24/49 にするだけでよい）
+  const PITY = { r: 10, sr: 25, ur: 50 };
+  const FIRST_ID = 'sd01';                                      // 初回固定：変種の種「まる小麦」
+  const FERT_ID = 'cs01';                                       // 種の被りは「肥料」1個に変換（肥料の所持数は cs01 に持つ）
+  const DUP_FERT = 1, DUP_SHARDS = 5;                           // お手伝いの被りはカケラ5個
+  const CATS = { seed: '変種の種', decor: '町の飾り', helper: 'お手伝い', cons: '消耗品' };
+  const CAT_ORDER = ['seed', 'decor', 'helper', 'cons'];
+
+  // 効果文：まる小麦だけは設計書の文面。それ以外は仮の文面（設計書の文面に差し替える）。
+  // 効果の発動そのものは段階5。今回は所持と表示まで
+  const I = (id, cat, name, r, fx, units) => ({ id, cat, name, r, fx, units: units || 1 });
+  const ITEMS = [
+    // ---- 変種の種16（C8／R3／SR3／UR2） ----
+    I('sd01', 'seed', 'まる小麦', 'C', '見た目が丸い。売値+5%'),
+    I('sd02', 'seed', 'ほしにんじん', 'C', '星形のにんじん。売値+5%'),
+    I('sd03', 'seed', 'こがねじゃが', 'C', '金色に輝くじゃがいも。売値+5%'),
+    I('sd04', 'seed', 'あおトマト', 'R', '青く実るトマト。売値+10%'),
+    I('sd05', 'seed', 'ながーいとうもろこし', 'C', 'とにかく長いとうもろこし。売値+5%'),
+    I('sd06', 'seed', 'しろいちご', 'SR', '雪のように白いいちご。売値+15%'),
+    I('sd07', 'seed', 'ミニかぼちゃ', 'C', '手のひらサイズのかぼちゃ。売値+5%'),
+    I('sd08', 'seed', 'あめぶどう', 'SR', '飴のように甘いぶどう。売値+15%'),
+    I('sd09', 'seed', 'にじ小麦', 'UR', '七色の穂が実る小麦。売値+25%'),
+    I('sd10', 'seed', 'ほしぞらいちご', 'UR', '星空の色をしたいちご。売値+25%'),
+    I('sd11', 'seed', 'ハートにんじん', 'C', 'ハート形のにんじん。売値+5%'),
+    I('sd12', 'seed', 'むらさきじゃが', 'R', '紫色のじゃがいも。売値+10%'),
+    I('sd13', 'seed', 'ツインとうもろこし', 'C', '二本で一つのとうもろこし。売値+5%'),
+    I('sd14', 'seed', 'きんかぼちゃ', 'R', '金色のかぼちゃ。売値+10%'),
+    I('sd15', 'seed', 'ゆきトマト', 'SR', '雪の下で育つトマト。売値+15%'),
+    I('sd16', 'seed', 'ほしふさぶどう', 'C', '星の形をした房のぶどう。売値+5%'),
+    // ---- 町の飾り14（C6／R4／SR2／UR2） ----
+    I('dc01', 'decor', '木のベンチ', 'C', '広場でひと休みできるベンチ'),
+    I('dc02', 'decor', '花壇・赤', 'C', '赤い花が咲く花壇'),
+    I('dc03', 'decor', '小さな噴水', 'C', '水音が心地よい小さな噴水'),
+    I('dc04', 'decor', '風見鶏つき看板', 'R', '風の向きを教えてくれる看板'),
+    I('dc05', 'decor', '街灯', 'C', '夕方になるとあかりが灯る'),
+    I('dc06', 'decor', '花壇・季節の花', 'R', '季節ごとに花が変わる花壇'),
+    I('dc07', 'decor', '町のシンボルツリー', 'SR', '町のシンボルになる大きな木'),
+    I('dc08', 'decor', '時計塔の金の鐘', 'UR', '時計塔を金色に飾る鐘'),
+    I('dc09', 'decor', '石の小道', 'C', '石畳の小道'),
+    I('dc10', 'decor', '木の柵セット', 'C', '木の柵のセット'),
+    I('dc11', 'decor', 'ガーデンアーチ', 'R', '花に囲まれたアーチ'),
+    I('dc12', 'decor', 'ガラスドーム', 'R', '光を集めるガラスのドーム'),
+    I('dc13', 'decor', '四季の庭園', 'SR', '一年中花が咲く庭園'),
+    I('dc14', 'decor', '世界樹の苗', 'UR', '町の自慢になる世界樹の小さな苗'),
+    // ---- お手伝い11（C4／R4／SR2／UR1） ----
+    I('hp01', 'helper', 'かかし', 'C', '畑の番をして作物の成長を見守る'),
+    I('hp02', 'helper', '配達ねこ', 'C', '注文の品を届けてくれる'),
+    I('hp03', 'helper', '見習いパン職人', 'R', '加工の仕事を手伝ってくれる'),
+    I('hp04', 'helper', '水やり少年', 'C', '毎日の水やりを手伝ってくれる'),
+    I('hp05', 'helper', '乳しぼり上手なおばあさん', 'R', '牛乳を分けてくれる'),
+    I('hp06', 'helper', '行商人', 'SR', 'めずらしい品を持ってやってくる'),
+    I('hp07', 'helper', '郵便カラス', 'C', '手紙とお礼を運んでくる'),
+    I('hp08', 'helper', '収穫どき番', 'R', '収穫のタイミングを教えてくれる'),
+    I('hp09', 'helper', '伝説の庭師', 'SR', 'どんな作物も立派に育てる'),
+    I('hp10', 'helper', '天気読みじいさん', 'R', '天気を読んで作物を守る'),
+    I('hp11', 'helper', '時の番人', 'UR', '時間そのものを見守る番人'),
+    // ---- 消耗品9（C4／R3／SR2／UR0）。units＝1回で増える所持数 ----
+    I('cs01', 'cons', '肥料x3', 'C', '肥料が3個増える（使用は段階5）', 3),
+    I('cs02', 'cons', '時の砂・10分', 'C', '使うと時短ストック+10分'),
+    I('cs03', 'cons', '注文リロール券', 'C', '注文パネルで、注文1件を引き直す'),
+    I('cs04', 'cons', '肥料・改x3', 'R', '強力な肥料が3個増える（使用は段階5）', 3),
+    I('cs05', 'cons', '時の砂・30分', 'R', '使うと時短ストック+30分'),
+    I('cs06', 'cons', '即完成券', 'SR', '使うと即完了チケット+1枚'),
+    I('cs07', 'cons', '注文ブースト券', 'C', '注文の報酬が増える（使用は段階5）'),
+    I('cs08', 'cons', 'ダブル収穫券', 'R', '収穫が2倍になる（使用は段階5）'),
+    I('cs09', 'cons', '全体時の砂', 'SR', '進行中のタイマーをまとめて縮める（使用は段階5）'),
+  ];
+  const byId = {}, byRarity = { C: [], R: [], SR: [], UR: [] };
+  for (const it of ITEMS) { byId[it.id] = it; byRarity[it.r].push(it); }
+
+  const freshState = () => {
+    const g = { pity: { r: 0, sr: 0, ur: 0 }, total: 0, firstUsed: false, items: {}, dex: {} };
+    for (const it of ITEMS) g.items[it.id] = 0;
+    return g;
+  };
+  const nat = n => (Number.isInteger(n) && n >= 0 ? n : 0);
+  // セーブ読み込み用：壊れた値・未知の品目を落として整える。種・お手伝いは0/1、飾り・消耗品は所持数
+  function sanitize(d) {
+    const g = freshState();
+    if (!d || typeof d !== 'object') return g;
+    if (d.pity) { g.pity.r = nat(d.pity.r); g.pity.sr = nat(d.pity.sr); g.pity.ur = nat(d.pity.ur); }
+    g.total = nat(d.total); g.firstUsed = d.firstUsed === true || g.total > 0;
+    for (const it of ITEMS) {
+      const v = d.items ? nat(d.items[it.id]) : 0;
+      g.items[it.id] = (it.cat === 'seed' || it.cat === 'helper') ? (v > 0 ? 1 : 0) : v;
+      if ((d.dex && d.dex[it.id]) || (it.cat !== 'cons' && g.items[it.id] > 0)) g.dex[it.id] = 1;
+    }
+    return g;
+  }
+
+  // 排出するレア度を抽選（min：このレア度以上に限る＝天井）
+  function drawRarity(rng, min) {
+    const list = RARITIES.slice(min ? RARITIES.indexOf(min) : 0);
+    const total = list.reduce((a, r) => a + RATES[r], 0);
+    let x = rng() * total;
+    for (const r of list) { if (x < RATES[r]) return r; x -= RATES[r]; }
+    return list[list.length - 1];
+  }
+  const pityNeed = g => (g.pity.ur >= PITY.ur ? 'UR' : g.pity.sr >= PITY.sr ? 'SR' : g.pity.r >= PITY.r ? 'R' : null);
+
+  // 1回引く。g を更新して結果を返す。
+  // 結果：{ id, cat, rarity, isNew, fixed, forced, dup:null|'fert'|'shards', fert, shards, units }
+  function pullOnce(g, rng) {
+    const forced = pityNeed(g);
+    let item, fixed = false;
+    if (!g.firstUsed) { item = byId[FIRST_ID]; fixed = true; g.firstUsed = true; }   // 初回固定（天井カウンタは通常どおり進める）
+    else { const pool = byRarity[drawRarity(rng, forced)]; item = pool[Math.floor(rng() * pool.length)]; }
+    const ri = RARITIES.indexOf(item.r);                       // 該当レア度以上が出たらリセット、出なければ+1
+    g.pity.r = ri >= 1 ? 0 : g.pity.r + 1;
+    g.pity.sr = ri >= 2 ? 0 : g.pity.sr + 1;
+    g.pity.ur = ri >= 3 ? 0 : g.pity.ur + 1;
+    g.total += 1;
+    const isNew = !g.dex[item.id]; g.dex[item.id] = 1;
+    const res = { id: item.id, cat: item.cat, rarity: item.r, isNew, fixed, forced, dup: null, fert: 0, shards: 0, units: 0 };
+    if (item.cat === 'seed') {                                 // 解放は永続。2回目以降は肥料1個
+      if (g.items[item.id]) { g.items[FERT_ID] += DUP_FERT; res.dup = 'fert'; res.fert = DUP_FERT; } else g.items[item.id] = 1;
+    } else if (item.cat === 'helper') {                        // 2回目以降はカケラ5個
+      if (g.items[item.id]) { res.dup = 'shards'; res.shards = DUP_SHARDS; } else g.items[item.id] = 1;
+    } else { g.items[item.id] += item.units; res.units = item.units; }   // 飾り・消耗品は所持数が増える
+    return res;
+  }
+  const dexCount = g => ITEMS.filter(it => g.dex[it.id]).length;
+
+  root.ClockseedGacha = { ITEMS, byId, byRarity, RARITIES, RARITY_LABEL, RATES, COST, PITY, FIRST_ID, FERT_ID, DUP_FERT, DUP_SHARDS,
+                          CATS, CAT_ORDER, freshState, sanitize, drawRarity, pityNeed, pullOnce, dexCount };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+
 <script>
 (() => {
   'use strict';
   const SAVE_KEY = 'clockseed.save';
-  const SAVE_VERSION = 5;
+  const SAVE_VERSION = 6;
   const MAX_PLOTS = 9;                 // 区画の最大数（町Lv2で 6 → 9）
   const BASE_PLOTS = 6;
   const ORDER_COUNT = 3;               // 同時に出る注文の数
@@ -543,7 +751,7 @@
   }
   function freshState() {
     const st = { saveVersion: SAVE_VERSION, plots: Array(MAX_PLOTS).fill(null),
-                 storage: {}, gold: 0, townExp: 0, orders: [], buildings: {}, drill: freshDrill() };
+                 storage: {}, gold: 0, townExp: 0, orders: [], buildings: {}, drill: freshDrill(), gacha: window.ClockseedGacha.freshState() };
     for (const k of ITEM_KEYS) st.storage[k] = 0;
     for (const k of BUILDING_KEYS) st.buildings[k] = null;
     while (st.orders.length < ORDER_COUNT) st.orders.push(newOrder(1, st.buildings));
@@ -581,6 +789,7 @@
           if (okJob && isFinite(j.skipMs) && j.skipMs > 0) s.buildings[k].job.skipMs = j.skipMs;
         }
       }
+      s.gacha = window.ClockseedGacha.sanitize(d.gacha);   // ガチャ（version 5 以前には無い → 初期状態）
       const dd = d.drill;                             // ドリル（version 4 以前には無い → 初期値）
       if (dd && typeof dd === 'object') {
         const D = s.drill;
@@ -687,6 +896,44 @@
       D.streak = 0;
     }
     save(); return res;
+  }
+
+  // ---------- ガチャ・消耗品 ----------
+  const GA = window.ClockseedGacha;
+  let lastGacha = [];                  // 直近の結果（表示・検品用。セーブしない）
+  // n回引く（カケラ20個×n）。足りなければ null。被り変換のカケラ（お手伝い）はその場で加算
+  function gachaPull(n) {
+    const cost = GA.COST * n, D = state.drill;
+    if (D.shards < cost) return null;
+    D.shards -= cost;
+    const out = [];
+    for (let i = 0; i < n; i++) { const r = GA.pullOnce(state.gacha, Math.random); D.shards += r.shards; out.push(r); }
+    lastGacha = out; save(); return out;
+  }
+  const ownedCount = id => state.gacha.items[id] || 0;
+  // 使える消耗品（今回の範囲）：時の砂は時短ストックに加算（上限で頭打ち）、即完成券は即完了チケット+1
+  const CONS_USE = { cs02: { sec: 600 }, cs05: { sec: 1800 }, cs06: { ticket: 1 } };
+  function canUseCons(id) {
+    const u = CONS_USE[id];
+    return !!u && ownedCount(id) >= 1 && !(u.sec && state.drill.stock >= DRILL_STOCK_MAX);   // ストックが満タンの時の砂は使わせない（無駄になる）
+  }
+  function useConsumable(id) {
+    if (!canUseCons(id)) return null;
+    const u = CONS_USE[id], D = state.drill;
+    state.gacha.items[id] -= 1;
+    let sec = 0;
+    if (u.sec) { const b = D.stock; D.stock = Math.min(DRILL_STOCK_MAX, D.stock + u.sec); sec = D.stock - b; }
+    if (u.ticket) D.tickets += u.ticket;
+    save(); return { sec, ticket: u.ticket || 0 };
+  }
+  // 注文リロール券：注文1件を（今と違う）新しいものに引き直す
+  function rerollOrder(i) {
+    const o = state.orders[i];
+    if (!o || ownedCount('cs03') < 1) return false;
+    let n, k = 0;
+    do { n = newOrder(townLevel(), state.buildings); } while (n.crop === o.crop && n.qty === o.qty && ++k < 50);
+    state.gacha.items.cs03 -= 1; state.orders[i] = n;
+    save(); return true;
   }
 
   // ---------- 時短：進行中のタイマー（区画・建設・加工）に適用 ----------
@@ -1232,6 +1479,76 @@
       '..RRRRRRRR..',
       '...RRRRRR...',
       '...xxxxxx...',
+      '............',
+    ],
+    ic_seed: [
+      '............',
+      '..FFFFFFFF..',
+      '..FbbbbbbF..',
+      '..FaaaaaaF..',
+      '..FaaGGaaF..',
+      '..FaGggGaF..',
+      '..FaaggaaF..',
+      '..FaaaaaaF..',
+      '..FaayyaaF..',
+      '..FaaaaaaF..',
+      '..FFFFFFFF..',
+      '............',
+    ],
+    ic_decor: [
+      '....1..1....',
+      '...111111...',
+      '....1331....',
+      '.....gg.....',
+      '..g..gg..g..',
+      '...gggggg...',
+      '.....gg.....',
+      '..XXXXXXXX..',
+      '...XssssX...',
+      '...XssssX...',
+      '....XXXX....',
+      '............',
+    ],
+    ic_helper: [
+      '....oooo....',
+      '..oooooooo..',
+      '...qqqqqq...',
+      '..qqqqqqqq..',
+      '..qmqqqqmq..',
+      '..qqqqqqqq..',
+      '..qqqmmqqq..',
+      '...qqqqqq...',
+      '....cccc....',
+      '...cccccc...',
+      '...cccccc...',
+      '............',
+    ],
+    ic_potion: [
+      '....XXXX....',
+      '.....ff.....',
+      '.....ff.....',
+      '....ffff....',
+      '...FiiiiF...',
+      '..FicccciF..',
+      '..FccccccF..',
+      '..FccccccF..',
+      '..FccCCccF..',
+      '...FCCCCF...',
+      '....FFFF....',
+      '............',
+    ],
+    ic_book: [
+      '............',
+      '..XXXXXXXX..',
+      '..XrrrrrrX..',
+      '..XrffffrX..',
+      '..XrFFFFrX..',
+      '..XrffffrX..',
+      '..XrrrrrrX..',
+      '..XrrrrrrX..',
+      '..XrrrrrrX..',
+      '..XXXXXXXX..',
+      '...FFFFFF...',
       '............',
     ],
     ic_hourglass: [
@@ -1935,7 +2252,7 @@
   function updateHud() {
     const lv = townLevel(), exp = state.townExp, st = state.storage;
     const D = state.drill;
-    const sig = [lv, exp, state.gold, ITEM_KEYS.map(k => st[k] + ':' + itemVisible(k)).join(), D.stock, D.shards, D.tickets].join('|');
+    const sig = [lv, exp, state.gold, ITEM_KEYS.map(k => st[k] + ':' + itemVisible(k)).join(), D.stock, D.shards, D.tickets, GA.dexCount(state.gacha)].join('|');
     if (sig === hudSig) return;
     hudSig = sig;
     $('lvText').textContent = '町Lv' + lv;
@@ -1948,6 +2265,7 @@
     }
     $('sGold').textContent = state.gold;
     for (const k of ITEM_KEYS) { stockEls[k].num.textContent = st[k]; stockEls[k].wrap.style.display = itemVisible(k) ? '' : 'none'; }
+    $('dexHudNum').textContent = GA.dexCount(state.gacha) + '/' + GA.ITEMS.length;
     $('dhStock').textContent = fmtStock(D.stock); $('dhShards').textContent = D.shards; $('dhTickets').textContent = D.tickets;
   }
   let toastTimer = 0;
@@ -2002,7 +2320,12 @@
       const b = document.createElement('button'); b.className = 'tool pix act';
       if (short > 0) { b.textContent = 'あと' + short + '個'; b.disabled = true; }
       else { b.textContent = '納品'; b.onclick = () => { if (deliver(i)) renderOrders(); }; }
-      row.appendChild(b); list.appendChild(row);
+      row.appendChild(b);
+      const rr = document.createElement('button'); rr.className = 'tool pix rrbtn';       // 注文リロール券で引き直す
+      rr.textContent = '引き直す（券×' + ownedCount('cs03') + '）'; rr.disabled = ownedCount('cs03') < 1;
+      rr.title = '注文リロール券を1枚使って、この注文を新しいものに引き直します';
+      if (!rr.disabled) rr.onclick = () => { if (rerollOrder(i)) renderOrders(); };
+      row.appendChild(rr); list.appendChild(row);
     });
   }
   function openOrders() { renderOrders(); $('ordersPanel').style.display = 'flex'; }
@@ -2137,7 +2460,9 @@
     const acts = document.createElement('div'); acts.className = 'dacts';
     acts.appendChild(mkBtn('5問セットを始める', false, startDrillSet));
     acts.appendChild(mkBtn('時短を使う', false, openSkip));
+    acts.appendChild(mkBtn('図鑑', false, openDex));
     body.appendChild(acts);
+    body.appendChild(gachaBox());
   }
   function startDrillSet() {
     ds = { level: drillLevel, set: DRILL.makeSet(drillLevel, Math.random, 5), i: 0, results: [], locked: false };
@@ -2245,6 +2570,109 @@
   $('drillClose').onclick = () => { $('drillPanel').style.display = 'none'; ds = null; };
   $('drillHud').onclick = openDrill;
 
+  // ---------- ガチャ（時計塔のパネル） ----------
+  const CAT_ICON = { seed: 'ic_seed', decor: 'ic_decor', helper: 'ic_helper', cons: 'ic_potion' };
+  const catIcon = cat => '<img class="px gic" src="' + iconURL(CAT_ICON[cat]) + '" alt="">';
+  function gachaBox() {
+    const D = state.drill, g = state.gacha, P = GA.PITY, box = document.createElement('div');
+    box.className = 'gbox';
+    const left = (need, cnt) => Math.max(0, need - cnt);
+    box.innerHTML = '<b>ガチャ</b>　カケラ ' + D.shards + '個（1回 ' + GA.COST + '個）' +
+      '<div class="gpity">レア以上まであと' + left(P.r, g.pity.r) + '回で確定／SR以上まであと' + left(P.sr, g.pity.sr) + '回／激レアまであと' + left(P.ur, g.pity.ur) + '回　' +
+      '（引いた回数 ' + g.total + '回・肥料 ' + ownedCount(GA.FERT_ID) + '個）</div>';
+    const row = document.createElement('div'); row.className = 'gbtns';
+    for (const n of [1, 10]) {
+      const b = document.createElement('button'); b.className = 'tool pix';
+      b.innerHTML = (n === 1 ? '1回引く' : '10連') + '<small>カケラ' + (GA.COST * n) + '個' + (D.shards < GA.COST * n ? '（あと' + (GA.COST * n - D.shards) + '個）' : '') + '</small>';
+      b.disabled = D.shards < GA.COST * n;
+      if (!b.disabled) b.onclick = () => doGacha(n);
+      row.appendChild(b);
+    }
+    box.appendChild(row);
+    return box;
+  }
+  function cardHtml(r, big) {
+    const it = GA.byId[r.id];
+    return '<div class="gcard r-' + r.rarity + (big ? ' big' : '') + '" data-id="' + r.id + '">' +
+      '<span class="rtag ' + r.rarity + '">' + GA.RARITY_LABEL[r.rarity] + '</span>' + catIcon(it.cat) +
+      (r.isNew ? '<div><span class="gnew">NEW</span></div>' : '') +
+      '<div class="gname">' + it.name + '</div>' +
+      (big ? '<div class="gcat">' + GA.CATS[it.cat] + '</div><div class="gfx">' + it.fx + '</div>' : '') +
+      (r.isNew && big ? '<div class="gdex">図鑑に登録されました</div>' : '') +
+      (r.dup === 'fert' ? '<div class="gdup">被り → 肥料+' + r.fert + '</div>' : r.dup === 'shards' ? '<div class="gdup">被り → カケラ+' + r.shards + '</div>' : '') +
+      (!r.dup && !r.isNew && it.cat === 'decor' ? '<div class="gdup">所持数 ' + ownedCount(r.id) + '</div>' : '') +
+      (it.cat === 'cons' && big ? '<div class="gdup">所持数 ' + ownedCount(r.id) + '</div>' : '') + '</div>';
+  }
+  function doGacha(n) {
+    const res = gachaPull(n);
+    if (!res) return;
+    hudSig = '';
+    renderGachaResult(res);
+  }
+  function renderGachaResult(res) {
+    $('drillTitle').textContent = res.length === 1 ? 'ガチャの結果' : 'ガチャの結果（' + res.length + '連）';
+    const body = $('drillBody');
+    const newN = res.filter(r => r.isNew).length, fert = res.reduce((a, r) => a + r.fert, 0), sh = res.reduce((a, r) => a + r.shards, 0);
+    const high = res.some(r => r.rarity === 'SR' || r.rarity === 'UR');
+    if (res.length === 1) body.innerHTML = cardHtml(res[0], true);
+    else {
+      body.innerHTML = '<div class="ggrid">' + res.map(r => cardHtml(r, false)).join('') + '</div>' +
+        '<div class="gsum">' + (newN ? '<span class="gnew">NEW</span> ' + newN + '種が図鑑に登録されました' : '新しい品目はありませんでした') +
+        (fert || sh ? '<br>被り変換：' + [fert ? '肥料+' + fert : '', sh ? 'カケラ+' + sh : ''].filter(Boolean).join('　') : '') + '</div>';
+    }
+    body.insertAdjacentHTML('beforeend', '<div class="gsum">カケラ ' + state.drill.shards + '個　図鑑 ' + GA.dexCount(state.gacha) + '/' + GA.ITEMS.length + '</div>');
+    const acts = document.createElement('div'); acts.className = 'dacts';
+    acts.appendChild(mkBtn('もう1回', state.drill.shards < GA.COST, () => doGacha(1)));
+    acts.appendChild(mkBtn('もう10連', state.drill.shards < GA.COST * 10, () => doGacha(10)));
+    acts.appendChild(mkBtn('図鑑', false, openDex));
+    acts.appendChild(mkBtn('メニューへ', false, renderDrillMenu));
+    body.appendChild(acts);
+    if (high) sparkle(body.querySelector('.gcard.r-SR, .gcard.r-UR') || body);
+  }
+
+  // ---------- 図鑑 ----------
+  let dexCat = 'seed';
+  const dexOpen = () => $('dexPanel').style.display === 'flex';
+  function renderDex() {
+    const g = state.gacha, total = GA.ITEMS.length, have = GA.dexCount(g), body = $('dexBody');
+    body.innerHTML = '<div class="dexhead"><span class="dexrate">収集率 ' + have + '/' + total + '（' + Math.floor(100 * have / total) + '%）</span>' +
+      '<span class="dexbar"><i style="width:' + (100 * have / total).toFixed(1) + '%"></i></span><span>肥料 ' + ownedCount(GA.FERT_ID) + '個</span></div>';
+    const tabs = document.createElement('div'); tabs.className = 'dextabs';
+    for (const c of GA.CAT_ORDER) {
+      const its = GA.ITEMS.filter(i => i.cat === c), n = its.filter(i => g.dex[i.id]).length;
+      const b = document.createElement('button'); b.className = 'tool pix' + (dexCat === c ? ' sel' : '');
+      b.innerHTML = GA.CATS[c] + ' ' + n + '/' + its.length; b.onclick = () => { dexCat = c; renderDex(); };
+      tabs.appendChild(b);
+    }
+    body.appendChild(tabs);
+    const grid = document.createElement('div'); grid.className = 'dexgrid';
+    for (const it of GA.ITEMS.filter(i => i.cat === dexCat)) {
+      const got = !!g.dex[it.id], card = document.createElement('div');
+      card.className = 'dexcard r-' + it.r + (got ? '' : ' unk'); card.dataset.id = it.id;
+      const cnt = it.cat === 'decor' || it.cat === 'cons' ? '<div class="dc">所持 ×' + ownedCount(it.id) + '</div>' : (it.cat === 'seed' || it.cat === 'helper') ? '<div class="dc">解放済み</div>' : '';
+      card.innerHTML = '<img class="px" src="' + iconURL(CAT_ICON[it.cat]) + '" alt="">' +
+        '<div class="dinfo"><span class="rtag ' + it.r + '">' + GA.RARITY_LABEL[it.r] + '</span> <span class="dn">' + (got ? it.name : '？？？') + '</span>' +
+        (got ? '<div class="df">' + it.fx + '</div>' + cnt : '') + '</div>';
+      if (got && CONS_USE[it.id]) {
+        const ub = document.createElement('button'); ub.className = 'tool pix'; ub.textContent = '使う';
+        const full = CONS_USE[it.id].sec && state.drill.stock >= DRILL_STOCK_MAX;
+        ub.disabled = !canUseCons(it.id); if (full) ub.title = '時短ストックが満タンです';
+        if (full) ub.textContent = '満タン';
+        ub.onclick = () => {
+          const r = useConsumable(it.id);
+          if (r) { hudSig = ''; toast(it.name + 'を使いました：' + (r.sec ? '時短ストック +' + fmtStock(r.sec) : '即完了チケット +' + r.ticket + '枚')); renderDex(); }
+        };
+        card.appendChild(ub);
+      }
+      grid.appendChild(card);
+    }
+    body.appendChild(grid);
+    body.insertAdjacentHTML('beforeend', '<div class="dexfoot">未入手は「？？？」とレア度だけ表示。効果の発動は段階5で対応します（注文リロール券は注文パネルで使えます）</div>');
+  }
+  function openDex() { $('drillPanel').style.display = 'none'; ds = null; renderDex(); $('dexPanel').style.display = 'flex'; }
+  $('dexClose').onclick = () => { $('dexPanel').style.display = 'none'; };
+  $('dexHud').onclick = openDex;
+
   // ---------- 時短の適用パネル（進行中のタイマーの一覧） ----------
   let skipSig = '', skipRows = {}, skipTickAt = 0;
   const skipOpen = () => $('skipPanel').style.display === 'flex';
@@ -2304,7 +2732,7 @@
   }
   $('skipClose').onclick = () => { $('skipPanel').style.display = 'none'; };
 
-  for (const id of ['popup', 'ordersPanel', 'warehousePanel', 'facPanel', 'drillPanel', 'skipPanel']) {
+  for (const id of ['popup', 'ordersPanel', 'warehousePanel', 'facPanel', 'drillPanel', 'skipPanel', 'dexPanel']) {
     const el = $(id);
     el.addEventListener('pointerdown', e => { if (e.target === el) { el.style.display = 'none'; if (id === 'popup') popupPlot = -1; if (id === 'drillPanel') ds = null; } });
   }
@@ -2417,6 +2845,7 @@
     facCenter: k => toScreen(FAC[k].x, FAC[k].y - (bState(k) === 'none' ? 8 : 20)),
     millCenter: () => window.__clockseed.facCenter('mill'),
     kitchenCenter: () => window.__clockseed.facCenter('kitchen'),
+    lastGacha: () => JSON.parse(JSON.stringify(lastGacha)),
     towerCenter: () => toScreen(LAYOUT.tower.x, LAYOUT.tower.y - 30),
     drillAnswerIndex: () => (ds && ds.set[ds.i] ? ds.set[ds.i].answer : -1),
     timers: () => timers().map(x => ({ id: x.id, remaining: x.ready - now(), dur: origDur(x) })),

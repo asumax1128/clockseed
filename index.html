@@ -157,9 +157,8 @@
   .pips i.ok{background:#7fc24a}.pips i.ng{background:#d0705a}.pips i.cur{background:#f2d27a}
   .dq-prompt{font-size:28px;font-weight:bold;margin:16px 4px 8px;letter-spacing:.03em;min-height:42px;line-height:1.35}
   .dq-vis{display:flex;justify-content:center;margin-bottom:4px}
-  /* 句読点（、。）の直後だけを改行の候補に：まとまり（.ph）は途中で割らず、行に入らないときだけ次の行へ。最後の手段（phwrap）だけ文節で折り返す */
+  /* 改行の候補は、句読点（、。）の直後と、かっこ書き「（」の直前だけ：まとまり（.ph）は途中で割らず、行に入らないときだけ次の行へ（例外なし） */
   .ph{display:inline-block;white-space:nowrap}
-  .phwrap .ph{display:inline;white-space:normal;word-break:auto-phrase}
   .dfbt{display:inline-block;max-width:100%}
   .choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;margin:8px 4px 0}   /* 狭い画面では1列 */
   .choice .cl{display:block;max-width:100%;line-height:1.3}.dq-prompt{overflow:hidden}
@@ -955,7 +954,7 @@
   T.C5 = { level: 'C', name: '場合の数', gen(rng) {
     const f = pick(rng, ['perm', 'comb', 'fact']), U = '通り';
     if (f === 'perm') { const n = ri(rng, 4, 8), r = ri(rng, 2, 3);
-      return build(rng, 'C5', 'C', '異なる ' + n + ' 個の文字から ' + r + ' 個を選んで1列に並べる並べ方は何通り？', Q(P_(n, r), 1, U),
+      return build(rng, 'C5', 'C', '異なる ' + n + ' 個の文字から ' + r + ' 個を選んで1列に並べます。並べ方は何通り？', Q(P_(n, r), 1, U),
         [Q(C_(n, r), 1, U), Q(n ** r, 1, U), Q(n * r, 1, U), Q(P_(n, r + 1), 1, U)], k => Q(P_(n, r) + near(k), 1, U), { f, n, r }, null, pos); }
     if (f === 'comb') { const n = ri(rng, 5, 10), r = ri(rng, 2, 4);
       return build(rng, 'C5', 'C', n + ' 人の中から ' + r + ' 人の係を選ぶ選び方は何通り？（係の区別はしない）', Q(C_(n, r), 1, U),
@@ -1474,12 +1473,15 @@
     const s = String(text), whole = [...s].every(c => MATH_CH.test(c));
     // 数式を含む文字列では、数だけの区間（「半径 14」の 14 など）も数式の字体にそろえる。数式を含まない文章（「5 人が1列に」）の数はそのまま
     const spans = s.match(new RegExp(MATH_CH.source + '+', 'g')) || [], anyMath = spans.some(x => TRIGGER.test(x.trim()));
-    let out = '', i = 0;
+    let out = '', i = 0, depth = 0;                        // depth：全角かっこ（ ）の中にいるか
     while (i < s.length) {
       if (!MATH_CH.test(s[i])) {
-        const ch = s[i++]; out += esc(ch);
-        if (phrases && (ch === '、' || ch === '。')) {
-          while (i < s.length && /[」』）)]/.test(s[i])) out += esc(s[i++]);          // 句読点のあとの閉じかっこは、同じまとまりに（行の先頭に来ない）
+        const ch = s[i++];
+        if (ch === '（') { if (phrases && depth === 0 && /\S/.test(out.slice(out.lastIndexOf(PH_MARK) + 1).replace(/<[^>]*>/g, ''))) out += PH_MARK; depth++; }   // かっこ書き（独立した補足）の直前も改行の候補
+        else if (ch === '）') depth = Math.max(0, depth - 1);
+        out += esc(ch);
+        if (phrases && depth === 0 && (ch === '、' || ch === '。')) {                // かっこの中では句読点でも割らない
+          while (i < s.length && /[」』）)]/.test(s[i])) { if (s[i] === '）') depth = Math.max(0, depth - 1); out += esc(s[i++]); }          // 句読点のあとの閉じかっこは、同じまとまりに（行の先頭に来ない）
           if (/\S/.test(s.slice(i))) out += PH_MARK;
         }
         continue;
@@ -5230,15 +5232,13 @@
     fitPhrases(body.querySelector('.dq-prompt'), 12); grid.querySelectorAll('.choice').forEach(b => fitMath(b, 14));
   }
   // 句読点の直後だけで改行する文章（問題文・「こたえは…」）：まとまり（.ph）は途中で割らない。
-  // 1つのまとまりが行の幅を超えるときは、文字を少しずつ小さくして収める。それでも収まらないとき（下限 min px）だけ、最後の手段として文節の切れ目で折り返す
+  // 1つのまとまりが行の幅を超えるときは、文字を少しずつ小さくして収める（下限 min px）
   function fitPhrases(el, min) {
     if (!el) return;
-    el.style.fontSize = ''; el.classList.remove('phwrap');
+    el.style.fontSize = '';
     let fs = parseFloat(getComputedStyle(el).fontSize);
     const over = () => { const w = el.getBoundingClientRect(); return el.scrollWidth > el.clientWidth + 1 || [...el.querySelectorAll('.ph')].some(p => { const r = p.getBoundingClientRect(); return r.right > w.right + 1 || r.left < w.left - 1; }); };
-    const orig = fs;
-    while (over() && fs > min) { fs -= 1; el.style.fontSize = fs + 'px'; }
-    if (over()) { el.classList.add('phwrap'); el.style.fontSize = Math.min(orig, 16) + 'px'; }   // 最後の手段：小さくしすぎず（16px）、文節の切れ目で折り返す
+    while (over() && fs > min) { fs -= 1; el.style.fontSize = fs + 'px'; }   // 例外なし：どの問題も、まとまりを割らずに min px までで収まる（tests/e2e/stage8f が全問題で確かめる）
   }
   // 数式は途中で折り返せないので、入りきらないときだけ文字を少しずつ小さくする（狭い画面の長い式・円の方程式など）
   function fitMath(el, min) {

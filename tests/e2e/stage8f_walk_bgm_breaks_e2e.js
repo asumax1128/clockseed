@@ -125,13 +125,13 @@ log('--- 問題文の改行 ---');
 const LAYOUT=el=>{const box=document.querySelector(el),host=box,ph=[...host.querySelectorAll('.ph')],hr=host.getBoundingClientRect(),cs=getComputedStyle(host),pad=parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight),W=hr.width-pad;
   if(!ph.length)return null;const lh=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.35,rs=ph.map(p=>{const r=p.getBoundingClientRect();return {l:r.left,r:r.right,t:r.top,w:r.width,h:r.height,txt:p.textContent};});
   const lines=[];for(const r of rs){const ln=lines.find(L=>Math.abs(L.t-r.t)<lh*0.5);if(ln){ln.items.push(r);}else lines.push({t:r.t,items:[r]});}
-  const wrapMode=host.classList.contains('phwrap'),fs=parseFloat(cs.fontSize);
+  const wrapMode=host.classList.contains('phwrap')||ph.some(p=>getComputedStyle(p).whiteSpace!=='nowrap'||getComputedStyle(p).display!=='inline-block'),fs=parseFloat(cs.fontSize);
   // 1つのまとまりが2行以上に割れた：まとまりの中の「文字」（数式の外のテキスト）の位置が、2つ以上の行にまたがる（分数などの背の高い数式は、行の数に数えない）
-  const split=wrapMode?0:ph.filter(p=>{const tops=[];const wk=document.createTreeWalker(p,NodeFilter.SHOW_TEXT);let nd;while((nd=wk.nextNode())){if(nd.parentElement.closest('math')||!nd.textContent.trim())continue;const rg=document.createRange();rg.selectNodeContents(nd);for(const q of rg.getClientRects()){if(q.width>0&&!tops.some(x=>Math.abs(x-q.top)<lh*0.5))tops.push(q.top);}}return tops.length>1;}).length;
+  const split=ph.filter(p=>{const tops=[];const wk=document.createTreeWalker(p,NodeFilter.SHOW_TEXT);let nd;while((nd=wk.nextNode())){if(nd.parentElement.closest('math')||!nd.textContent.trim())continue;const rg=document.createRange();rg.selectNodeContents(nd);for(const q of rg.getClientRects()){if(q.width>0&&!tops.some(x=>Math.abs(x-q.top)<lh*0.5))tops.push(q.top);}}return tops.length>1;}).length;
   const over=rs.filter(r=>r.r>hr.right+1||r.l<hr.left-1).length+(host.scrollWidth>host.clientWidth+1?1:0);   // 行からはみ出した
   let lazy=0;for(let k=0;k+1<lines.length;k++){const used=lines[k].items.reduce((m,x)=>m+x.w,0),next=lines[k+1].items[0].w;if(used+next<=W-2)lazy++;}   // 入るのに割った（欲ばりでない）
   const total=rs.reduce((m,x)=>m+x.w,0);
-  const lineEnds=lines.slice(0,-1).every(L=>/[、。][」』）)]*$/.test(L.items[L.items.length-1].txt.trim()));   // 最後以外の行は句読点で終わる
+  const lineEnds=lines.slice(0,-1).every((L,k)=>/[、。][」』）)]*$/.test(L.items[L.items.length-1].txt.trim())||/^（/.test(lines[k+1].items[0].txt.trim()));   // 最後以外の行は、句読点で終わるか、次の行が「（」で始まる
   return {n:rs.length,lines:lines.length,split,over,lazy,fits:total<=W-2,fs,wrapMode,W:Math.round(W),total:Math.round(total),lineEnds,texts:lines.map(L=>L.items.map(x=>x.txt.trim()).join(''))};};
 const TYPES=await (async()=>{const pg=await boot(1180,820,save(8));const r=await pg.evaluate(()=>Object.keys(window.ClockseedDrill.TYPES));await pg.context().close();return r;})();
 for(const [w,h,name] of [[1180,820,'タブレット横'],[390,844,'スマホ縦 390×844'],[360,740,'スマホ縦 360×740']]){
@@ -144,12 +144,20 @@ for(const [w,h,name] of [[1180,820,'タブレット横'],[390,844,'スマホ縦 
     if(L.wrapMode&&!stat.wrap.includes(t))stat.wrap.push(t);stat.minFs=Math.min(stat.minFs,L.fs);
     if(L.fits&&L.n>1){stat.fitsOne++;if(L.lines!==1){stat.fitsOneBad++;stat.sample=stat.sample||'収まるのに改行 '+t+':'+info.prompt;}}
     if(L.n>1&&stat.ex.length<4&&L.lines>1&&!stat.ex.some(e=>e.t===t))stat.ex.push({t,prompt:info.prompt,texts:L.texts});}
-  ok(stat.split===0&&stat.over===0&&stat.lazy===0&&stat.notEnd===0&&stat.fitsOneBad===0,'['+name+'] '+stat.n+'問：句読点の直後だけで改行（途中で割れ 0・行からはみ出し 0・入るのに割った 0・句読点で終わらない行 0）。句読点のある問題 '+stat.withPunct+'問のうち、改行されたのは '+stat.multi+'問、全体が1行に収まる '+stat.fitsOne+'問は句読点があっても1行のまま（改行 '+stat.fitsOneBad+'）',stat.sample||'');
-  log('   文字の大きさの最小 '+stat.minFs+'px'+(stat.wrap.length?'｜1つのまとまりが12pxでも幅を超える問題（最後の手段で文節の切れ目の折り返し）：'+stat.wrap.join(','):'｜どの問題も、まとまりを割らずに収まった'));
+  ok(stat.wrap.length===0,'['+name+'] 例外なし：「最後の手段の折り返し」を使う問題は 0（全 '+stat.n+' 問がまとまりを割らずに収まる）',stat.wrap.join(','));
+  ok(stat.split===0&&stat.over===0&&stat.lazy===0&&stat.notEnd===0&&stat.fitsOneBad===0,'['+name+'] '+stat.n+'問：句読点の直後と「（」の直前だけで改行（途中で割れ 0・行からはみ出し 0・入るのに割った 0・句読点で終わらない行 0）。句読点のある問題 '+stat.withPunct+'問のうち、改行されたのは '+stat.multi+'問、全体が1行に収まる '+stat.fitsOne+'問は句読点があっても1行のまま（改行 '+stat.fitsOneBad+'）',stat.sample||'');
+  log('   文字の大きさの最小 '+stat.minFs+'px'+(stat.wrap.length?'｜例外あり：'+stat.wrap.join(','):'｜どの問題も、まとまりを割らずに収まった'));
   if(w===1180)ok(stat.fitsOne>0&&stat.multi>=0,'['+name+'] 句読点があっても1行に収まる問題が実際にある（'+stat.fitsOne+'問）');
-  if(w===390){stat.wrap.forEach(t=>log('   ※ '+name+'：'+t+' は最後の手段の折り返しを使う'));
+  if(w===390){
     for(const e of stat.ex)log('   例 '+e.t+'：「'+e.prompt+'」→ '+e.texts.map(x=>'【'+x+'】').join(''));}
   await pg.context().close();}
+// C5「…何通り？（係の区別はしない）」：スマホ縦（390・360）で2行に収まる（「（」の直前で改行）
+for(const [w,h] of [[390,844],[360,740]]){const pg=await boot(w,h,save(8),{dsf:2});let n=0,bad=[];
+  for(let s=1;s<=60;s++){const info=await pg.evaluate(s=>window.__clockseed.drillShow('C5',s*7+3),s);if(!/（/.test(info.prompt))continue;n++;
+    const L=await pg.evaluate(LAYOUT,'.dq-prompt');const fs=await pg.evaluate(()=>parseFloat(getComputedStyle(document.querySelector('.dq-prompt')).fontSize));
+    if(L.lines!==2||L.split||L.over||!/^（/.test(L.texts[1])||fs<12)bad.push(info.prompt+' '+L.lines+'行 '+fs+'px');
+    if(n===1)await pg.locator('#drillPanel .box').screenshot({path:O+'101_C5_paren_'+w+'.png'});}
+  ok(n>0&&bad.length===0,'[C5 '+w+'px] 「（係の区別はしない）」付きの問題 '+n+' 問すべてが2行（2行目は「（」から）・割れなし・はみ出しなし・12px以上',bad[0]||'');await pg.context().close();}
 // スクリーンショット（句読点のあるいろいろな問題：タブレット横と、スマホ縦）
 for(const [w,h,tag,dsf] of [[1180,820,'tablet',1],[390,844,'phone',2]]){
   const pg=await boot(w,h,save(8),{dsf});let shot=0;const pick=[['C6',9],['D6',3],['E6',5],['D3',11],['D5',4],['E4',2],['C1',8]];

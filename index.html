@@ -155,8 +155,12 @@
   .pips{display:flex;gap:6px}
   .pips i{width:14px;height:14px;background:#d8c39a;display:block;box-shadow:inset 0 -3px 0 #0001}
   .pips i.ok{background:#7fc24a}.pips i.ng{background:#d0705a}.pips i.cur{background:#f2d27a}
-  .dq-prompt{font-size:28px;font-weight:bold;margin:16px 4px 8px;letter-spacing:.03em;min-height:42px;line-height:1.35;word-break:auto-phrase}   /* 句読点（、。）での改行は <br>。幅が足りないときの折り返しも、文節で（対応していないブラウザでは通常の折り返し） */
+  .dq-prompt{font-size:28px;font-weight:bold;margin:16px 4px 8px;letter-spacing:.03em;min-height:42px;line-height:1.35}
   .dq-vis{display:flex;justify-content:center;margin-bottom:4px}
+  /* 句読点（、。）の直後だけを改行の候補に：まとまり（.ph）は途中で割らず、行に入らないときだけ次の行へ。最後の手段（phwrap）だけ文節で折り返す */
+  .ph{display:inline-block;white-space:nowrap}
+  .phwrap .ph{display:inline;white-space:normal;word-break:auto-phrase}
+  .dfbt{display:inline-block;max-width:100%}
   .choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;margin:8px 4px 0}   /* 狭い画面では1列 */
   .choice .cl{display:block;max-width:100%;line-height:1.3}.dq-prompt{overflow:hidden}
   .choice{font-size:24px;padding:10px;justify-content:center;min-height:62px}
@@ -212,7 +216,7 @@
   .fxf-qbar{height:6px;background:#0b0f22;border-radius:4px;overflow:hidden}.fxf-qbar i{display:block;height:100%;background:#6bd4e8}.fxf-qbar i.warn{background:#ff5c5c}
   .fxf-pop{position:absolute;right:12px;top:8px;display:none;flex-direction:column;align-items:flex-end;font-size:13px}
   .fxf-pop.show{display:flex}.fxf-pop b{font-size:24px;text-shadow:0 2px 0 #000}.fxf-pop span{font-size:18px;color:#ffd54a;font-weight:bold}
-  .fxf-grid{flex:1;width:100%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:14px;min-height:0;touch-action:none}
+  .fxf-grid{flex:1;width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,1fr);gap:14px;min-height:0;touch-action:none}
   .fxf-tile{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#fdfbff,#dcd6f5);color:#1d1640;border-radius:16px;
     border:3px solid #8a7fe0;box-shadow:0 5px 0 #4b3fa0;font-size:34px;font-weight:bold;cursor:grab;touch-action:none;position:relative;transition:box-shadow .1s}
   .fxf-tile.drag{z-index:5;cursor:grabbing;box-shadow:0 12px 18px #0008;opacity:.8}
@@ -483,6 +487,8 @@
     .dmenu .dacts{gap:8px;margin-top:2px}.dmenu .dacts .tool{min-height:44px;font-size:15px;padding:6px 14px}
     .dmenu .gbox{margin:8px 0 4px;padding:8px}
   }
+  /* FACTOR×FACTOR（移植版）の式（MathML）：スマホ縦ではタイルの文字を小さくして、縁から余裕をもって収める */
+  @media (max-width:600px){.fxf-tile{font-size:22px;border-radius:12px}.fxf-grid{gap:8px}.fxf-target{font-size:32px}.fxf-tile math{max-width:100%}}
 </style>
 </head>
 <body>
@@ -1343,6 +1349,7 @@
    =================================================================== */
 (function (root) {
   'use strict';
+  const PH_MARK = '\u0001';                                // まとまりの区切り（toHtml の中だけで使う）
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const SUPD = { '²': '2', '³': '3' }, SUBD = '₀₁₂₃₄₅₆₇₈₉';
   const UNITS = ['cm', 'kg', 'g', 'm'];
@@ -1427,7 +1434,7 @@
   // ---- 描画：木 → MathML ----
   const mo = (v, a) => '<mo' + (a || '') + '>' + esc(v) + '</mo>';
   const THIN = '<mspace width="0.167em"></mspace>';                 // 関数名と引数のあいだの細いすき間（sin 30°・log₂ 8）
-  const neg = v => (v[0] === '−' ? mo('−') + '<mn>' + v.slice(1) + '</mn>' : '<mn>' + v + '</mn>');
+  const neg = v => (v[0] === '−' ? mo('−', ' form="prefix"') + '<mn>' + v.slice(1) + '</mn>' : '<mn>' + v + '</mn>');   // 積分の上下端の符号
   function R(xs) { return xs.map((n, j) => node(n, xs[j + 1], xs[j - 1])).join(''); }
   function node(n, next, prev) {
     switch (n.k) {
@@ -1454,7 +1461,7 @@
         if (n.v === ',') return mo(',', ' separator="true"');
         if (n.v === '°' || n.v === '′') return mo(n.v, ' lspace="0" rspace="0"');
         if (n.v === '|') return mo('|', ' stretchy="false" lspace="0" rspace="0"');   // 絶対値の縦線は中身に寄せる
-        if ((n.v === '−' || n.v === '-' || n.v === '±') && (!prev || prev.k === 'op' || prev.k === 'fn' || prev.k === 'slash')) return mo(n.v, ' form="prefix"');   // 符号（−5、= −2i、, −3）
+        if ((n.v === '−' || n.v === '-' || n.v === '±') && (!prev || (prev.k === 'op' && prev.v !== '°' && prev.v !== '′') || prev.k === 'fn' || prev.k === 'slash')) return mo(n.v, ' form="prefix"');   // 符号（−5、= −2i、, −3）
         return mo(n.v);
     }
     return '';
@@ -1463,19 +1470,27 @@
 
   // ---- 文章の中から数式の区間を探して、そこだけ MathML に ----
   function toHtml(text, opts) {
-    const breaks = !!(opts && opts.breaks);                // 句読点（、。）のあとで改行する（日本語の文章の部分だけ。数式の途中では割らない。段階8f）
+    const phrases = !!(opts && opts.phrases);              // 句読点（、。）の直後だけを改行の候補にするため、文章を「句読点で終わるまとまり」（<span class="ph">）に分ける（段階8f）
     const s = String(text), whole = [...s].every(c => MATH_CH.test(c));
     // 数式を含む文字列では、数だけの区間（「半径 14」の 14 など）も数式の字体にそろえる。数式を含まない文章（「5 人が1列に」）の数はそのまま
     const spans = s.match(new RegExp(MATH_CH.source + '+', 'g')) || [], anyMath = spans.some(x => TRIGGER.test(x.trim()));
     let out = '', i = 0;
     while (i < s.length) {
-      if (!MATH_CH.test(s[i])) { const ch = s[i++]; out += esc(ch); if (breaks && (ch === '、' || ch === '。') && /\S/.test(s.slice(i)) && !/^[」』）)\s]*$/.test(s.slice(i))) out += '<br>'; continue; }
+      if (!MATH_CH.test(s[i])) {
+        const ch = s[i++]; out += esc(ch);
+        if (phrases && (ch === '、' || ch === '。')) {
+          while (i < s.length && /[」』）)]/.test(s[i])) out += esc(s[i++]);          // 句読点のあとの閉じかっこは、同じまとまりに（行の先頭に来ない）
+          if (/\S/.test(s.slice(i))) out += PH_MARK;
+        }
+        continue;
+      }
       let j = i; while (j < s.length && MATH_CH.test(s[j])) j++;
       const span = s.slice(i, j), lead = span.match(/^ */)[0], trail = span.match(/ *$/)[0], core = span.trim();
       if (core && (TRIGGER.test(core) || whole || (anyMath && /^[\d.,\s]+$/.test(core) && /\d/.test(core)))) out += esc(lead) + mathOf(core) + esc(trail);
       else out += esc(span);
       i = j;
     }
+    if (phrases) out = out.split(PH_MARK).map(x => x.replace(/^ +/, '')).filter(x => x !== '').map(x => '<span class="ph">' + x + '</span>').join('');
     return out;
   }
   root.ClockseedMath = { toHtml, mathOf, lex, parse };
@@ -5091,7 +5106,7 @@
     }).join('');
   // 通常ドリルの問題文・選択肢は MathML で描く（段階8b）。fmtMath は特殊ドリル（本家の表示が正本）だけが使う
   const mathHtml = s => window.ClockseedMath.toHtml(s);
-  const promptHtml = s => window.ClockseedMath.toHtml(s, { breaks: true });          // 問題文・「こたえは…」：句読点（、。）で改行（段階8f）
+  const promptHtml = s => window.ClockseedMath.toHtml(s, { phrases: true });         // 問題文・「こたえは…」：句読点（、。）の直後だけを改行の候補に（段階8f）
   const icon = k => '<img class="px" src="' + iconURL(k) + '" alt="">';
   const fmtShard = x => (Number.isInteger(x) ? String(x) : x.toFixed(1));
   let drillLevel = 'A', ds = null;                   // ds：進行中のセット（セーブしない）
@@ -5212,7 +5227,18 @@
     });
     body.appendChild(grid);
     const fb = document.createElement('div'); fb.className = 'dfb'; fb.id = 'dqFb'; body.appendChild(fb);
-    fitMath(body.querySelector('.dq-prompt'), 16); grid.querySelectorAll('.choice').forEach(b => fitMath(b, 14));
+    fitPhrases(body.querySelector('.dq-prompt'), 12); grid.querySelectorAll('.choice').forEach(b => fitMath(b, 14));
+  }
+  // 句読点の直後だけで改行する文章（問題文・「こたえは…」）：まとまり（.ph）は途中で割らない。
+  // 1つのまとまりが行の幅を超えるときは、文字を少しずつ小さくして収める。それでも収まらないとき（下限 min px）だけ、最後の手段として文節の切れ目で折り返す
+  function fitPhrases(el, min) {
+    if (!el) return;
+    el.style.fontSize = ''; el.classList.remove('phwrap');
+    let fs = parseFloat(getComputedStyle(el).fontSize);
+    const over = () => { const w = el.getBoundingClientRect(); return el.scrollWidth > el.clientWidth + 1 || [...el.querySelectorAll('.ph')].some(p => { const r = p.getBoundingClientRect(); return r.right > w.right + 1 || r.left < w.left - 1; }); };
+    const orig = fs;
+    while (over() && fs > min) { fs -= 1; el.style.fontSize = fs + 'px'; }
+    if (over()) { el.classList.add('phwrap'); el.style.fontSize = Math.min(orig, 16) + 'px'; }   // 最後の手段：小さくしすぎず（16px）、文節の切れ目で折り返す
   }
   // 数式は途中で折り返せないので、入りきらないときだけ文字を少しずつ小さくする（狭い画面の長い式・円の方程式など）
   function fitMath(el, min) {
@@ -5274,7 +5300,7 @@
       setTimeout(() => { if (ds === cur && drillOpen()) nextDrill(); }, 950);
     } else {
       sfx('wrong'); fxBatsu();
-      fb.innerHTML = 'ざんねん… こたえは「' + promptHtml(pb.choices[pb.answer].label) + '」' + (res.streakLost ? '<br><small>連続正解が0に戻りました</small>' : '') + '<br>';
+      fb.innerHTML = '<span class="dfbt">' + promptHtml('ざんねん… こたえは「' + pb.choices[pb.answer].label + '」') + '</span>' + (res.streakLost ? '<br><small>連続正解が0に戻りました</small>' : '') + '<br>';
       const nb = mkBtn('つぎへ', false, nextDrill); nb.style.marginTop = '6px'; fb.appendChild(nb);
     }
   }
@@ -5354,9 +5380,9 @@
     el.innerHTML = '<div class="fxf-hud">' +
       '<div class="fxf-hp"><div class="fxf-hpbar"><i id="fxfHpFill"></i></div><b id="fxfHp"></b></div>' +
       '<div class="fxf-stats"><span>スコア <b id="fxfScore"></b></span><span>コンボ <b id="fxfCombo"></b></span><span>問 <b id="fxfQ"></b> / ' + C.clearCount + '</span><span id="fxfTime"></span></div></div>' +
-      '<div class="fxf-q"><span class="fxf-lv">Lv' + q.level + ' ' + FXF.LEVEL_NAME[q.level] + '</span><div class="fxf-target" id="fxfTarget">' + fmtMath(q.target) + '</div>' +
+      '<div class="fxf-q"><span class="fxf-lv">Lv' + q.level + ' ' + FXF.LEVEL_NAME[q.level] + '</span><div class="fxf-target" id="fxfTarget">' + mathHtml(q.target) + '</div>' +
       '<div class="fxf-qbar"><i id="fxfQbar"></i></div><div class="fxf-pop" id="fxfPop"></div></div>' +
-      '<div class="fxf-grid" id="fxfGrid">' + q.tiles.map(t => '<div class="fxf-tile" data-tile-id="' + t.id + '"><span>' + fmtMath(t.label) + '</span></div>').join('') + '</div>' +
+      '<div class="fxf-grid" id="fxfGrid">' + q.tiles.map(t => '<div class="fxf-tile" data-tile-id="' + t.id + '"><span>' + mathHtml(t.label) + '</span></div>').join('') + '</div>' +
       '<div class="fxf-foot"><span id="fxfEarn"></span><small>' + fxfRewardNote() + '</small></div>';
     $('fxfGrid').querySelectorAll('.fxf-tile').forEach(tEl => tEl.addEventListener('pointerdown', e => fxfDown(e, tEl)));
     fxfHud();

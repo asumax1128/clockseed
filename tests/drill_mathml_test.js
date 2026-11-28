@@ -57,7 +57,12 @@ function ser(n) {
   const E = elems(n), S = k => ser(k), A = (n.t in ARITY) ? E : null;
   if (A && A.length !== ARITY[n.t]) throw new Error('<' + n.t + '> の子の数が ' + A.length);
   switch (n.t) {
-    case 'math': case 'mrow': return E.map(S).join('');
+    case 'math': case 'mrow': return E.map((k, i) => {
+      if (k.t === 'mo' && textOf(k) === '−') {                  // 符号のマイナス：先頭・演算子のあと（°′は除く）は form="prefix"、それ以外は form なし
+        const pv = E[i - 1], unary = !pv || (pv.t === 'mo' && !['°', '′'].includes(textOf(pv)));
+        if (unary !== (k.attrs.form === 'prefix')) throw new Error('マイナスの形（符号／引き算）が合わない');
+      }
+      return S(k); }).join('');
     case 'mn': case 'mi': return textOf(n);
     case 'mo': { const v = textOf(n); return v === '⁡' ? '' : v; }
     case 'mspace': return '';
@@ -175,52 +180,97 @@ for (const [name, from, to, tag] of MUT) {
   console.log((okm ? '検出 ' : '見逃し ') + name + '｜' + tag + 'を含む ' + target.length + '種のうち ' + caught.length + '種で不一致（' + caught.join(',') + '）');
 }
 
-// ---- 句読点で改行（段階8f）：問題文と「こたえは…」は、日本語の文章の句読点（、。）のあとで改行。数式の途中では割らない ----
-// 検査：①<br> を取り除くと、改行なしの表示と完全に同じ（文字も数式も変わらない） ②<br> は <math>…</math> の外だけ
-//       ③<br> の数 ＝ 文の途中にある句読点（、。）の数（句読点の直後で、最後の句読点・「」や空白だけが続く場合を除く）
+// ---- 句読点の直後だけを改行の候補にする（段階8f）：問題文と「こたえは…」を、句読点（、。）で終わるまとまり <span class="ph"> に分ける ----
+// （まとまりは途中で割らない／行に入らないときだけ次の行へ、はブラウザで確かめる：tests/e2e/stage8f_walk_bgm_breaks_e2e.js）
+// 検査：①まとまりの <span> を取り除くと、改行の候補なしの表示と完全に同じ（文字も数式も変わらない） ②<span> は数式（<math>）の外だけで、入れ子にならない
+//       ③まとまりの数 ＝ 文の途中にある句読点の数 ＋ 1 ④最後以外のまとまりは句読点（と閉じかっこ）で終わり、途中に句読点がない ⑤まとまりは空白で始まらない・空でない
+const PUNCT = /[、。]/, CLOSE = /[」』）)]/;
+function wantPhrases(src) {                                   // 独立に書いた分け方：句読点（＋続く閉じかっこ）のあとで区切る。残りが空白だけなら区切らない
+  const out = []; let cur = '';
+  for (let k = 0; k < src.length; k++) { cur += src[k];
+    if (PUNCT.test(src[k])) { while (k + 1 < src.length && CLOSE.test(src[k + 1])) cur += src[++k]; if (/\S/.test(src.slice(k + 1))) { out.push(cur); cur = ''; } } }
+  out.push(cur); return out.map(x => x.replace(/^ +/, '')).filter(x => x !== '');
+}
 function breakChecks(MR, n, seed0) {
-  const res = { n: 0, strip: 0, inMath: 0, count: 0, hasBr: 0, sample: null };
+  const res = { n: 0, strip: 0, inMath: 0, count: 0, ends: 0, hasBr: 0, sample: null };
+  const one = src => {
+    res.n++;
+    const a = MR.toHtml(src), b = MR.toHtml(src, { phrases: true });
+    if (b.replace(/<span class="ph">|<\/span>/g, '') !== a) { res.strip++; res.sample = res.sample || '①' + src; }
+    let dm = 0, ds = 0, bad = false; const texts = [];
+    for (const tk of b.split(/(<\/?math>|<span class="ph">|<\/span>)/)) {
+      if (tk === '<math>') dm++; else if (tk === '</math>') dm--;
+      else if (tk === '<span class="ph">') { if (dm > 0 || ds > 0) bad = true; ds++; texts.push(''); } else if (tk === '</span>') ds--;
+      else if (ds === 1 && dm === 0 && !/^<\/?(math|mrow|mn|mi|mo|mfrac|msqrt|msup|msub|msubsup|mover|mspace)/.test(tk)) texts[texts.length - 1] += tk;
+    }
+    if (bad || ds !== 0) { res.inMath++; res.sample = res.sample || '②' + src; }
+    const want = wantPhrases(src);
+    if (texts.length !== want.length) { res.count++; res.sample = res.sample || '③' + src + ' 期待' + want.length + ' 実際' + texts.length; }
+    // 各まとまりの「文字」（数式は空に見える）を、元の文の対応する部分から数式を除いたものと比べる代わりに、句読点の位置で確かめる
+    const phr = b.match(/<span class="ph">[\s\S]*?<\/span>(?=<span class="ph">|$)/g) || [];
+    phr.forEach((ph, k) => { const plain = ph.replace(/<math>[\s\S]*?<\/math>/g, '').replace(/<[^>]+>/g, '');
+      const mid = plain.replace(/[」』）)]+$/, '');
+      const endsOk = k === phr.length - 1 ? true : (/[、。]$/.test(mid) && !/[、。]/.test(mid.slice(0, -1)));
+      const raw = ph.replace(/<\/?span[^>]*>/g, '');
+      if (!endsOk || /^\s/.test(raw) || raw === '') { res.ends++; res.sample = res.sample || '④⑤「' + plain + '」in ' + src; } });
+    if (want.length > 1) res.hasBr++;
+  };
   for (const [ti, id] of Object.keys(D.TYPES).entries()) {
     const rng = mulberry32(seed0 + ti * 104729);
-    for (let q = 0; q < n; q++) {
-      const pb = D.generate(id, rng);
-      for (const src of [pb.prompt, pb.choices[pb.answer].label]) {
-        res.n++;
-        const a = MR.toHtml(src), b = MR.toHtml(src, { breaks: true });
-        if (b.replace(/<br>/g, '') !== a) { res.strip++; res.sample = res.sample || '①' + src; }
-        let depth = 0, brInMath = false; for (const tk of b.split(/(<\/?math>|<br>)/)) { if (tk === '<math>') depth++; else if (tk === '</math>') depth--; else if (tk === '<br>' && depth > 0) brInMath = true; }
-        if (brInMath) { res.inMath++; res.sample = res.sample || '②' + src; }
-        const want = [...src].filter((c, k) => (c === '、' || c === '。') && /\S/.test(src.slice(k + 1)) && !/^[」』）)\s]*$/.test(src.slice(k + 1))).length, got = (b.match(/<br>/g) || []).length;
-        if (want !== got) { res.count++; res.sample = res.sample || '③' + src + ' 期待' + want + ' 実際' + got; }
-        if (/(?<![、。])<br>/.test(b) || /<br>$/.test(b)) { res.pos = (res.pos || 0) + 1; res.sample = res.sample || '④' + src; }   // <br> は句読点の直後だけ・文末にはない
-        if (got) res.hasBr++;
-      }
-    }
+    for (let q = 0; q < n; q++) { const pb = D.generate(id, rng); one(pb.prompt); one('ざんねん… こたえは「' + pb.choices[pb.answer].label + '」'); }
   }
-  for (const src of ['のとき、', '正解は 3 です。', 'こたえは「1、2」', 'A、B。C', '、', '。。', '3 + 4、5 − 2', '「中心(0, 1)、半径 √3」', '2点 A、B について、']) {   // 文の終わり・連続・かっこ書きなどの決まったケース
-    res.n++; const a = MR.toHtml(src), b = MR.toHtml(src, { breaks: true });
-    const want = [...src].filter((c, k) => (c === '、' || c === '。') && /\S/.test(src.slice(k + 1)) && !/^[」』）)\s]*$/.test(src.slice(k + 1))).length, got = (b.match(/<br>/g) || []).length;
-    if (b.replace(/<br>/g, '') !== a || want !== got || /(?<![、。])<br>/.test(b) || /<br>$/.test(b)) { res.count++; res.sample = res.sample || '決まったケース「' + src + '」→ ' + b; }
-  }
+  for (const src of ['のとき、', '正解は 3 です。', 'こたえは「1、2」', 'A、B。C', '、', '。。', '3 + 4、5 − 2', '「中心(0, 1)、半径 √3」', '2点 A、B について、', '「終わり。」', '彼は言った。「行く、よ」と。']) one(src);   // 文の終わり・連続・かっこ書きなどの決まったケース
   return res;
 }
 const BR = breakChecks(MR, Math.max(200, Math.round(N / 5)), 515151);
-const brOk = !BR.strip && !BR.inMath && !BR.count && !BR.pos && BR.hasBr > 0;
-console.log('\n句読点で改行：' + BR.n + '件（そのうち改行が入ったもの ' + BR.hasBr + '件）｜<br>を除くと同じ ' + (BR.n - BR.strip) + '／数式の外だけ ' + (BR.n - BR.inMath) + '／数が句読点と一致 ' + (BR.n - BR.count) + ' → ' + (brOk ? '合格' : '不合格 ' + BR.sample));
+const brOk = !BR.strip && !BR.inMath && !BR.count && !BR.ends && BR.hasBr > 0;
+console.log('\n句読点で終わるまとまり：' + BR.n + '件（そのうち2つ以上に分かれたもの ' + BR.hasBr + '件）｜<span>を除くと同じ ' + (BR.n - BR.strip) + '／数式の外・入れ子なし ' + (BR.n - BR.inMath) + '／まとまりの数が句読点と一致 ' + (BR.n - BR.count) + '／句読点で終わる ' + (BR.n - BR.ends) + ' → ' + (brOk ? '合格' : '不合格 ' + BR.sample));
 const BMUT = [
-  ['数式の中の「,」でも改行する', "if (breaks && (ch === '、' || ch === '。')", "if (breaks && (ch === '、' || ch === '。' || ch === ',')", s => s.replace("      if (core && (TRIGGER", "      if (breaks && core.includes(',')) { out += esc(lead) + mathOf(core).replace(/<mo separator=\"true\">,<\\/mo>/g, '<mo separator=\"true\">,</mo><br>') + esc(trail); i = j; continue; }\n      if (core && (TRIGGER")],
-  ['句読点を消してしまう', "out += esc(ch); if (breaks", "out += breaks ? '' : esc(ch); if (breaks", s => s],
-  ['句読点の前で改行する', "out += esc(ch); if (breaks && (ch === '、' || ch === '。')", "out += (breaks && (ch === '、' || ch === '。') ? '<br>' : '') + esc(ch); if (false && (ch === '、' || ch === '。')", s => s],
-  ['最後の句読点のあとにも改行する', "&& /\\S/.test(s.slice(i)) && !/^[」』）)\\s]*$/.test(s.slice(i))) out += '<br>'", ") out += '<br>'", s => s],
+  ['助詞「の」のあとでも分ける（文節の途中で割る）', "if (phrases && (ch === '、' || ch === '。')) {", "if (phrases && (ch === '、' || ch === '。' || ch === 'の')) {", s => s],
+  ['句読点を消してしまう', "const ch = s[i++]; out += esc(ch);\n        if (phrases", "const ch = s[i++]; out += phrases && (ch === '、' || ch === '。') ? '' : esc(ch);\n        if (phrases", s => s],
+  ['句読点の前で分ける', "const ch = s[i++]; out += esc(ch);\n        if (phrases && (ch === '、' || ch === '。')) {", "const ch = s[i++]; if (phrases && (ch === '、' || ch === '。')) out += PH_MARK; out += esc(ch);\n        if (false) {", s => s],
+  ['閉じかっこを次のまとまりに回す', "while (i < s.length && /[」』）)]/.test(s[i])) out += esc(s[i++]);", "", s => s],
+  ['最後の句読点のあとにも（空の）まとまりを作る', "if (/\\S/.test(s.slice(i))) out += PH_MARK;", "out += PH_MARK;", s => s.replace(".filter(x => x !== '')", '')],
+  ['数式の中でも分ける（「,」で）', "      if (core && (TRIGGER", "      if (phrases && core.includes(',')) { out += esc(lead) + mathOf(core).replace(/<mo separator=\"true\">,<\\/mo>/g, '<mo separator=\"true\">,</mo>' + PH_MARK) + esc(trail); i = j; continue; }\n      if (core && (TRIGGER", s => s],
 ];
 let brCaught = true;
-console.log('改行の壊しテスト：' + BMUT.length + '通り');
+console.log('まとまりの壊しテスト：' + BMUT.length + '通り');
 for (const [name, from, to, post] of BMUT) {
   if (!MR_SRC.includes(from)) { console.log('× ' + name + '：壊す場所が見つからない'); brCaught = false; continue; }
-  const M = run(post(MR_SRC.replace(from, to))).ClockseedMath, r = breakChecks(M, 100, 515151), caught = r.strip || r.inMath || r.count || r.pos;
+  const M = run(post(MR_SRC.replace(from, to))).ClockseedMath, r = breakChecks(M, 100, 515151), caught = r.strip || r.inMath || r.count || r.ends;
   if (!caught) brCaught = false;
-  console.log((caught ? '検出 ' : '見逃し ') + name + '（不一致 ' + (r.strip + r.inMath + r.count) + '件）');
+  console.log((caught ? '検出 ' : '見逃し ') + name + '（不一致 ' + (r.strip + r.inMath + r.count + r.ends) + '件）');
 }
-const pass = ok && allCaught && brOk && brCaught;
+// ---- FACTOR×FACTOR（移植版）の式（段階8f）：目標の多項式と、タイルの因数・数を、通常ドリルと同じ MathML で描く。描いた式を読み戻して、元の式と構造まで一致 ----
+const FXF = run(pick('fxf-engine')).ClockseedFxF;
+function fxfChecks(MR, n, seed0) {
+  const res = { n: 0, mismatch: 0, errs: 0, msup: 0, sample: null }, rng = mulberry32(seed0);
+  for (let L = 1; L <= 5; L++) for (let q = 0; q < n; q++) {
+    const b = FXF.buildBoard(L, new Set(), 6, rng);
+    for (const src of [b.target].concat(b.tiles.map(x => x.label))) {
+      res.n++; const d = display(MR, src), want = canon(src);
+      if (d.errs.length) { res.errs++; res.sample = res.sample || '「' + src + '」' + d.errs[0]; }
+      if (d.str !== want) { res.mismatch++; res.sample = res.sample || '「' + src + '」 表示 ' + d.str + ' ／ 期待 ' + want; }
+      if (/²/.test(src) && /\^\{2\}/.test(d.str) && MR.toHtml(src).includes('<msup>')) res.msup++;
+    }
+  }
+  return res;
+}
+const FX = fxfChecks(MR, Math.max(200, Math.round(N / 5)), 909090), fxOk = !FX.mismatch && !FX.errs && FX.msup > 0;
+console.log('\nFACTOR×FACTOR の式：Lv1〜5 の目標・タイル ' + FX.n + '件を MathML で描いて読み戻し：構造が一致 ' + (FX.n - FX.mismatch) + '／誤り ' + FX.errs + '（累乗 msup ' + FX.msup + '件）→ ' + (fxOk ? '合格' : '不合格 ' + FX.sample));
+const FMUT = [
+  ['累乗が上付きにならない', "case 'sup': return '<msup><mrow>' + node(n.base, null, null) + '</mrow><mrow>' + R(n.exp) + '</mrow></msup>';", "case 'sup': return node(n.base, null, null) + R(n.exp);"],
+  ['かっこが消える', "case 'group': { const st", "case 'group': return R(n.kids); { const st"],
+  ['符号のマイナスが引き算の形のまま（prefix にならない）', "return mo(n.v, ' form=\"prefix\"');", "return mo(n.v);"],
+];
+let fxCaught = true;
+console.log('FACTOR×FACTOR の式の壊しテスト：' + FMUT.length + '通り');
+for (const [name, from, to] of FMUT) {
+  if (!MR_SRC.includes(from)) { console.log('× ' + name + '：壊す場所が見つからない'); fxCaught = false; continue; }
+  const M = run(MR_SRC.replace(from, to)).ClockseedMath, r = fxfChecks(M, 100, 909090), caught = r.mismatch || r.errs;
+  if (!caught) fxCaught = false;
+  console.log((caught ? '検出 ' : '見逃し ') + name + '（不一致 ' + (r.mismatch + r.errs) + '件）');
+}
+const pass = ok && allCaught && brOk && brCaught && fxOk && fxCaught;
 console.log(pass ? '=> 全て合格' : '=> 不合格');
 process.exit(pass ? 0 : 1);

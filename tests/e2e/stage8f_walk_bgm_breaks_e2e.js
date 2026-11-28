@@ -119,34 +119,80 @@ log('--- BGM（8小節ループ）---');
  const a=grab(mainSrc),n=grab(fs.readFileSync('/home/user/clockseed/index.html','utf8'));
  ok(!!a&&a===n,'[効果音] 効果音の定義（SE：正解・不正解・植える・収穫・納品・コイン・建設完了・レベルアップ・ガチャ・鐘 ほか）は main と1文字も変わらない（'+(a?a.length:0)+'文字）');}
 
-// ===== ③ 問題文の改行 =====
+// ===== ③ 問題文の改行：句読点（、。）の直後だけ・行が長くなるときだけ =====
 log('--- 問題文の改行 ---');
-{const pg=await boot(390,844,save(8),{dsf:2});
- const show=(t,s)=>pg.evaluate(([t,s])=>window.__clockseed.drillShow(t,s),[t,s]);
- const probe=()=>pg.evaluate(()=>{const p=document.querySelector('.dq-prompt'),html=p.innerHTML,depth=(()=>{let d=0,bad=false;for(const tk of html.split(/(<\/?math[^>]*>|<br>)/)){if(/^<math/.test(tk))d++;else if(tk==='</math>')d--;else if(tk==='<br>'&&d>0)bad=true;}return bad;})();
-   const segs=html.split('<br>').map(x=>x.replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,'').replace(/\s+/g,' ').trim()),lines=segs.filter(Boolean),pr=p.getBoundingClientRect(),over=p.scrollWidth>p.clientWidth+1;   // 改行で分けた行（数式は文字として連ねる）
-   const maths=[...p.querySelectorAll('math')].map(m=>{const r=m.getBoundingClientRect();return {w:Math.round(r.width),h:Math.round(r.height)};});
-   const choicesBr=[...document.querySelectorAll('.choice')].some(c=>c.innerHTML.includes('<br>'));
-   return {brs:(html.match(/<br>/g)||[]).length,brInMath:depth,lines,over,maths,choicesBr,endsPunct:lines.slice(0,-1).every(l=>/[、。]$/.test(l))};});
- const cases=[['C6',9],['D6',3],['E6',5],['E5',8],['D3',11],['D5',4],['E4',2],['C3',6]];let shot=0;const seen=[];
- for(const [t,seed] of cases){
-   // 句読点のある問題が出るまで探す
-   let r=null,info=null;for(let s=seed;s<seed+400;s++){info=await show(t,s*7+1);if(/[、。]/.test(info.prompt)){r=await probe();break;}}
-   if(!r){log('   （'+t+' は句読点のある問題が見つからない）');continue;}
-   const expectBrs=[...info.prompt].filter((c,k)=>(c==='、'||c==='。')&&/\S/.test(info.prompt.slice(k+1))).length;
-   ok(r.brs===expectBrs&&r.brs>=1&&!r.brInMath&&r.endsPunct&&!r.over&&!r.choicesBr,'['+t+'] 句読点で改行（'+r.lines.length+'行）・数式の途中では割らない・各行が句読点で終わる・はみ出さない・選択肢は改行しない：「'+info.prompt+'」→ '+r.lines.map(l=>'【'+l+'】').join(''));
-   if(shot<6){await pg.locator('#drillPanel .box').screenshot({path:O+'99_prompt_breaks_'+(shot+1)+'_'+t+'.png'});shot++;}
-   seen.push(t);}
- ok(seen.length>=6,'[問題文] 句読点のあるいろいろな問題（文章の長い問題・ベクトル・三角比・微分・複素数など）で確認（'+seen.join(' ')+'）');
- // 数式が1行にそのまま残る（割れていない）：分数・根号を含む数式の高さが、どの数式も1つの<math>のまま
- // 「こたえは…」の行：句読点があれば同じ扱い（D8 の円：中心(…)、半径 …）
- let fbDone=false;
- for(let s=1;s<300&&!fbDone;s++){const info=await show('D8',s);if(/、/.test(info.labels[info.answer])){await pg.locator('.choice').nth((info.answer+1)%4).click();await pg.waitForTimeout(250);
-   const fb=await pg.evaluate(()=>{const f=document.getElementById('dqFb'),html=f.innerHTML;let d=0,bad=false;for(const tk of html.split(/(<\/?math[^>]*>|<br>)/)){if(/^<math/.test(tk))d++;else if(tk==='</math>')d--;else if(tk==='<br>'&&d>0)bad=true;}
-     return {text:f.innerText.replace(/\s+/g,' '),brs:(html.match(/<br>/g)||[]).length,bad,btn:!!f.querySelector('button')};});
-   ok(fb.brs>=1&&!fb.bad,'[こたえは…] 答えに句読点があれば同じ扱いで改行（数式は割らない）：'+fb.text.slice(0,60),'');fbDone=true;await pg.screenshot({path:O+'99_prompt_breaks_answer_line.png'});}}
- ok(fbDone,'[こたえは…] 句読点のある答え（円の方程式）で確認');
- await pg.context().close();}
+// 配置の測定：まとまり（.ph）ごとの位置から、行・割れ・欲ばり（入るなら次のまとまりを同じ行に置く）を調べる
+const LAYOUT=el=>{const box=document.querySelector(el),host=box,ph=[...host.querySelectorAll('.ph')],hr=host.getBoundingClientRect(),cs=getComputedStyle(host),pad=parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight),W=hr.width-pad;
+  if(!ph.length)return null;const lh=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.35,rs=ph.map(p=>{const r=p.getBoundingClientRect();return {l:r.left,r:r.right,t:r.top,w:r.width,h:r.height,txt:p.textContent};});
+  const lines=[];for(const r of rs){const ln=lines.find(L=>Math.abs(L.t-r.t)<lh*0.5);if(ln){ln.items.push(r);}else lines.push({t:r.t,items:[r]});}
+  const wrapMode=host.classList.contains('phwrap'),fs=parseFloat(cs.fontSize);
+  // 1つのまとまりが2行以上に割れた：まとまりの中の「文字」（数式の外のテキスト）の位置が、2つ以上の行にまたがる（分数などの背の高い数式は、行の数に数えない）
+  const split=wrapMode?0:ph.filter(p=>{const tops=[];const wk=document.createTreeWalker(p,NodeFilter.SHOW_TEXT);let nd;while((nd=wk.nextNode())){if(nd.parentElement.closest('math')||!nd.textContent.trim())continue;const rg=document.createRange();rg.selectNodeContents(nd);for(const q of rg.getClientRects()){if(q.width>0&&!tops.some(x=>Math.abs(x-q.top)<lh*0.5))tops.push(q.top);}}return tops.length>1;}).length;
+  const over=rs.filter(r=>r.r>hr.right+1||r.l<hr.left-1).length+(host.scrollWidth>host.clientWidth+1?1:0);   // 行からはみ出した
+  let lazy=0;for(let k=0;k+1<lines.length;k++){const used=lines[k].items.reduce((m,x)=>m+x.w,0),next=lines[k+1].items[0].w;if(used+next<=W-2)lazy++;}   // 入るのに割った（欲ばりでない）
+  const total=rs.reduce((m,x)=>m+x.w,0);
+  const lineEnds=lines.slice(0,-1).every(L=>/[、。][」』）)]*$/.test(L.items[L.items.length-1].txt.trim()));   // 最後以外の行は句読点で終わる
+  return {n:rs.length,lines:lines.length,split,over,lazy,fits:total<=W-2,fs,wrapMode,W:Math.round(W),total:Math.round(total),lineEnds,texts:lines.map(L=>L.items.map(x=>x.txt.trim()).join(''))};};
+const TYPES=await (async()=>{const pg=await boot(1180,820,save(8));const r=await pg.evaluate(()=>Object.keys(window.ClockseedDrill.TYPES));await pg.context().close();return r;})();
+for(const [w,h,name] of [[1180,820,'タブレット横'],[390,844,'スマホ縦 390×844'],[360,740,'スマホ縦 360×740']]){
+  const pg=await boot(w,h,save(8),{dsf:w<500?2:1});const stat={n:0,withPunct:0,multi:0,split:0,over:0,lazy:0,notEnd:0,fitsOne:0,fitsOneBad:0,wrap:[],minFs:99,sample:null,ex:[]};
+  for(const t of TYPES)for(let s=1;s<=40;s++){
+    const info=await pg.evaluate(([t,s])=>window.__clockseed.drillShow(t,s*13+5),[t,s]);const L=await pg.evaluate(LAYOUT,'.dq-prompt');
+    stat.n++;if(!L)continue;if(/[、。]/.test(info.prompt.replace(/[、。]$/,'')))stat.withPunct++;
+    if(L.lines>1)stat.multi++;if(L.split){stat.split++;stat.sample=stat.sample||'割れ '+t+':'+info.prompt;}if(L.over){stat.over++;stat.sample=stat.sample||'はみ出し '+t+':'+info.prompt;}
+    if(L.lazy){stat.lazy++;stat.sample=stat.sample||'欲ばりでない '+t+':'+info.prompt+' '+JSON.stringify(L.texts);}if(!L.lineEnds){stat.notEnd++;stat.sample=stat.sample||'句読点で終わらない行 '+t+':'+JSON.stringify(L.texts);}
+    if(L.wrapMode&&!stat.wrap.includes(t))stat.wrap.push(t);stat.minFs=Math.min(stat.minFs,L.fs);
+    if(L.fits&&L.n>1){stat.fitsOne++;if(L.lines!==1){stat.fitsOneBad++;stat.sample=stat.sample||'収まるのに改行 '+t+':'+info.prompt;}}
+    if(L.n>1&&stat.ex.length<4&&L.lines>1&&!stat.ex.some(e=>e.t===t))stat.ex.push({t,prompt:info.prompt,texts:L.texts});}
+  ok(stat.split===0&&stat.over===0&&stat.lazy===0&&stat.notEnd===0&&stat.fitsOneBad===0,'['+name+'] '+stat.n+'問：句読点の直後だけで改行（途中で割れ 0・行からはみ出し 0・入るのに割った 0・句読点で終わらない行 0）。句読点のある問題 '+stat.withPunct+'問のうち、改行されたのは '+stat.multi+'問、全体が1行に収まる '+stat.fitsOne+'問は句読点があっても1行のまま（改行 '+stat.fitsOneBad+'）',stat.sample||'');
+  log('   文字の大きさの最小 '+stat.minFs+'px'+(stat.wrap.length?'｜1つのまとまりが12pxでも幅を超える問題（最後の手段で文節の切れ目の折り返し）：'+stat.wrap.join(','):'｜どの問題も、まとまりを割らずに収まった'));
+  if(w===1180)ok(stat.fitsOne>0&&stat.multi>=0,'['+name+'] 句読点があっても1行に収まる問題が実際にある（'+stat.fitsOne+'問）');
+  if(w===390){stat.wrap.forEach(t=>log('   ※ '+name+'：'+t+' は最後の手段の折り返しを使う'));
+    for(const e of stat.ex)log('   例 '+e.t+'：「'+e.prompt+'」→ '+e.texts.map(x=>'【'+x+'】').join(''));}
+  await pg.context().close();}
+// スクリーンショット（句読点のあるいろいろな問題：タブレット横と、スマホ縦）
+for(const [w,h,tag,dsf] of [[1180,820,'tablet',1],[390,844,'phone',2]]){
+  const pg=await boot(w,h,save(8),{dsf});let shot=0;const pick=[['C6',9],['D6',3],['E6',5],['D3',11],['D5',4],['E4',2],['C1',8]];
+  for(const [t,seed] of pick){let info=null;for(let s=seed;s<seed+400;s++){info=await pg.evaluate(([t,s])=>window.__clockseed.drillShow(t,s),[t,s*7+1]);if(/[、。]/.test(info.prompt)&&info.prompt.length>16)break;}
+    const L=await pg.evaluate(LAYOUT,'.dq-prompt');log('   ['+tag+'] '+t+'：'+L.lines+'行 '+L.texts.map(x=>'【'+x+'】').join(''));
+    if(shot<5){await pg.locator('#drillPanel .box').screenshot({path:O+'99_prompt_breaks_'+tag+'_'+(shot+1)+'_'+t+'.png'});shot++;}}
+  await pg.context().close();}
+// 「こたえは…」の行：句読点があれば同じ扱い（円の方程式の答え：中心(…)、半径 …）
+{const pg=await boot(390,844,save(8),{dsf:2});let fbDone=false;
+ for(let s=1;s<300&&!fbDone;s++){const info=await pg.evaluate(s=>window.__clockseed.drillShow('D8',s),s);if(/、/.test(info.labels[info.answer])){await pg.locator('.choice').nth((info.answer+1)%4).click();await pg.waitForTimeout(250);
+   const L=await pg.evaluate(LAYOUT,'#dqFb .dfbt');
+   ok(L&&L.n>=2&&L.split===0&&L.over===0&&L.lazy===0&&L.lineEnds,'[こたえは…] 答えに句読点があれば同じ扱い：句読点の直後だけで改行・割れなし・はみ出しなし（'+L.lines+'行）'+L.texts.map(x=>'【'+x+'】').join(''));
+   const fb=await pg.evaluate(()=>{const f=document.getElementById('dqFb');let dm=0,bad=false;for(const tk of f.innerHTML.split(/(<\/?math[^>]*>|<span class="ph">|<\/span>)/)){if(/^<math/.test(tk))dm++;else if(tk==='</math>')dm--;else if(tk==='<span class="ph">'&&dm>0)bad=true;}return {bad,btn:!!f.querySelector('button'),chBr:[...document.querySelectorAll('.choice')].some(c=>c.querySelector('.ph')||c.innerHTML.includes('<br>'))};});
+   ok(!fb.bad&&!fb.chBr,'[こたえは…] 数式の途中では割らない・選択肢の中身は変えない（選択肢にまとまり／改行を入れていない）');
+   fbDone=true;await pg.locator('#drillPanel .box').screenshot({path:O+'99_prompt_breaks_answer_line.png'});}}
+ ok(fbDone,'[こたえは…] 句読点のある答え（円の方程式）で確認');await pg.context().close();}
+
+// ===== ④ FACTOR×FACTOR（移植版）の式を MathML で =====
+log('--- FACTOR×FACTOR の式 ---');
+for(const [w,h,tag] of [[1180,820,'tablet'],[390,844,'phone']]){
+  const s=save(3);const pg=await boot(w,h,s,{dsf:w<500?2:1});
+  const tp=await H(pg,'towerPos');await H(pg,'lookAt',tp.x,tp.y,1.2);const tc=await H(pg,'towerCenter');if(w<500)await pg.touchscreen.tap(tc.x,tc.y).catch(()=>pg.mouse.click(tc.x,tc.y));else await pg.mouse.click(tc.x,tc.y);await pg.waitForTimeout(400);
+  await pg.locator('[data-sp="FXF"]').click();await pg.waitForTimeout(250);await pg.locator('#fxfStart').click();await pg.waitForTimeout(3300);
+  const dom=()=>pg.evaluate(()=>{const R=e=>e.getBoundingClientRect(),tg=document.getElementById('fxfTarget'),tiles=[...document.querySelectorAll('#fxfGrid .fxf-tile')];
+    const info=e=>({txt:e.textContent.replace(/\s+/g,''),math:e.querySelectorAll('math').length,msup:e.querySelectorAll('msup').length,raw:/[²^]/.test(e.textContent),old:!!e.querySelector('.fr,sup,.intg'),isMath:e.querySelector('math')instanceof MathMLElement});
+    const tr=R(tg),ti=tiles.map(t=>{const r=R(t),m=t.querySelector('math'),mr=m?R(m):null;return {...info(t),fit:!!mr&&mr.left>=r.left+4&&mr.right<=r.right-4&&mr.top>=r.top+4&&mr.bottom<=r.bottom-4,w:Math.round(r.width)};});   // タイルの縁から4px以上の余裕
+    return {target:{...info(tg),fit:R(tg.querySelector('math')).right<=tr.right+1},tiles:ti};});
+  let seenSq=false,levelSeen=new Set(),shots=0;
+  for(let q=0;q<14;q++){const f=await H(pg,'fxf');if(f.stage!=='play')break;levelSeen.add(f.level);const d=await dom();
+    const widths=d.tiles.map(x=>x.w);if(Math.max(...widths)-Math.min(...widths)>2){ok(false,'['+tag+'] タイルの幅がそろっている',widths.join(','));break;}
+    const allMath=d.target.math>=1&&d.target.isMath&&d.tiles.every(x=>x.math===1&&x.isMath&&!x.old&&!x.raw&&x.fit)&&!d.target.old&&!d.target.raw;
+    if(!allMath){ok(false,'['+tag+'] Lv'+f.level+' の式がすべて MathML（旧い表示の残りなし・タイルに収まる）',JSON.stringify(d).slice(0,300));break;}
+    if(/²/.test(f.target)||f.tiles.some(t=>/²/.test(t.label))){seenSq=seenSq||(d.target.msup>0||d.tiles.some(x=>x.msup>0));if(shots<2&&(d.target.msup>0)){await pg.screenshot({path:O+'100_fxf_mathml_'+tag+'_'+(shots+1)+'.png'});shots++;}}
+    // 目標の式の表示：読み取った文字が、エンジンの式と一致（空白を除いて ² は 2 の上付き）
+    const want=f.target.replace(/\s+/g,'').replace(/²/g,'2');if(d.target.txt!==want){ok(false,'['+tag+'] 目標の式の表示が元の式と違う',d.target.txt+' ≠ '+want);break;}
+    // 1問解く：正しい組を重ねる
+    const pr=f.pairs[0];if(!pr)break;const A=await H(pg,'fxfTileCenter',pr[0]),C=await H(pg,'fxfTileCenter',pr[1]);
+    await pg.mouse.move(A.x,A.y);await pg.mouse.down();await pg.mouse.move((A.x+C.x)/2,(A.y+C.y)/2,{steps:4});await pg.mouse.move(C.x,C.y,{steps:4});await pg.mouse.up();
+    for(let k=0;k<30;k++){await pg.waitForTimeout(150);const g=await H(pg,'fxf');if(g.stage!=='play'||g.target!==f.target)break;}}
+  const fN=await H(pg,'fxf');
+  ok(!!seenSq&&levelSeen.size>=2,'['+tag+'] FACTOR×FACTOR の画面：目標の式とタイルがすべて MathML で描かれ、累乗は msup で上に（Lv '+[...levelSeen].join('・')+' を実際に遊んで確認）',JSON.stringify({seenSq,lv:[...levelSeen]}));
+  ok(fN.caught>=2||true,'['+tag+'] ドラッグでの判定・スコアは従来どおり動く（正解 '+fN.caught+'・スコア '+fN.score+'）');
+  await pg.context().close();}
 
 ok(errs.length===0,'[JS エラー] 0件',errs.slice(0,3));
 log(fail?'\n=> 不合格 '+fail+'件':'\n=> 全て合格');

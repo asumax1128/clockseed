@@ -155,7 +155,7 @@
   .pips{display:flex;gap:6px}
   .pips i{width:14px;height:14px;background:#d8c39a;display:block;box-shadow:inset 0 -3px 0 #0001}
   .pips i.ok{background:#7fc24a}.pips i.ng{background:#d0705a}.pips i.cur{background:#f2d27a}
-  .dq-prompt{font-size:28px;font-weight:bold;margin:16px 4px 8px;letter-spacing:.03em;min-height:42px;line-height:1.35}
+  .dq-prompt{font-size:28px;font-weight:bold;margin:16px 4px 8px;letter-spacing:.03em;min-height:42px;line-height:1.35;word-break:auto-phrase}   /* 句読点（、。）での改行は <br>。幅が足りないときの折り返しも、文節で（対応していないブラウザでは通常の折り返し） */
   .dq-vis{display:flex;justify-content:center;margin-bottom:4px}
   .choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;margin:8px 4px 0}   /* 狭い画面では1列 */
   .choice .cl{display:block;max-width:100%;line-height:1.3}.dq-prompt{overflow:hidden}
@@ -1462,13 +1462,14 @@
   const mathOf = s => '<math>' + R(parse(lex(s))) + '</math>';
 
   // ---- 文章の中から数式の区間を探して、そこだけ MathML に ----
-  function toHtml(text) {
+  function toHtml(text, opts) {
+    const breaks = !!(opts && opts.breaks);                // 句読点（、。）のあとで改行する（日本語の文章の部分だけ。数式の途中では割らない。段階8f）
     const s = String(text), whole = [...s].every(c => MATH_CH.test(c));
     // 数式を含む文字列では、数だけの区間（「半径 14」の 14 など）も数式の字体にそろえる。数式を含まない文章（「5 人が1列に」）の数はそのまま
     const spans = s.match(new RegExp(MATH_CH.source + '+', 'g')) || [], anyMath = spans.some(x => TRIGGER.test(x.trim()));
     let out = '', i = 0;
     while (i < s.length) {
-      if (!MATH_CH.test(s[i])) { out += esc(s[i++]); continue; }
+      if (!MATH_CH.test(s[i])) { const ch = s[i++]; out += esc(ch); if (breaks && (ch === '、' || ch === '。') && /\S/.test(s.slice(i)) && !/^[」』）)\s]*$/.test(s.slice(i))) out += '<br>'; continue; }
       let j = i; while (j < s.length && MATH_CH.test(s[j])) j++;
       const span = s.slice(i, j), lead = span.match(/^ */)[0], trail = span.match(/ *$/)[0], core = span.trim();
       if (core && (TRIGGER.test(core) || whole || (anyMath && /^[\d.,\s]+$/.test(core) && /\d/.test(core)))) out += esc(lead) + mathOf(core) + esc(trail);
@@ -2731,24 +2732,38 @@
       log.push({ name, played: ok }); if (log.length > 50) log.shift();
       return ok;
     }
-    // ----- BGM：オルゴール風（8小節×8分音符のループ。テンポ 84） -----
-    const _ = null;
-    const MEL = [76, _, 79, _, 84, _, 79, _,   81, _, 79, 76, 74, _, _, _,   72, _, 76, _, 79, _, 81, _,   79, _, _, _, _, _, _, _,
-                 76, _, 79, _, 84, _, 86, _,   88, _, 86, 84, 81, _, _, _,   79, _, 76, _, 74, _, 76, _,   72, _, _, _, _, _, _, _];
-    const BASS = [48, 55, 45, 52, 41, 48, 43, 50, 48, 55, 45, 52, 41, 43, 48, 43];   // 1小節に2音（1拍目・3拍目）
-    const STEP = 60 / 84 / 2;
-    function boxNote(m, t, vol) {                         // 櫛の歯をはじいたような減衰音
+    // ----- BGM：オルゴール風の8小節ループ（ハ長調・♩=92）-----
+    // コード進行（1小節1コード）：C → G/B → Am → Em/G → F → C/E → Dm → G（くり返し）。
+    // 低音（各小節の根音）と、薄い分散和音（8分音符）の上に、主旋律（4分音符）を重ねる。root・arp・mel は MIDI の音番号（60＝中央のド）
+    const BPM = 92, STEP = 60 / BPM / 2;                  // 1ステップ＝8分音符
+    const SCORE = [
+      { chord: 'C',    root: 48, arp: [55, 60, 64], mel: [64, 67, 72] },            // ミ ソ ド(高)
+      { chord: 'G/B',  root: 43, arp: [59, 62, 67], mel: [74, 71, 67] },            // レ(高) シ ソ
+      { chord: 'Am',   root: 45, arp: [57, 60, 64], mel: [69, 72, 76] },            // ラ ド(高) ミ(高)
+      { chord: 'Em/G', root: 40, arp: [55, 59, 64], mel: [76, 74, 71] },            // ミ(高) レ(高) シ
+      { chord: 'F',    root: 41, arp: [57, 60, 65], mel: [69, 65, 69, 72] },        // ラ ファ ラ ド(高)
+      { chord: 'C/E',  root: 48, arp: [52, 55, 60], mel: [76, 72, 67] },            // ミ(高) ド(高) ソ
+      { chord: 'Dm',   root: 50, arp: [57, 62, 65], mel: [65, 69, 74] },            // ファ ラ レ(高)
+      { chord: 'G',    root: 43, arp: [55, 59, 62], mel: [74, 71, 67] },            // レ(高) シ ソ（→ 1小節目へ戻る）
+    ];
+    const MEL_AT = n => (n === 4 ? [0, 2, 4, 6] : [0, 2, 4]);   // 旋律の位置（8分音符のステップ）。4分音符どうし（余韻は櫛の歯の響きに任せる）
+    const ARP_PAT = [0, 1, 2, 1, 0, 1, 2, 1];                   // 分散和音：和音の3音を 下→中→上→中 と8分音符で
+    const bgmLog = [];                                    // 検品用（?debug=1 のときだけ）：鳴らした音の記録
+    function boxNote(m, t, vol, part, bar, st) {          // 櫛の歯をはじいたような減衰音
       const f = hz(m);
-      tone(bgmBus, 'sine', f, t, 1.6, vol, null, 0.004);
-      tone(bgmBus, 'sine', f * 2, t, .7, vol * .35, null, 0.003);
-      tone(bgmBus, 'sine', f * 3.01, t, .3, vol * .12, null, 0.002);
+      tone(bgmBus, 'sine', f, t, part === 'arp' ? 1.0 : 1.6, vol, null, 0.004);
+      tone(bgmBus, 'sine', f * 2, t, part === 'arp' ? .4 : .7, vol * .35, null, 0.003);
+      if (part !== 'arp') tone(bgmBus, 'sine', f * 3.01, t, .3, vol * .12, null, 0.002);
+      if (DEBUG) { bgmLog.push({ part, bar, st, m, t, vol }); if (bgmLog.length > 4000) bgmLog.splice(0, 1000); }
     }
     function schedule() {
       if (!ac) return;
       while (nextT < ac.currentTime + 0.5) {
-        const i = step % MEL.length;
-        if (MEL[i] != null) boxNote(MEL[i], nextT, .22);
-        if (i % 4 === 0) boxNote(BASS[i / 4 | 0], nextT, .12);
+        const i = step % (SCORE.length * 8), bar = i >> 3, st = i & 7, B = SCORE[bar];
+        const mi = MEL_AT(B.mel.length).indexOf(st);
+        if (mi >= 0) boxNote(B.mel[mi], nextT, .18, 'melody', bar, st);
+        if (st === 0) boxNote(B.root, nextT, .09, 'bass', bar, st); else if (st === 4) boxNote(B.root, nextT, .06, 'bass', bar, st);
+        boxNote(B.arp[ARP_PAT[st]], nextT, .045, 'arp', bar, st);
         nextT += STEP; step++;
       }
     }
@@ -2783,7 +2798,7 @@
     $('bgmBtn').onclick = () => set('bgm', !conf().bgm);
     $('seBtn').onclick = () => set('se', !conf().se);
     syncButtons();
-    return { play, set, syncButtons, info: () => ({ unlocked, ctx: ac ? ac.state : null, bgm: !!timer, settings: Object.assign({}, conf()), log: log.slice() }) };
+    return { play, set, syncButtons, info: () => ({ unlocked, ctx: ac ? ac.state : null, bgm: !!timer, settings: Object.assign({}, conf()), log: log.slice(), bpm: BPM, step: STEP, score: JSON.parse(JSON.stringify(SCORE)), bgmLog: bgmLog.slice() }) };
   })();
   const sfx = name => SND.play(name);
   // ---------- 出来事のログ（段階8a）：最新の1行を上の帯に流し、タップで直近30件 ----------
@@ -2886,6 +2901,56 @@
     .concat(LAYOUT.houses.map(h => ({ x: h.tx - 1, y: h.ty - 2, w: 4, h: 4 })));
   const PLOT_PX = 2 * T;
   const plotRect = i => ({ x: LAYOUT.plots[i][0] * T, y: LAYOUT.plots[i][1] * T, w: PLOT_PX, h: PLOT_PX });
+
+  // ---------- 道だけを歩く（段階8f） ----------
+  // 町を歩くキャラ（水やり少年・鐘で集まる町の人）は、道（石畳・土の通路・広場）のマスの上だけを通る。畑・施設・家・草地には入らない。
+  // 道の網は、広場からつながっているマスだけ（畑のあいだの別の通路など、つながっていない道は使わない）。目的地が道に面していなければ、最寄りの道のマスまで
+  const tkey = (x, y) => x + ',' + y;
+  const roadCache = {};
+  function roadNet(lv) {
+    if (roadCache[lv]) return roadCache[lv];
+    const all = new Set(), add = r => { for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) all.add(tkey(x, y)); };
+    add(LAYOUT.plaza); for (const r of LAYOUT.path) if (r.lv <= lv) add(r); for (const r of LAYOUT.aisle) if (r.lv <= lv) add(r);
+    const main = new Set([tkey(LAYOUT.plaza.x, LAYOUT.plaza.y)]), q = [[LAYOUT.plaza.x, LAYOUT.plaza.y]];
+    while (q.length) { const [x, y] = q.shift(); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = tkey(x + dx, y + dy); if (all.has(k) && !main.has(k)) { main.add(k); q.push([x + dx, y + dy]); } } }
+    return (roadCache[lv] = { all, main, routes: {} });
+  }
+  const inTile = (net, px, py) => net.main.has(tkey(Math.floor(px / T), Math.floor(py / T)));
+  function nearestRoad(net, px, py) {                         // 最寄りの道のマス（マスの中心との距離）
+    let best = null, bd = Infinity;
+    for (const k of net.main) { const [x, y] = k.split(',').map(Number), d = Math.hypot(x * T + T / 2 - px, y * T + T / 2 - py); if (d < bd) { bd = d; best = [x, y]; } }
+    return best;
+  }
+  function roadRoute(net, a, b) {                             // a から b までのマス列（4方向の幅優先。道のマスだけ）
+    const key = tkey(a[0], a[1]) + '>' + tkey(b[0], b[1]);
+    if (net.routes[key]) return net.routes[key];
+    const prev = { [tkey(a[0], a[1])]: null }, q = [a];
+    while (q.length) { const [x, y] = q.shift(); if (x === b[0] && y === b[1]) break;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy, k = tkey(nx, ny); if (net.main.has(k) && !(k in prev)) { prev[k] = [x, y]; q.push([nx, ny]); } } }
+    const out = []; for (let c = tkey(b[0], b[1]); c !== null;) { const [x, y] = c.split(',').map(Number); out.push([x, y]); const p = prev[c]; c = p ? tkey(p[0], p[1]) : null; }
+    return (net.routes[key] = out.reverse());
+  }
+  // 出発点 p0 から目的地 p1（ピクセル）まで、道の上だけを通る折れ線。p0・p1 が道のマスの中ならその点を、外なら最寄りの道のマスの中心を使う
+  function roadPolyline(net, p0, p1) {
+    const snap = p => inTile(net, p[0], p[1]) ? { px: p, t: [Math.floor(p[0] / T), Math.floor(p[1] / T)] } : (t => ({ px: [t[0] * T + T / 2, t[1] * T + T / 2], t }))(nearestRoad(net, p[0], p[1]));
+    const A = snap(p0), B = snap(p1), route = roadRoute(net, A.t, B.t);
+    return [A.px].concat(route.slice(1, -1).map(t => [t[0] * T + T / 2, t[1] * T + T / 2]), route.length > 1 ? [B.px] : []);
+  }
+  function polyAt(poly, u) {                                  // 折れ線の全長の u（0〜1）の位置
+    const seg = []; let L = 0; for (let i = 1; i < poly.length; i++) { const d = Math.hypot(poly[i][0] - poly[i - 1][0], poly[i][1] - poly[i - 1][1]); seg.push(d); L += d; }
+    if (!L) return { x: poly[0][0], y: poly[0][1] };
+    let m = Math.min(1, Math.max(0, u)) * L;
+    for (let i = 0; i < seg.length; i++) { if (m <= seg[i] || i === seg.length - 1) { const f = seg[i] ? Math.min(1, m / seg[i]) : 0; return { x: poly[i][0] + (poly[i + 1][0] - poly[i][0]) * f, y: poly[i][1] + (poly[i + 1][1] - poly[i][1]) * f }; } m -= seg[i]; }
+  }
+  function plotStand(net, i) {                                // 区画 i を水やりするときに立つ場所（区画の下または上の道のマス。なければ最寄りの道のマス）
+    const [tx, ty] = LAYOUT.plots[i];
+    for (const [c, r, side] of [[tx + 1, ty + 2, 'b'], [tx, ty + 2, 'b'], [tx + 1, ty - 1, 'a'], [tx, ty - 1, 'a']]) {
+      if (net.main.has(tkey(c, r))) return [c === tx + 1 ? c * T + 2 : c * T + T - 2, side === 'b' ? r * T + 3 : r * T + T - 3];
+    }
+    const t = nearestRoad(net, tx * T + T, ty * T + T); return [t[0] * T + T / 2, t[1] * T + T / 2];
+  }
+  const walkLog = [];                                         // 検品用（?debug=1 のときだけ記録）：歩いた位置
+  const walkLogPush = (id, x, y, extra) => { if (DEBUG) { walkLog.push(Object.assign({ id, x, y, lv: builtLevel }, extra || {})); if (walkLog.length > 6000) walkLog.splice(0, 2000); } };
 
   // ---------- 疑似乱数（固定シード） ----------
   function rngFrom(seed) {
@@ -4536,9 +4601,11 @@
           c.globalAlpha = 1 - ph; px(c, xx, yy, '#f0d45a', 2, 2); px(c, xx + 1, yy - 4, '#f0d45a', 1, 4); px(c, xx + 2, yy - 4, '#f0d45a', 1, 1); c.globalAlpha = 1;
         }
       } });
-      if (bell && el < 6) FOLK_PATH.forEach(([[sx, sy], [tx, ty]], k) => {   // 町の人が集まる（約6秒）
-        const u = Math.min(1, Math.max(0, (el - k * .25) / 2.2)), x = Math.round(sx + (tx - sx) * u), y = Math.round(sy + (ty - sy) * u);
-        const hop = u >= 1 ? Math.round(Math.abs(Math.sin(el * 6 + k)) * 2) : (Math.floor(el * 8) % 2), a = el > 5 ? 6 - el : 1, sp = SPR['d_folk' + k];
+      if (bell && el < 6) FOLK_PATH.forEach(([[sx, sy], [tx, ty]], k) => {   // 町の人が集まる（約6秒）。道の上だけを歩く（町の外から来る人は、最寄りの道のマスに現れる）
+        const net = roadNet(builtLevel), poly = roadPolyline(net, [sx, sy], [tx, ty]);
+        const u = Math.min(1, Math.max(0, (el - k * .25) / 2.2)), pos = polyAt(poly, u), x = Math.round(pos.x), y = Math.round(pos.y);
+        walkLogPush('folk' + k, x, y, { u });
+        const hop = u >= 1 ? Math.round(Math.abs(Math.sin(el * 6 + k)) * 2) : (Math.floor(el * 8) % 2), a = (el > 5 ? 6 - el : 1) * Math.min(1, Math.max(0, el - k * .25) / .3), sp = SPR['d_folk' + k];
         objs.push({ y, shadow: [x, y - 1, 3, 1], draw: c => { c.globalAlpha = a; c.drawImage(sp, x - 2, y - sp.height - hop); c.globalAlpha = 1; } });
       });
       if (bell && el >= 6) bell = null;
@@ -4619,8 +4686,10 @@
     });
     if (ownsHelper('hp04') && AP > 0) {                          // 水やり少年：畑の区画を順にめぐる（演出のみ）
       const n = Math.min(AP, 6), cyc = ts / 3.2, a = Math.floor(cyc) % n, b2 = (a + 1) % n, f = cyc % 1;
-      const RA = plotRect(a), RB = plotRect(b2), ease = f < .7 ? f / .7 : 1;
-      const wx = Math.round(RA.x + 16 + (RB.x - RA.x) * ease), wy = Math.round(RA.y + PLOT_PX + 3 + (RB.y - RA.y) * ease), water = f >= .7;
+      const net = roadNet(builtLevel), ease = f < .7 ? f / .7 : 1;                       // 歩くのは3.2秒のうち最初の70%、残りは水やり（従来どおり）。道の上だけを歩く
+      const pos = polyAt(roadPolyline(net, plotStand(net, a), plotStand(net, b2)), ease);
+      const wx = Math.round(pos.x), wy = Math.round(pos.y), water = f >= .7;
+      walkLogPush('waterboy', wx, wy, { water, a, b: b2 });
       objs.push({ y: wy, shadow: [wx, wy, 4, 1.4], draw: c => {
         const step = water ? 0 : Math.floor(ts * 8) % 2, X = wx - 3, Y = wy - 13;
         px(c, X + 1, Y, '#6a3e1e', 5, 2); px(c, X + 1, Y + 2, '#f0c8a0', 5, 3); px(c, X + 2, Y + 3, '#3a2a20', 1, 1); px(c, X + 4, Y + 3, '#3a2a20', 1, 1);
@@ -5022,6 +5091,7 @@
     }).join('');
   // 通常ドリルの問題文・選択肢は MathML で描く（段階8b）。fmtMath は特殊ドリル（本家の表示が正本）だけが使う
   const mathHtml = s => window.ClockseedMath.toHtml(s);
+  const promptHtml = s => window.ClockseedMath.toHtml(s, { breaks: true });          // 問題文・「こたえは…」：句読点（、。）で改行（段階8f）
   const icon = k => '<img class="px" src="' + iconURL(k) + '" alt="">';
   const fmtShard = x => (Number.isInteger(x) ? String(x) : x.toFixed(1));
   let drillLevel = 'A', ds = null;                   // ds：進行中のセット（セーブしない）
@@ -5134,7 +5204,7 @@
       : pb.role === 'special' ? '<span class="roletag special">特殊</span>' : '';
     body.innerHTML = '<div class="dq-head"><span><span class="lvtag">' + (L === 'S' ? '特' : pb.level) + '</span>' + DRILL.TYPES[pb.type].name + role + '</span>' +
       '<span class="pips">' + pips + '</span><span>' + (ds.i + 1) + ' / ' + ds.set.length + '問</span></div>' +
-      '<div class="dq-prompt">' + mathHtml(pb.prompt) + '</div>' + (pb.visual ? '<div class="dq-vis">' + visualSvg(pb.visual) + '</div>' : '');
+      '<div class="dq-prompt">' + promptHtml(pb.prompt) + '</div>' + (pb.visual ? '<div class="dq-vis">' + visualSvg(pb.visual) + '</div>' : '');
     const grid = document.createElement('div'); grid.className = 'choices';
     pb.choices.forEach((c, k) => {
       const b = document.createElement('button'); b.className = 'tool pix choice' + (c.label.length > 18 ? ' long' : ''); b.innerHTML = '<span class="cl">' + mathHtml(c.label) + '</span>';
@@ -5204,7 +5274,7 @@
       setTimeout(() => { if (ds === cur && drillOpen()) nextDrill(); }, 950);
     } else {
       sfx('wrong'); fxBatsu();
-      fb.innerHTML = 'ざんねん… こたえは「' + mathHtml(pb.choices[pb.answer].label) + '」' + (res.streakLost ? '<br><small>連続正解が0に戻りました</small>' : '') + '<br>';
+      fb.innerHTML = 'ざんねん… こたえは「' + promptHtml(pb.choices[pb.answer].label) + '」' + (res.streakLost ? '<br><small>連続正解が0に戻りました</small>' : '') + '<br>';
       const nb = mkBtn('つぎへ', false, nextDrill); nb.style.marginTop = '6px'; fb.appendChild(nb);
     }
   }
@@ -6214,6 +6284,15 @@
     chips: () => chipInfo.map(c => Object.assign({}, c, { y: c.y + CY0 })),
     jobMs: (k, rk) => jobMs(k, rk),
     zoomInfo: () => ({ zoom: cam.zoom, min: zoomMin(), max: ZOOM_MAX }),
+    walkLog: () => walkLog.slice(),
+    walkClear: () => { walkLog.length = 0; },
+    roadInfo: () => { const n = roadNet(builtLevel); return { lv: builtLevel, all: [...n.all], main: [...n.main] }; },
+    blockers: () => { const r = [];                                    // 歩いてはいけない場所（ピクセルの四角）：畑・施設・家
+      for (let i = 0; i < LAYOUT.plots.length; i++) { const R = plotRect(i); r.push({ kind: 'plot', i, x: R.x, y: R.y, w: R.w, h: R.h }); }
+      for (const k of BUILDING_KEYS) { const f = FAC[k]; r.push({ kind: 'fac', k, x: f.left, y: f.top, w: SPR[k].width, h: SPR[k].height }); }
+      for (const h of LAYOUT.houses) { const sp = SPR['house' + h.v], fx = (h.tx + 1) * T, fy = (h.ty + 1) * T - 1; r.push({ kind: 'house', lv: h.lv, x: fx - (sp.width >> 1), y: fy - sp.height, w: sp.width, h: sp.height }); }
+      return r; },
+    ringBell: () => ringBell(),
     boardPos: () => ({ x: BOARD.cx, y: BOARD.top + 10 }),
     towerPos: () => ({ x: LAYOUT.tower.x, y: LAYOUT.tower.y - 30 }),
     contentScreen: () => { const c = contentBox(), a = scr(c.x0, c.y0), b = scr(c.x1, c.y1); return { x0: a.x, y0: a.y, x1: b.x, y1: b.y }; },

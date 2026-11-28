@@ -174,6 +174,53 @@ for (const [name, from, to, tag] of MUT) {
   if (!okm) allCaught = false;
   console.log((okm ? '検出 ' : '見逃し ') + name + '｜' + tag + 'を含む ' + target.length + '種のうち ' + caught.length + '種で不一致（' + caught.join(',') + '）');
 }
-const pass = ok && allCaught;
+
+// ---- 句読点で改行（段階8f）：問題文と「こたえは…」は、日本語の文章の句読点（、。）のあとで改行。数式の途中では割らない ----
+// 検査：①<br> を取り除くと、改行なしの表示と完全に同じ（文字も数式も変わらない） ②<br> は <math>…</math> の外だけ
+//       ③<br> の数 ＝ 文の途中にある句読点（、。）の数（句読点の直後で、最後の句読点・「」や空白だけが続く場合を除く）
+function breakChecks(MR, n, seed0) {
+  const res = { n: 0, strip: 0, inMath: 0, count: 0, hasBr: 0, sample: null };
+  for (const [ti, id] of Object.keys(D.TYPES).entries()) {
+    const rng = mulberry32(seed0 + ti * 104729);
+    for (let q = 0; q < n; q++) {
+      const pb = D.generate(id, rng);
+      for (const src of [pb.prompt, pb.choices[pb.answer].label]) {
+        res.n++;
+        const a = MR.toHtml(src), b = MR.toHtml(src, { breaks: true });
+        if (b.replace(/<br>/g, '') !== a) { res.strip++; res.sample = res.sample || '①' + src; }
+        let depth = 0, brInMath = false; for (const tk of b.split(/(<\/?math>|<br>)/)) { if (tk === '<math>') depth++; else if (tk === '</math>') depth--; else if (tk === '<br>' && depth > 0) brInMath = true; }
+        if (brInMath) { res.inMath++; res.sample = res.sample || '②' + src; }
+        const want = [...src].filter((c, k) => (c === '、' || c === '。') && /\S/.test(src.slice(k + 1)) && !/^[」』）)\s]*$/.test(src.slice(k + 1))).length, got = (b.match(/<br>/g) || []).length;
+        if (want !== got) { res.count++; res.sample = res.sample || '③' + src + ' 期待' + want + ' 実際' + got; }
+        if (/(?<![、。])<br>/.test(b) || /<br>$/.test(b)) { res.pos = (res.pos || 0) + 1; res.sample = res.sample || '④' + src; }   // <br> は句読点の直後だけ・文末にはない
+        if (got) res.hasBr++;
+      }
+    }
+  }
+  for (const src of ['のとき、', '正解は 3 です。', 'こたえは「1、2」', 'A、B。C', '、', '。。', '3 + 4、5 − 2', '「中心(0, 1)、半径 √3」', '2点 A、B について、']) {   // 文の終わり・連続・かっこ書きなどの決まったケース
+    res.n++; const a = MR.toHtml(src), b = MR.toHtml(src, { breaks: true });
+    const want = [...src].filter((c, k) => (c === '、' || c === '。') && /\S/.test(src.slice(k + 1)) && !/^[」』）)\s]*$/.test(src.slice(k + 1))).length, got = (b.match(/<br>/g) || []).length;
+    if (b.replace(/<br>/g, '') !== a || want !== got || /(?<![、。])<br>/.test(b) || /<br>$/.test(b)) { res.count++; res.sample = res.sample || '決まったケース「' + src + '」→ ' + b; }
+  }
+  return res;
+}
+const BR = breakChecks(MR, Math.max(200, Math.round(N / 5)), 515151);
+const brOk = !BR.strip && !BR.inMath && !BR.count && !BR.pos && BR.hasBr > 0;
+console.log('\n句読点で改行：' + BR.n + '件（そのうち改行が入ったもの ' + BR.hasBr + '件）｜<br>を除くと同じ ' + (BR.n - BR.strip) + '／数式の外だけ ' + (BR.n - BR.inMath) + '／数が句読点と一致 ' + (BR.n - BR.count) + ' → ' + (brOk ? '合格' : '不合格 ' + BR.sample));
+const BMUT = [
+  ['数式の中の「,」でも改行する', "if (breaks && (ch === '、' || ch === '。')", "if (breaks && (ch === '、' || ch === '。' || ch === ',')", s => s.replace("      if (core && (TRIGGER", "      if (breaks && core.includes(',')) { out += esc(lead) + mathOf(core).replace(/<mo separator=\"true\">,<\\/mo>/g, '<mo separator=\"true\">,</mo><br>') + esc(trail); i = j; continue; }\n      if (core && (TRIGGER")],
+  ['句読点を消してしまう', "out += esc(ch); if (breaks", "out += breaks ? '' : esc(ch); if (breaks", s => s],
+  ['句読点の前で改行する', "out += esc(ch); if (breaks && (ch === '、' || ch === '。')", "out += (breaks && (ch === '、' || ch === '。') ? '<br>' : '') + esc(ch); if (false && (ch === '、' || ch === '。')", s => s],
+  ['最後の句読点のあとにも改行する', "&& /\\S/.test(s.slice(i)) && !/^[」』）)\\s]*$/.test(s.slice(i))) out += '<br>'", ") out += '<br>'", s => s],
+];
+let brCaught = true;
+console.log('改行の壊しテスト：' + BMUT.length + '通り');
+for (const [name, from, to, post] of BMUT) {
+  if (!MR_SRC.includes(from)) { console.log('× ' + name + '：壊す場所が見つからない'); brCaught = false; continue; }
+  const M = run(post(MR_SRC.replace(from, to))).ClockseedMath, r = breakChecks(M, 100, 515151), caught = r.strip || r.inMath || r.count || r.pos;
+  if (!caught) brCaught = false;
+  console.log((caught ? '検出 ' : '見逃し ') + name + '（不一致 ' + (r.strip + r.inMath + r.count) + '件）');
+}
+const pass = ok && allCaught && brOk && brCaught;
 console.log(pass ? '=> 全て合格' : '=> 不合格');
 process.exit(pass ? 0 : 1);

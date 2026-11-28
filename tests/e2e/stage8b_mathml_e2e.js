@@ -57,7 +57,7 @@ for(const [vp,name] of [[{width:1180,height:820},'タブレット横'],[{width:3
   ok(!bad.intBad&&tot.int>0,'['+name+'] 定積分の上端は上、下端は下',bad.intBad||'');
   ok(!bad.subBad&&!bad.supBad,'['+name+'] 対数の底は下付き、累乗は上付き',(bad.subBad||[]).concat(bad.supBad||[]));
   ok(!bad.btnBad,'['+name+'] 問題文と選択肢の数式が欄・ボタン・パネル・画面からはみ出さない',bad.btnBad||'');
-  ok(minFs>=14,'['+name+'] 入りきらない式だけ文字を小さくする（最小 '+minFs+'px、下限14px）');
+  ok(minFs>=12,'['+name+'] 入りきらない式だけ文字を小さくする（最小 '+minFs+'px、下限12px。段階8fで、問題文は句読点のまとまりを割らないよう12pxまで小さくできる）');
   ok(!bad.squash,'['+name+'] 数式が潰れない（ボタンの中で文字が縮まない・分数の高さは文字の1.25倍以上）',bad.squash||'');
   await pg.context().close();}
 
@@ -96,7 +96,7 @@ for(const [vp,name] of [[{width:1180,height:820},'タブレット横'],[{width:3
   const p2=await page({width:1180,height:820});await p2.evaluate(()=>{const s=JSON.parse(localStorage.getItem('clockseed.save'));s.townExp=300;localStorage.setItem('clockseed.save',JSON.stringify(s));});await p2.reload();await p2.waitForTimeout(400);
   const c=await p2.evaluate(()=>window.__clockseed.towerCenter());await p2.mouse.click(c.x,c.y);await p2.waitForTimeout(250);await p2.locator('[data-sp="FXF"]').click();await p2.waitForTimeout(200);await p2.locator('#fxfStart').click();await p2.waitForTimeout(2600);
   const fx=await p2.evaluate(()=>({math:document.querySelectorAll('#fxfPanel math').length,tiles:document.querySelectorAll('#fxfGrid .fxf-tile').length,sup:document.querySelectorAll('#fxfPanel sup').length}));
-  ok(fx.math===0&&fx.tiles===6,'[特殊ドリル] FACTOR×FACTOR 移植版の表示はこれまでどおり（MathML にしない）',JSON.stringify(fx));
+  ok(fx.math===7&&fx.tiles===6,'[特殊ドリル] FACTOR×FACTOR 移植版の式は MathML（目標の式1つ＋タイル6つ。段階8fで通常ドリルとそろえた）',JSON.stringify(fx));
   await p2.context().close();}
 
 ok(errs.length===0,'[JS エラー] 0件',errs.slice(0,3));

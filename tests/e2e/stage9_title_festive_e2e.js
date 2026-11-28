@@ -55,9 +55,15 @@ for(const [w,h,name,dsf,touch] of [[1180,820,'tablet',1,false],[390,844,'phone',
   ok(/gradient/.test(see.bg)&&see.canvas,'['+name+'] 後ろに町の様子が見える（半透明の重ね・町は描画中）');
   const hits=await oldTitleHits(pg);ok(hits.length===0,'['+name+'] タイトル画面で旧題『ときの種』の表示なし',hits.join(','));
   await pg.waitForTimeout(1300);   // 「タップではじめる」がふわっと出るまで
-  const lay=await pg.evaluate(()=>{const l=document.querySelector('#titleLogo .tl2'),b=document.querySelector('#titleScreen .tbox').getBoundingClientRect(),st=document.getElementById('titleStart').getBoundingClientRect();
-    return {oneLine:l.getBoundingClientRect().height<parseFloat(getComputedStyle(l).fontSize)*1.6,inside:b.left>=0&&b.right<=innerWidth,start:st.width>0&&parseFloat(getComputedStyle(document.getElementById('titleStart')).opacity)>.9};});
-  ok(lay.oneLine&&lay.inside&&lay.start,'['+name+'] ロゴは1行で画面の幅に収まり、「タップではじめる」が見える',JSON.stringify(lay));
+  const lay=await pg.evaluate(()=>{const im=document.getElementById('titleLogoImg'),r=im.getBoundingClientRect(),st=document.getElementById('titleStart').getBoundingClientRect();
+    return {loaded:im.complete&&im.naturalWidth>0,src:im.getAttribute('src'),alt:im.alt,img:document.getElementById('titleLogo').classList.contains('img'),ratio:+(r.width/innerWidth).toFixed(3),
+      inside:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight,cx:Math.round(r.left+r.width/2),cy:Math.round(r.top+r.height/2),W:innerWidth,H:innerHeight,above:r.bottom<=st.top,
+      textHidden:getComputedStyle(document.querySelector('#titleLogo .tl2')).display==='none'&&getComputedStyle(document.querySelector('#titleScreen .tsub')).display==='none',
+      start:st.width>0&&parseFloat(getComputedStyle(document.getElementById('titleStart')).opacity)>.9,mode:getComputedStyle(document.getElementById('titleMode')).display!=='none'};});
+  ok(lay.loaded&&lay.img&&lay.src==='title-logo.webp'&&lay.alt==='みんなのときまきタウン'&&lay.textHidden,'['+name+'] タイトルのロゴは木の看板の画像（title-logo.webp・代替テキスト『'+lay.alt+'』。文字のロゴは隠す）');
+  ok(lay.inside&&Math.abs(lay.cx-lay.W/2)<=2&&lay.cy<lay.H/2&&lay.above,'['+name+'] ロゴは画面中央の上寄りで、はみ出さない（中心 '+lay.cx+','+lay.cy+'／画面 '+lay.W+'×'+lay.H+'）');
+  if(name==='tablet')ok(lay.ratio>=0.5&&lay.ratio<=0.6,'[tablet] ロゴの幅は画面幅の'+Math.round(lay.ratio*100)+'%（55%前後）');
+  ok(lay.start&&lay.mode,'['+name+'] 「タップではじめる」と、はじめから／つづきからの案内はそのまま');
   await pg.screenshot({path:O+'110_title_'+name+'.png'});
   // 音の切り替え（タイトル画面のまま）
   await pg.locator('#tSe').click();await pg.waitForTimeout(80);let snd=await H(pg,'sound');const s1=await S9(pg);
@@ -74,6 +80,13 @@ for(const [w,h,name,dsf,touch] of [[1180,820,'tablet',1,false],[390,844,'phone',
   const tu=await H(pg,'tutorial');ok(!tu.done&&tu.step===1&&await pg.isVisible('#tutBar'),'['+name+'] セーブなし → チュートリアルから（手順1・案内の帯）');
   const hits2=await oldTitleHits(pg);ok(hits2.length===0,'['+name+'] ゲーム画面にも旧題の表示なし',hits2.join(','));
   if(name==='tablet'){const tt=await pg.locator('#titleText').innerText();ok(tt==='みんなのときまきタウン','[tablet] 上の帯のタイトル「'+tt+'」');}
+  await pg.context().close();
+}
+{ // 画像が読み込めないとき：文字のロゴ（代替テキストも『みんなのときまきタウン』）
+  const pg=await boot(1180,820,null);
+  const r=await pg.evaluate(()=>new Promise(res=>{const im=document.getElementById('titleLogoImg');im.addEventListener('error',()=>setTimeout(()=>res({img:document.getElementById('titleLogo').classList.contains('img'),
+    tl2:getComputedStyle(document.querySelector('#titleLogo .tl2')).display,text:document.getElementById('titleLogo').innerText.replace(/\s+/g,''),alt:im.alt}),50),{once:true});im.src='title-logo-missing.webp';}));
+  ok(!r.img&&r.tl2!=='none'&&r.text==='みんなのときまきタウン'&&r.alt==='みんなのときまきタウン','[画像なし] 読み込めないときは文字のロゴ「'+r.text+'」に戻る（代替テキスト『'+r.alt+'』）');
   await pg.context().close();
 }
 { // セーブあり：続きから

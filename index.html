@@ -161,8 +161,13 @@
   .pips i.ok{background:#7fc24a}.pips i.ng{background:#d0705a}.pips i.cur{background:#f2d27a}
   .dq-prompt{font-size:28px;font-weight:bold;margin:16px 4px 8px;letter-spacing:.03em;min-height:42px;line-height:1.35}
   .dq-vis{display:flex;justify-content:center;margin-bottom:4px}
-  .choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 4px 0}
+  .choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;margin:8px 4px 0}   /* 狭い画面では1列 */
+  .choice .cl{display:block;max-width:100%;line-height:1.3}.dq-prompt{overflow:hidden}
   .choice{font-size:24px;padding:10px;justify-content:center;min-height:62px}
+  /* 数式（MathML）：数式用のフォント、大きさは周りの文字にそろえる */
+  math{font-family:"STIX Two Math","Cambria Math","Latin Modern Math","STIX Math",math;font-size:1.08em;math-style:normal}
+  .choice math{max-width:100%}.dq-prompt math,.dfb math{margin:0 .08em}
+  math .unit{margin-left:.06em}
   .choice.ok{background:#cdeaa8}.choice.ng{background:#f3c2b4}
   .choice:disabled{cursor:default}
   .dfb{min-height:46px;margin-top:12px;font-weight:bold;position:relative}
@@ -1208,6 +1213,158 @@
     return out;
   }
   root.ClockseedDrill = { TYPES: T, LEVELS, CHALLENGE, generate, makeSet };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script id="math-render">
+/* ===================================================================
+   ときの種：ドリルの数式表示（MathML）  段階8b
+   ドリルエンジン（drill-engine）が作る問題文・選択肢の文字列は変えずに、表示のときだけ
+   数式の部分を MathML に描き直す。日本語の文章はそのままのテキスト。
+   - 分数 a/b → <mfrac>（縦）。左の項は空白をはさまずに続く数・文字・根号・累乗（例：3π/2、x²/16、√3/3）、
+     かっこの組はかっこを外して分子・分母に（例：(√3 + 3)/3、(sin 6x)/(3x)）
+   - 根号 √n → <msqrt>（上線は数字だけにかかる。√3i は √3 と i）
+   - ベクトル a⃗・AB⃗ → <mover> で矢印を文字の上に（AB⃗ は AB 全体の上）
+   - 累乗 x²・^(…)・^n → <msup>、対数の底 log₂ → <msub>、定積分 ∫_a^b → <msubsup>、共役 z̄ → <mover>
+   - 単位（cm・kg・g・m）は立体、sin・cos・tan・log は関数名
+   ゲームの状態・DOM には触らない（文字列 → 文字列）。tests/drill_mathml_test.js がこのスクリプトだけを取り出して検証する
+   =================================================================== */
+(function (root) {
+  'use strict';
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const SUPD = { '²': '2', '³': '3' }, SUBD = '₀₁₂₃₄₅₆₇₈₉';
+  const UNITS = ['cm', 'kg', 'g', 'm'];
+  const MATH_CH = /[0-9A-Za-z+\-−×÷=<>≤≥·±()|²³√/^_∫∞°πθ⃗̄′→.,□? ₀-₉]/;     // 数式の区間に入る文字
+  const TRIGGER = /[A-Za-z+\-−×÷=<>≤≥·±()|²³√/^∫∞°πθ⃗̄′→□?₀-₉]/;           // これを含む区間（数だけの区間は除く）を数式にする
+
+  // ---- 字句：数式の区間 → トークン（sp：直前に空白があった） ----
+  function lex(s) {
+    const T = []; let i = 0, sp = false;
+    while (i < s.length) {
+      const c = s[i], rest = s.slice(i);
+      if (c === ' ') { sp = true; i++; continue; }
+      let m, tok, len = 1;
+      if ((m = rest.match(/^∫_(−?\d+)\^(−?\d+)/))) { tok = { t: 'int', lo: m[1], hi: m[2] }; len = m[0].length; }
+      else if ((m = rest.match(/^\d+(?:\.\d+)?/))) { tok = { t: 'num', v: m[0] }; len = m[0].length; }
+      else if ((m = rest.match(/^√(\d+)/))) { tok = { t: 'sqrt', v: m[1] }; len = m[0].length; }
+      else if ((m = rest.match(/^(sin|cos|tan|log)/))) { tok = { t: 'fn', v: m[1] }; len = m[0].length; }
+      else if (rest.startsWith('^(')) {
+        let d = 0, j = i + 1;
+        for (; j < s.length; j++) { if (s[j] === '(') d++; else if (s[j] === ')' && --d === 0) break; }
+        tok = { t: 'sup', inner: s.slice(i + 2, j) }; len = j - i + 1;
+      }
+      else if ((m = rest.match(/^\^(−?\d+)/))) { tok = { t: 'sup', inner: m[1] }; len = m[0].length; }
+      else if (SUPD[c]) tok = { t: 'sup', inner: SUPD[c] };
+      else if ((m = rest.match(/^[₀-₉]+/))) { tok = { t: 'sub', inner: [...m[0]].map(d => SUBD.indexOf(d)).join('') }; len = m[0].length; }
+      else if (c === '⃗') tok = { t: 'vec' };
+      else if (c === '̄') tok = { t: 'bar' };
+      else if (/[A-Za-zπθ∞□?]/.test(c)) tok = { t: 'id', v: c };
+      else if (c === '(' || c === ')' || c === '/') tok = { t: c };
+      else tok = { t: 'op', v: c };
+      tok.sp = sp; sp = false; T.push(tok); i += len;
+    }
+    // 数（または □）のすぐ後ろの単位：cm・kg・g・m（文字のつながりが単位と完全に一致するときだけ）
+    for (let k = 0; k < T.length; k++) {
+      const p = T[k - 1];
+      if (T[k].t !== 'id' || T[k].sp || !p || !(p.t === 'num' || (p.t === 'id' && p.v === '□'))) continue;
+      let e = k, w = '';
+      while (e < T.length && T[e].t === 'id' && /[a-z]/.test(T[e].v) && (e === k || !T[e].sp)) w += T[e++].v;
+      if (UNITS.includes(w)) T.splice(k, e - k, { t: 'unit', v: w, sp: false });
+    }
+    return T;
+  }
+
+  // ---- 構文：トークン → 木（かっこの組・後置（累乗・添字・矢印・共役）・分数） ----
+  const OPERAND = n => ['num', 'id', 'unit', 'sqrt', 'sup', 'vec', 'bar', 'group', 'frac'].includes(n.k);
+  function parse(T) {
+    let i = 0;
+    function seq(close) {
+      const out = [];
+      while (i < T.length) {
+        const t = T[i++];
+        if (t.t === ')') { if (close) break; out.push({ k: 'op', v: ')', sp: t.sp }); continue; }
+        if (t.t === '(') { out.push({ k: 'group', kids: seq(true), sp: t.sp }); continue; }
+        const last = out[out.length - 1];
+        if (t.t === 'sup' && last) { out[out.length - 1] = { k: 'sup', base: last, exp: parse(lex(t.inner)), sp: last.sp }; continue; }
+        if (t.t === 'sub' && last) { out[out.length - 1] = { k: 'sub', base: last, s: t.inner, sp: last.sp }; continue; }
+        if ((t.t === 'vec' || t.t === 'bar') && last) {
+          let a = out.length - 1;                                    // AB⃗ のような大文字の並びは全体に矢印
+          if (t.t === 'vec' && last.k === 'id' && /[A-Z]/.test(last.v)) while (a > 0 && !out[a].sp && out[a - 1].k === 'id' && /[A-Z]/.test(out[a - 1].v)) a--;
+          const kids = out.splice(a);
+          out.push({ k: t.t, kids, sp: kids[0].sp }); continue;
+        }
+        if (t.t === '/') { out.push({ k: 'slash' }); continue; }
+        out.push(Object.assign({ k: t.t }, t));
+      }
+      // 分数：「/」の左は空白をはさまずに続く項のつながり、右は次の1項
+      for (let j = 0; j < out.length; j++) {
+        if (out[j].k !== 'slash' || j === 0 || j + 1 >= out.length) continue;
+        let a = j - 1;
+        while (a > 0 && !out[a].sp && OPERAND(out[a - 1]) && OPERAND(out[a])) a--;
+        if (!OPERAND(out[a])) a = j - 1;
+        const L = out.slice(a, j), Rt = out[j + 1];
+        const unwrap = xs => (xs.length === 1 && xs[0].k === 'group' ? xs[0].kids : xs);
+        const f = { k: 'frac', num: unwrap(L), den: unwrap([Rt]), sp: L[0].sp };
+        out.splice(a, j - a + 2, f); j = a;
+      }
+      return out;
+    }
+    return seq(false);
+  }
+
+  // ---- 描画：木 → MathML ----
+  const mo = (v, a) => '<mo' + (a || '') + '>' + esc(v) + '</mo>';
+  const THIN = '<mspace width="0.167em"></mspace>';                 // 関数名と引数のあいだの細いすき間（sin 30°・log₂ 8）
+  const neg = v => (v[0] === '−' ? mo('−') + '<mn>' + v.slice(1) + '</mn>' : '<mn>' + v + '</mn>');
+  function R(xs) { return xs.map((n, j) => node(n, xs[j + 1], xs[j - 1])).join(''); }
+  function node(n, next, prev) {
+    switch (n.k) {
+      case 'num': return '<mn>' + n.v + '</mn>';
+      case 'unit': return '<mi mathvariant="normal" class="unit">' + n.v + '</mi>';
+      case 'id':
+        if (n.v === '□' || n.v === '?') return '<mi mathvariant="normal">' + n.v + '</mi>';
+        if (n.v === 'd' && n.sp && next && next.k === 'id' && !next.sp) return '<mspace width="0.167em"></mspace><mi mathvariant="normal">d</mi>';   // dx の d（前に細いすき間）
+        return '<mi>' + n.v + '</mi>';
+      case 'sqrt': return '<msqrt><mn>' + n.v + '</mn></msqrt>';
+      case 'fn': return '<mi>' + n.v + '</mi>' + mo('\u2061') + THIN;
+      case 'int': return '<msubsup>' + mo('∫') + '<mrow>' + neg(n.lo) + '</mrow><mrow>' + neg(n.hi) + '</mrow></msubsup>';
+      case 'group': { const st = n.kids.some(x => x.k === 'frac') ? '' : ' stretchy="false"';   // 分数を含むときだけ、かっこを伸ばす
+        return '<mrow>' + mo('(', st) + R(n.kids) + mo(')', st) + '</mrow>'; }
+      case 'sup': return '<msup><mrow>' + node(n.base, null, null) + '</mrow><mrow>' + R(n.exp) + '</mrow></msup>';
+      case 'sub':
+        if (n.base.k === 'fn') return '<msub><mi>' + n.base.v + '</mi><mn>' + n.s + '</mn></msub>' + mo('\u2061') + THIN;
+        return '<msub><mrow>' + node(n.base, null, null) + '</mrow><mn>' + n.s + '</mn></msub>';
+      case 'vec': return '<mover accent="true"><mrow>' + R(n.kids) + '</mrow>' + mo(n.kids.length > 1 ? '⟶' : '→', ' stretchy="true"') + '</mover>';   // AB⃗ は長い矢印（2文字の幅）
+      case 'bar': return '<mover accent="true"><mrow>' + R(n.kids) + '</mrow>' + mo('¯', ' stretchy="true"') + '</mover>';
+      case 'frac': return '<mfrac><mrow>' + R(n.num) + '</mrow><mrow>' + R(n.den) + '</mrow></mfrac>';
+      case 'slash': return mo('/');
+      case 'op':
+        if (n.v === ',') return mo(',', ' separator="true"');
+        if (n.v === '°' || n.v === '′') return mo(n.v, ' lspace="0" rspace="0"');
+        if (n.v === '|') return mo('|', ' stretchy="false" lspace="0" rspace="0"');   // 絶対値の縦線は中身に寄せる
+        if ((n.v === '−' || n.v === '-' || n.v === '±') && (!prev || prev.k === 'op' || prev.k === 'fn' || prev.k === 'slash')) return mo(n.v, ' form="prefix"');   // 符号（−5、= −2i、, −3）
+        return mo(n.v);
+    }
+    return '';
+  }
+  const mathOf = s => '<math>' + R(parse(lex(s))) + '</math>';
+
+  // ---- 文章の中から数式の区間を探して、そこだけ MathML に ----
+  function toHtml(text) {
+    const s = String(text), whole = [...s].every(c => MATH_CH.test(c));
+    // 数式を含む文字列では、数だけの区間（「半径 14」の 14 など）も数式の字体にそろえる。数式を含まない文章（「5 人が1列に」）の数はそのまま
+    const spans = s.match(new RegExp(MATH_CH.source + '+', 'g')) || [], anyMath = spans.some(x => TRIGGER.test(x.trim()));
+    let out = '', i = 0;
+    while (i < s.length) {
+      if (!MATH_CH.test(s[i])) { out += esc(s[i++]); continue; }
+      let j = i; while (j < s.length && MATH_CH.test(s[j])) j++;
+      const span = s.slice(i, j), lead = span.match(/^ */)[0], trail = span.match(/ *$/)[0], core = span.trim();
+      if (core && (TRIGGER.test(core) || whole || (anyMath && /^[\d.,\s]+$/.test(core) && /\d/.test(core)))) out += esc(lead) + mathOf(core) + esc(trail);
+      else out += esc(span);
+      i = j;
+    }
+    return out;
+  }
+  root.ClockseedMath = { toHtml, mathOf, lex, parse };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 
@@ -4744,6 +4901,8 @@
       if (/^\^−?\d+$/.test(t)) return '<sup>' + t.slice(1) + '</sup>';
       return t.replace(/(−?(?:\d*√\d+|\d*π|\d+))\/(\d+)/g, '<span class="fr"><span>$1</span><span>$2</span></span>');
     }).join('');
+  // 通常ドリルの問題文・選択肢は MathML で描く（段階8b）。fmtMath は特殊ドリル（本家の表示が正本）だけが使う
+  const mathHtml = s => window.ClockseedMath.toHtml(s);
   const icon = k => '<img class="px" src="' + iconURL(k) + '" alt="">';
   const fmtShard = x => (Number.isInteger(x) ? String(x) : x.toFixed(1));
   let drillLevel = 'A', ds = null;                   // ds：進行中のセット（セーブしない）
@@ -4854,14 +5013,22 @@
       : pb.role === 'special' ? '<span class="roletag special">特殊</span>' : '';
     body.innerHTML = '<div class="dq-head"><span><span class="lvtag">' + (L === 'S' ? '特' : pb.level) + '</span>' + DRILL.TYPES[pb.type].name + role + '</span>' +
       '<span class="pips">' + pips + '</span><span>' + (ds.i + 1) + ' / ' + ds.set.length + '問</span></div>' +
-      '<div class="dq-prompt">' + fmtMath(pb.prompt) + '</div>' + (pb.visual ? '<div class="dq-vis">' + visualSvg(pb.visual) + '</div>' : '');
+      '<div class="dq-prompt">' + mathHtml(pb.prompt) + '</div>' + (pb.visual ? '<div class="dq-vis">' + visualSvg(pb.visual) + '</div>' : '');
     const grid = document.createElement('div'); grid.className = 'choices';
     pb.choices.forEach((c, k) => {
-      const b = document.createElement('button'); b.className = 'tool pix choice' + (c.label.length > 18 ? ' long' : ''); b.innerHTML = fmtMath(c.label);
+      const b = document.createElement('button'); b.className = 'tool pix choice' + (c.label.length > 18 ? ' long' : ''); b.innerHTML = '<span class="cl">' + mathHtml(c.label) + '</span>';
       b.onclick = () => answerDrill(k); grid.appendChild(b);
     });
     body.appendChild(grid);
     const fb = document.createElement('div'); fb.className = 'dfb'; fb.id = 'dqFb'; body.appendChild(fb);
+    fitMath(body.querySelector('.dq-prompt'), 16); grid.querySelectorAll('.choice').forEach(b => fitMath(b, 14));
+  }
+  // 数式は途中で折り返せないので、入りきらないときだけ文字を少しずつ小さくする（狭い画面の長い式・円の方程式など）
+  function fitMath(el, min) {
+    if (!el) return;
+    let fs = parseFloat(getComputedStyle(el).fontSize);
+    const over = () => el.scrollWidth > el.clientWidth + 1 || [...el.querySelectorAll('math')].some(m => m.getBoundingClientRect().right > el.getBoundingClientRect().right + 1);
+    while (over() && fs > min) { fs -= 1; el.style.fontSize = fs + 'px'; }
   }
   function sparkle(el) {              // 正解の小さな演出（効果音の代わり）
     for (let k = 0; k < 10; k++) {
@@ -4916,7 +5083,7 @@
       setTimeout(() => { if (ds === cur && drillOpen()) nextDrill(); }, 950);
     } else {
       sfx('wrong'); fxBatsu();
-      fb.innerHTML = 'ざんねん… こたえは「' + fmtMath(pb.choices[pb.answer].label) + '」' + (res.streakLost ? '<br><small>連続正解が0に戻りました</small>' : '') + '<br>';
+      fb.innerHTML = 'ざんねん… こたえは「' + mathHtml(pb.choices[pb.answer].label) + '」' + (res.streakLost ? '<br><small>連続正解が0に戻りました</small>' : '') + '<br>';
       const nb = mkBtn('つぎへ', false, nextDrill); nb.style.marginTop = '6px'; fb.appendChild(nb);
     }
   }
@@ -5898,6 +6065,10 @@
     kitchenCenter: () => window.__clockseed.facCenter('kitchen'),
     lastGacha: () => JSON.parse(JSON.stringify(lastGacha)),
     gachaFx: () => GFX.info(),
+    // 検品用：指定のタイプの問題（乱数のシード指定）を、ドリルのパネルにそのまま出す（報酬は通常どおり。見た目の確認だけに使う）
+    drillShow: (type, seed) => { let a = (seed >>> 0) || 1; const rng = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+      const pb = DRILL.generate(type, rng); ds = { kind: 'set', level: DRILL.TYPES[type].level || type[0], set: [pb], i: 0, results: [], locked: false };
+      $('drillPanel').style.display = 'flex'; renderDrillQ(); return { prompt: pb.prompt, labels: pb.choices.map(c => c.label), answer: pb.answer }; },
     log: () => LOG.map(e => ({ text: e.text, at: e.at, away: e.away })),
     logLine: () => $('logText').textContent,
     plotNames: () => PLOT_NAMES.slice(),

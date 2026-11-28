@@ -14,6 +14,7 @@ const errs=[];
 const SIZES=[[390,844,'スマホ縦 390×844','a'],[360,740,'スマホ縦 360×740','b'],[844,390,'スマホ横 844×390','c']];
 async function boot(w,h,save,dsf=1,u=url){
   const ctx=await b.newContext({viewport:{width:w,height:h},deviceScaleFactor:dsf,hasTouch:true,isMobile:w<700});
+await ctx.addInitScript(()=>{document.addEventListener('DOMContentLoaded',()=>{if(innerWidth>innerHeight){const s=document.createElement('style');s.textContent='#rotateNotice{display:none!important}';document.head.appendChild(s);}});});   // 段階8d：スマホ横の案内は、中の画面の検査のために隠す（案内そのものは stage8d のテストで確かめる）
   if(save)await ctx.addInitScript(s=>{if(!sessionStorage.getItem('__booted')){sessionStorage.setItem('__booted','1');localStorage.clear();localStorage.setItem('clockseed.save',s);}},JSON.stringify(save));
   const pg=await ctx.newPage();pg.on('pageerror',e=>errs.push(e.message));pg.on('console',m=>{if(m.type()==='error')errs.push(m.text())});
   await pg.goto(u);await pg.waitForTimeout(700);return pg;}
@@ -150,7 +151,8 @@ for(const [w,h,name,key] of SIZES){
   const tp=await H(pg,'towerPos');await focusWorld(pg,tp.x,tp.y,w<=600?1.0:1.2);const tc2=await H(pg,'towerCenter');await tapXY(pg,tc2.x,tc2.y);
   await pg.waitForTimeout(500);ok(await vis(pg,'#drillPanel')&&!await vis(pg,'#skipPanel')&&!await vis(pg,'#fxfPanel')&&!await vis(pg,'#tpPanel'),'['+tag+'] ドリル：時計塔をタップ→ドリルのパネルだけが開く（指の下に現れたボタンが勝手に押されない）');await panelFit(pg,'#drillPanel .box','ドリルのメニュー（特殊ドリル・ガチャ欄を含む）',tag);
   await pg.screenshot({path:O+'84_mobile_'+key+'_drill_menu.png'});
-  await tapSel(pg,'#drillStartBtn');
+  ok(await pg.locator('.dq-prompt').count()===0,'['+tag+'] 時計塔のタップで、指の下の A〜E のボタンが勝手に押されて5問が始まらない');
+  await tapSel(pg,'.lvbtn[data-lv="A"]');                                   // 段階8d：スマホでは A〜E をタップするとそのまま5問セットが始まる
   for(let q=0;q<5;q++){await pg.waitForSelector('.choice:not([disabled])',{timeout:6000});const k=await H(pg,'drillAnswerIndex');
     if(q===1){await panelFit(pg,'#drillPanel .box','ドリルの問題（MathML）',tag);await pg.screenshot({path:O+'85_mobile_'+key+'_drill_question.png'});}
     await tapSel(pg,'.choice >> nth='+k);await pg.waitForTimeout(1050);}

@@ -12,7 +12,9 @@ const AUDIO_SPY=()=>{const A=window.AudioContext||window.webkitAudioContext;wind
   window.AudioContext=class extends A{constructor(...a){super(...a);window.__audio.ctx++;}};
   P.createOscillator=function(){window.__audio.osc++;const o=co.call(this),s=o.start;o.start=function(...a){window.__audio.starts++;return s.apply(this,a);};return o;};
   P.createBufferSource=function(){window.__audio.src++;const o=cb.call(this),s=o.start;o.start=function(...a){window.__audio.starts++;return s.apply(this,a);};return o;};};
-async function page(vp={width:1180,height:820},dsf=1){const ctx=await b.newContext({viewport:vp,deviceScaleFactor:dsf});await ctx.addInitScript(AUDIO_SPY);const pg=await ctx.newPage();
+async function page(vp={width:1180,height:820},dsf=1){const ctx=await b.newContext({viewport:vp,deviceScaleFactor:dsf});await ctx.addInitScript(AUDIO_SPY);
+await ctx.addInitScript(()=>{document.addEventListener('DOMContentLoaded',()=>{if(innerWidth>innerHeight){const s=document.createElement('style');s.textContent='#rotateNotice{display:none!important}';document.head.appendChild(s);}});});   // 段階8d：スマホ横の案内は、中の画面の検査のために隠す（案内そのものは stage8d のテストで確かめる）
+const pg=await ctx.newPage();
   pg.on('pageerror',e=>errs.push(e.message));pg.on('console',m=>{if(m.type()==='error')errs.push(m.text())});return pg;}
 let pg=await page(undefined,2);
 const st=()=>pg.evaluate(()=>JSON.parse(localStorage.getItem('clockseed.save')));

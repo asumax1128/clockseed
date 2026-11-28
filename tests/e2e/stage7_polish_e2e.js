@@ -138,7 +138,7 @@ for(const lv of [2,3,4]){const s=done(clone(FRESH));s.townExp=LV[lv-1];await loa
 const SIZES=[[1180,820,'タブレット横'],[1024,768,'iPad 横'],[768,1024,'iPad 縦'],[1366,1024,'iPad Pro 横'],[1280,720,'ノートPC'],[390,844,'スマホ縦'],[844,390,'スマホ横']];
 for(const lv of [2,5]){const s=done(clone(FRESH));s.townExp=LV[lv-1];for(const [w,h,name] of SIZES){const p2=await page({width:w,height:h});await p2.goto(url);await p2.evaluate(s=>{localStorage.clear();localStorage.setItem('clockseed.save',JSON.stringify(s));},s);await p2.reload();await p2.waitForTimeout(450);
   const r=await p2.evaluate(()=>{const g=id=>document.getElementById(id).getBoundingClientRect(),C=window.__clockseed,v=C.viewport(),tb=g('topBand'),bb=g('botBand'),cv=g('world');
-    const inside=(p)=>p.x>=0&&p.x<=innerWidth&&p.y>=cv.top-0.5&&p.y<=cv.bottom+0.5;
+    const inside=(p)=>p.x>=0&&p.x<=innerWidth&&p.y>=cv.top+1&&p.y<=cv.bottom-1;   // 帯との境目ぴったり（中心がちょうど町の帯の縁）は「帯の下に隠れている」とは数えない（段階8cで帯の高さが変わり、境目に当たることがある）
     const pl=[...Array(C.mapInfo().plots).keys()].map(i=>C.plotCenter(i)),tw=C.towerCenter();
     const covered=[...pl,tw].filter(inside).map(p=>document.elementFromPoint(p.x,p.y)).filter(e=>e&&e.id!=='world').length;
     return {tb:{top:tb.top,bottom:tb.bottom},bb:{top:bb.top,bottom:bb.bottom},cv:{top:cv.top,bottom:cv.bottom,h:cv.height},v,inside:[...pl,tw].filter(inside).length,total:pl.length+1,covered,ih:innerHeight};});

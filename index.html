@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>ときの種</title>
+<title>みんなのときまきタウン</title>
 <style>
   :root{
     --ink:#4a3322; --ink-soft:#8a6a4c;
@@ -491,12 +491,73 @@
   }
   /* FACTOR×FACTOR（移植版）の式（MathML）：スマホ縦ではタイルの文字を小さくして、縁から余裕をもって収める */
   @media (max-width:600px){.fxf-tile{font-size:22px;border-radius:12px}.fxf-grid{gap:8px}.fxf-target{font-size:32px}.fxf-tile math{max-width:100%}}
+  /* ===== 段階9：タイトル画面・節目の祝祭・収穫の演出 ===== */
+  #titleScreen{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;
+    background:linear-gradient(180deg,#1f2a4af2 0,#1f2a4ae6 var(--topH,86px),#2a1a1040 calc(var(--topH,86px) + 140px),#2a1a1022 60%,#2a1a10b0 calc(100% - 170px),#2a1a10f2 calc(100% - 90px))}
+  #titleScreen .tsky{position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 40% at 50% 38%,#fff3c855 0%,#fff3c800 70%)}
+  #titleScreen .tbox{position:relative;text-align:center;padding:18px 22px 16px;max-width:calc(100vw - 32px)}
+  #titleLogo{margin:0;line-height:1.05;color:#fff6e0;font-weight:900;letter-spacing:.06em;text-shadow:0 3px 0 #8a4a1e,0 6px 0 #3e2a1a,0 0 18px #ffd88a99;animation:tlogo 1.1s cubic-bezier(.2,1.4,.4,1) both}
+  #titleLogo .tl1{display:block;font-size:clamp(22px,6vw,40px);color:#ffe9a8}
+  #titleLogo .tl2{display:block;font-size:clamp(30px,10vw,76px);white-space:nowrap}
+  #titleScreen .tsub{margin-top:10px;color:#fff;font-weight:bold;font-size:clamp(14px,3.6vw,22px);letter-spacing:.12em;text-shadow:0 2px 0 #3e2a1a,0 0 8px #000a;animation:tfade 1.2s .5s both}
+  #titleScreen .tstart{display:inline-block;margin-top:clamp(22px,6vh,48px);padding:10px 26px;border-radius:999px;background:#fff6e0;color:#5a3a22;font-weight:bold;font-size:clamp(16px,4.4vw,22px);box-shadow:0 0 0 3px #8a4a1e,0 6px 0 #3e2a1a;animation:tfade .8s .9s both,tblink 1.6s 1.7s ease-in-out infinite}
+  #titleScreen .tmode{margin-top:12px;color:#fff6e0;font-size:13px;opacity:.9;text-shadow:0 1px 2px #000;animation:tfade .8s 1.1s both}
+  #titleScreen .tsnd{position:absolute;right:12px;bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:8px}
+  #titleScreen .tsnd .sndbtn{min-height:44px;min-width:44px;padding:4px 12px;font-size:14px}
+  @keyframes tlogo{0%{opacity:0;transform:translateY(-24px) scale(.85)}100%{opacity:1;transform:none}}
+  @keyframes tfade{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
+  @keyframes tblink{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .celeb{z-index:85;background:#2a1a1055;cursor:pointer}
+  .celeb .cbox{position:relative;text-align:center;min-width:min(320px,calc(100vw - 32px));max-width:min(460px,calc(100vw - 24px));max-height:calc(100vh - 40px);overflow:auto;padding:20px 22px 14px;animation:cpop .5s cubic-bezier(.2,1.5,.4,1) both;box-shadow:0 0 0 4px #e0b04a,0 10px 30px #0008}
+  .celeb .cstar{display:inline-block;margin:-6px 0 2px;font-size:30px;line-height:1;color:#f0c040;text-shadow:0 0 10px #fff6c0;animation:cspin 3s linear infinite}
+  .celeb .ctitle{display:block;font-size:24px;color:#8a3a1e;letter-spacing:.04em}
+  .celeb .csub{margin-top:6px;font-size:14px;color:#5a3a22}
+  .celeb .clist{list-style:none;margin:12px 0 4px;padding:0;text-align:left;display:flex;flex-direction:column;gap:6px}
+  .celeb .clist li{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:#fff6e0;box-shadow:inset 0 0 0 2px #e8d2a4;font-size:15px;animation:crow .4s both}
+  .celeb .clist li .ck{flex:none;font-size:12px;font-weight:bold;color:#fff;background:#b8743a;border-radius:6px;padding:1px 6px}
+  .celeb .clist li img.px{width:22px;height:22px;flex:none}
+  .celeb .cgoal{margin-top:12px;padding:8px 12px;border-radius:8px;background:#fff6e0;box-shadow:inset 0 0 0 2px #e0b04a;font-weight:bold;color:#5a3a22;font-size:15px}
+  .celeb .ctap{margin-top:12px;font-size:12px;color:#8a6a4a;animation:tblink 1.6s ease-in-out infinite}
+  .celeb.big{background:#2a1a1028}
+  .celeb.big .cbox{min-width:min(380px,calc(100vw - 24px));box-shadow:0 0 0 5px #f0c040,0 0 0 9px #c8503a,0 0 40px #ffd86a,0 10px 30px #0008;background:linear-gradient(180deg,#fff9e8,#ffe9c0)}
+  .celeb.big .ctitle{font-size:30px;color:#c0392b;text-shadow:0 2px 0 #ffd86a}
+  .celeb.big .cstar{font-size:42px}
+  .celeb .clist.many li{padding:3px 8px;font-size:13px}.celeb .clist.many{gap:3px}
+  @keyframes cpop{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:none}}
+  @keyframes crow{0%{opacity:0;transform:translateX(-10px)}100%{opacity:1;transform:none}}
+  @keyframes cspin{to{transform:rotate(360deg)}}
+  #fxLayer{position:fixed;inset:0;z-index:8;pointer-events:none;overflow:hidden}
+  #fxLayer .hv{position:absolute;left:0;top:0;width:24px;height:24px;margin:-12px 0 0 -12px;image-rendering:pixelated;will-change:transform,opacity}
+  #fxLayer .hvn{position:absolute;left:0;top:0;transform:translate(-50%,-50%);font-weight:900;font-size:18px;color:#fff6c0;text-shadow:0 2px 0 #5a3a22,0 0 4px #5a3a22;white-space:nowrap;will-change:transform,opacity}
+  #fxLayer .spk{position:absolute;left:0;top:0;width:6px;height:6px;margin:-3px 0 0 -3px;background:#fff6c8;box-shadow:0 0 6px #ffe27a;transform:rotate(45deg);will-change:transform,opacity}
+  #fxLayer .hring{position:absolute;left:0;top:0;width:120px;height:120px;margin:-60px 0 0 -60px}
+  #fxLayer .hring path{fill:none;stroke:#e0483a;stroke-width:6;stroke-linecap:round;stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:hanadraw .6s ease-out forwards}
+  #fxLayer .hring path.petal{animation-delay:.25s}
+  #comboTip{position:fixed;left:0;top:0;z-index:9;display:none;pointer-events:none;padding:2px 10px;border-radius:999px;background:#fff6e0;color:#c0392b;font-weight:900;font-size:16px;box-shadow:0 0 0 2px #e0483a;transform:translate(-50%,-150%);white-space:nowrap}
+  #comboTip.bump{animation:cbump .25s ease-out}
+  @keyframes cbump{0%{transform:translate(-50%,-150%) scale(1.35)}100%{transform:translate(-50%,-150%) scale(1)}}
+  #warehouse.got{animation:wbump .3s ease-out}
+  @keyframes wbump{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
+  #skipClock{display:inline-block;width:26px;height:26px;vertical-align:-7px;margin-right:6px}
+  #skipClock svg{width:100%;height:100%;overflow:visible}
+  #skipClock .gear{fill:#b88a3a;transform-origin:0 0}
+  #skipClock .face{fill:#fff6e0;stroke:#5a3a22;stroke-width:1.5}
+  #skipClock line{stroke:#5a3a22;stroke-linecap:round;transform-origin:0 0}
+  #skipClock .mh{stroke-width:1.6}#skipClock .hh{stroke-width:2.2}
+  #skipClock.spin .gear{animation:gspin 1.6s cubic-bezier(.3,.1,.3,1)}
+  #skipClock.spin .mh{animation:hspin 1.6s cubic-bezier(.3,.1,.3,1)}
+  #skipClock.spin .hh{animation:hspin2 1.6s cubic-bezier(.3,.1,.3,1)}
+  @keyframes gspin{to{transform:rotate(-360deg)}}
+  @keyframes hspin{to{transform:rotate(1080deg)}}
+  @keyframes hspin2{to{transform:rotate(360deg)}}
+  #title #titleText{font-size:18px;letter-spacing:.06em}
+  @media (max-width:600px){#titleLogo{letter-spacing:.02em}.celeb .ctitle{font-size:21px}.celeb.big .ctitle{font-size:25px}.celeb .clist li{font-size:14px}}
 </style>
 </head>
 <body>
 <div id="topBand" class="band">
   <div id="topbar">
-    <div id="title" class="pix"><img class="px" data-icon="ic_sprout" alt="">ときの種<span id="fastBadge"></span></div>
+    <div id="title" class="pix"><img class="px" data-icon="ic_sprout" alt=""><span id="titleText">みんなのときまきタウン</span><span id="fastBadge"></span></div>
     <div id="town" class="pix" title="町レベル"><span id="lvText">町Lv1</span><span id="expBar"><i id="expFill"></i></span><span id="expText">0/30</span></div>
     <div id="gold" class="pix" title="ゴールド"><img class="px" data-icon="ic_gold" alt="ゴールド"><span id="sGold">0</span></div>
     <button id="warehouse" class="pix" aria-label="倉庫（タップで売却パネルを開く）">
@@ -520,7 +581,7 @@
 <span id="topBrk" aria-hidden="true"></span>
 <div id="visitBar" class="pix" style="display:none"><span id="visitText"></span><button class="tool pix act" id="visitEnd">見学を終わる</button></div>
 </div>
-<canvas id="world" aria-label="ときの種の町（畑と時計塔）"></canvas>
+<canvas id="world" aria-label="みんなのときまきタウンの町（畑と時計塔）"></canvas>
 <div id="zoomBtns"><button id="zoomIn" class="pix" aria-label="拡大">＋</button><button id="zoomOut" class="pix" aria-label="縮小">−</button></div>
 <div id="botBand" class="band">
 <div id="tutBar" class="pix" style="display:none"><span id="tutStep"></span><span id="tutText"></span><button id="tutSkip">スキップ</button></div>
@@ -558,7 +619,7 @@
   <div id="drillBody"></div>
 </div></div>
 <div id="skipPanel" class="overlay"><div class="box pix sbox">
-  <div class="panelhd"><b>時短ストックを使う</b><button id="skipClose" aria-label="閉じる">×</button></div>
+  <div class="panelhd"><b><span id="skipClock" aria-hidden="true"><svg viewBox="-20 -20 40 40"><g class="gear"><path d="M-3-16h6l1 4 4 2 4-2 4 4-2 4 2 4 4 1v6l-4 1-2 4 2 4-4 4-4-2-4 2-1 4h-6l-1-4-4-2-4 2-4-4 2-4-2-4-4-1v-6l4-1 2-4-2-4 4-4 4 2 4-2z"/></g><circle class="face" r="9"/><line class="mh" x1="0" y1="0" x2="0" y2="-7"/><line class="hh" x1="0" y1="0" x2="4" y2="0"/></svg></span>時短ストックを使う</b><button id="skipClose" aria-label="閉じる">×</button></div>
   <div id="skipHead"></div>
   <div id="skipList"></div>
   <div class="hint">元の所要時間の75%までは ストック1秒＝1秒短縮。残りが25%を切ると追い込み区間で、ストック2秒＝1秒短縮。即完了チケットはストックを使わずに1件を即完了します</div>
@@ -579,6 +640,32 @@
   <div id="logList"></div>
   <div class="hint">直近30件まで（新しい順）。履歴はセーブしません</div>
 </div></div>
+<div id="fxLayer" aria-hidden="true"></div>
+<div id="comboTip" class="pix" aria-hidden="true"></div>
+<div id="lvPanel" class="overlay celeb" role="dialog" aria-modal="true" aria-labelledby="lvTitle"><div class="box pix cbox">
+  <div class="cstar" aria-hidden="true">✦</div>
+  <b id="lvTitle" class="ctitle">町がLv2になった！</b>
+  <div id="lvSub" class="csub"></div>
+  <ul id="lvList" class="clist"></ul>
+  <div class="ctap">タップで閉じる</div>
+</div></div>
+<div id="tutDonePanel" class="overlay celeb" role="dialog" aria-modal="true" aria-labelledby="tdTitle"><div class="box pix cbox">
+  <div class="cstar" aria-hidden="true">✦</div>
+  <b id="tdTitle" class="ctitle">チュートリアル完了！</b>
+  <div id="tdSub" class="csub"></div>
+  <div id="tdGoal" class="cgoal"></div>
+  <div class="ctap">タップで閉じる</div>
+</div></div>
+<div id="titleScreen" role="dialog" aria-modal="true" aria-labelledby="titleLogo" style="display:none">
+  <div class="tsky" aria-hidden="true"></div>
+  <div class="tbox">
+    <h1 id="titleLogo"><span class="tl1">みんなの</span><span class="tl2">ときまきタウン</span></h1>
+    <div class="tsub">とまった時計塔の小さな街</div>
+    <div id="titleStart" class="tstart">タップではじめる</div>
+    <div id="titleMode" class="tmode"></div>
+  </div>
+  <div class="tsnd"><button id="tBgm" class="pix sndbtn" aria-pressed="true">♪ BGM</button><button id="tSe" class="pix sndbtn" aria-pressed="true">♪ 効果音</button></div>
+</div>
 <div id="toast" class="pix"></div>
 <div id="rotateNotice" role="alertdialog" aria-live="assertive" aria-label="スマホは縦画面で遊んでね">
   <div class="rn-box">
@@ -593,7 +680,7 @@
 
 <script id="drill-engine">
 /* ===================================================================
-   ときの種：ドリルエンジン（問題の自動生成）
+   みんなのときまきタウン：ドリルエンジン（問題の自動生成）
    - DOM・ゲーム状態に触れない純粋な関数だけで書く（window.ClockseedDrill を公開するだけ）
    - 乱数は引数 rng（0以上1未満を返す関数）で受け取る。本体は Math.random、テストは固定シード
    - 検証は tests/drill_engine_test.js が、この <script> だけを取り出して別実装で再計算して行う
@@ -1338,7 +1425,7 @@
 </script>
 <script id="math-render">
 /* ===================================================================
-   ときの種：ドリルの数式表示（MathML）  段階8b
+   みんなのときまきタウン：ドリルの数式表示（MathML）  段階8b
    ドリルエンジン（drill-engine）が作る問題文・選択肢の文字列は変えずに、表示のときだけ
    数式の部分を MathML に描き直す。日本語の文章はそのままのテキスト。
    - 分数 a/b → <mfrac>（縦）。左の項は空白をはさまずに続く数・文字・根号・累乗（例：3π/2、x²/16、√3/3）、
@@ -1504,7 +1591,7 @@
 
 <script id="gacha-engine">
 /* ===================================================================
-   ときの種：ガチャエンジン（50種のデータ・抽選・天井・被り変換）
+   みんなのときまきタウン：ガチャエンジン（50種のデータ・抽選・天井・被り変換）
    - DOM・ゲーム状態に触れない純粋な関数だけで書く（window.ClockseedGacha を公開するだけ）
    - 乱数は引数 rng（0以上1未満を返す関数）で受け取る。本体は Math.random、テストは固定シード
    - ガチャの状態 g は { pity:{r,sr,ur}, total, firstUsed, items:{id:所持}, dex:{id:1} }
@@ -1648,7 +1735,7 @@
 </script>
 <script id="fxf-engine">
 /* ===================================================================
-   ときの種：FACTOR×FACTOR ソロ・イージー（移植版）のエンジン
+   みんなのときまきタウン：FACTOR×FACTOR ソロ・イージー（移植版）のエンジン
    - 本家 asumax1128/factorfactor（commit 2af9777f6188f70817e25a69ea9a25df1212c848）の index.html から、
      ソロ・イージーに必要な部分だけを移植した（出題生成 genL1〜5・盤面 buildBoard・判定 multiply/polyEqual・
      判定の6段階 JUDGE_TIERS・体力と得点の計算・1ゲームの流れ）。
@@ -1829,7 +1916,7 @@
 </script>
 <script id="tp-engine">
 /* ===================================================================
-   ときの種：テンパズル（移植版）のエンジン
+   みんなのときまきタウン：テンパズル（移植版）のエンジン
    - 本家 asumax1128/tenpuzzle（commit 36808e0b7601c835e0fc195551ce3ab1734d1875、index.html＝v1.2）の
      ソロプレイの核だけを移植した：問題プール（解けることを本家のソルバーで確かめ済みの組）・ティア・
      カードを合体させる盤面（merge / undo / reset / preview）・操作方法A（数字→記号→数字）とB（数字2枚→記号）・判定。
@@ -1937,7 +2024,7 @@
 </script>
 <script id="trade-codec">
 /* ===================================================================
-   ときの種：交換掲示板のコード（町のコード TOKI-TOWN- ／ ギフトコード TOKI-SEED-）
+   みんなのときまきタウン：交換掲示板のコード（町のコード TOKI-TOWN- ／ ギフトコード TOKI-SEED-）
    - 文字列の変換だけを行う純粋な関数（サーバー・通信なし）。window.ClockseedCode を公開するだけ。
    - 本体は 0-9A-Z の36進の文字列。最後の2文字はチェック用（種類ごとに違う値を混ぜる）。
      1文字の書き間違い・隣どうしの入れ替え・町とギフトの取り違えは必ず検出する。
@@ -2026,6 +2113,10 @@
   // デバッグ：?fast=N で育成・建設・加工の時間をN分の1に（開始時点の倍速で終了時刻を確定）
   // デバッグ（検品用）：?debug=1 のときだけ ?fast と window.__clockseed（正解の位置などを読む API）を有効にする
   const DEBUG = new URLSearchParams(location.search).get('debug') === '1';
+  // 段階9：起動時のタイトル画面と、節目のパネル（町のレベルアップ・チュートリアル完了）。
+  // ?debug=1&intro=0 のときだけ出さない（段階8までの通しテストの流れのまま。祝祭の演出そのもの〈鐘・紙吹雪・町の人〉は出す）
+  const INTRO = !(DEBUG && new URLSearchParams(location.search).get('intro') === '0');
+  let titleUp = INTRO;                                   // タイトル画面を出しているあいだ true（BGM はタップで始めたときに鳴らす）
   const FAST = (() => {
     if (!DEBUG) return 1;
     const v = parseFloat(new URLSearchParams(location.search).get('fast'));
@@ -2300,6 +2391,7 @@
     } catch (e) { return freshState(); }
   }
   let visit = null;                                     // 見学モード：{ real：自分の state, data：コードの中身 }
+  const HAD_SAVE = (() => { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } })();   // タイトル画面の「つづきから／はじめから」
   let state = load();
   function save() {
     if (visit) return;                                  // 見学中は仮の町なので、自分のセーブには一切書かない
@@ -2495,7 +2587,7 @@
     const u = CONS_USE[id], D = state.drill;
     state.gacha.items[id] -= 1;
     if (u.reserve) { state.buffs[u.reserve] += 1; save(); return { reserve: u.reserve, count: state.buffs[u.reserve] }; }
-    if (u.allSand) { const moved = applyAllSand(); save(); return { allSand: moved }; }
+    if (u.allSand) { const moved = applyAllSand(); save(); if (moved.length) spinTower(Math.max(...moved.map(m => m.ms)), 'allSand'); return { allSand: moved }; }
     let sec = 0;
     if (u.sec) { const b = D.stock; D.stock = Math.min(DRILL_STOCK_MAX, D.stock + u.sec); sec = D.stock - b; }
     if (u.ticket) D.tickets += u.ticket;
@@ -2601,7 +2693,7 @@
   function gainExp(n) {
     const before = townLevel();
     state.townExp += n;
-    if (townLevel() > before) onLevelUp(townLevel());
+    if (townLevel() > before) onLevelUp(townLevel(), before);
   }
   // 報酬ゴールド＝単価×個数×1.3（端数切り上げ）。小数誤差を避けるため整数で ceil(x*13/10) を計算
   // 町の魅力：飾りを持っていれば種類ごとに1回だけ数える（所持状態から計算。セーブしない）
@@ -2732,7 +2824,7 @@
       correct: t => { tone(seBus, 'triangle', hz(88), t, .14, .35); tone(seBus, 'triangle', hz(93), t + .09, .32, .35); },
       wrong:   t => { tone(seBus, 'square', 220, t, .16, .12, 170); tone(seBus, 'square', 165, t + .14, .22, .1, 120); },
       plant:   t => { tone(seBus, 'sine', 520, t, .12, .35, 260); noise(t, .05, .05, 2500); },
-      harvest: t => arp([84, 88, 91, 96], t, .055, .22, .26),
+      harvest: (t, k = 0) => arp([84, 88, 91, 96].map(m => m + Math.min(12, k)), t, .055, .22, .26),   // 1回のなぞりで続けて収穫するほど半音ずつ高く（最大1オクターブ）
       deliver: t => { arp([79, 84, 88], t, .08, .3, .24); SE.coin(t + .26); },
       coin:    t => { tone(seBus, 'square', hz(83), t, .07, .12); tone(seBus, 'square', hz(88), t + .07, .32, .12); },
       build:   t => { arp([72, 76, 79], t, .1, .26, .24, 'square'); tone(seBus, 'triangle', hz(84), t + .3, .6, .3); },
@@ -2744,12 +2836,14 @@
       ur:      t => { tone(seBus, 'sawtooth', 200, t, .6, .08, 1600); arp([84, 88, 91, 96, 100, 103, 108], t + .35, .05, .7, .2, 'square'); bellAt(t + .75, hz(96), .3); },   // 激レア：虹
       done:    t => { arp([84, 91, 96], t, .07, .35, .24, 'sine'); tone(seBus, 'triangle', hz(100), t + .2, .5, .14); },   // 加工の完成
       bell:    t => { bellAt(t, hz(76), .5); bellAt(t + .55, hz(71), .4); },
+      fest:    t => { bellAt(t, hz(76), .5); bellAt(t + .45, hz(79), .45); bellAt(t + .9, hz(84), .5); arp([72, 76, 79, 84, 88, 91, 96, 100], t + 1.35, .08, .55, .2); bellAt(t + 2.1, hz(88), .35); },   // 町Lv8：鐘3つと長いファンファーレ
       hanamaru: t => { arp([84, 88, 91, 96, 91, 96, 100], t, .06, .28, .2); },
+      tick:    t => { for (let i = 0; i < 8; i++) tone(seBus, 'square', i % 2 ? 1900 : 1500, t + i * .09, .03, .06); tone(seBus, 'triangle', hz(91), t + .78, .4, .18); },   // 時短：歯車のカチカチ
     };
-    function play(name) {
+    function play(name, arg) {
       let ok = false;
-      if (conf().se && unlocked && SE[name] && ensure()) { try { SE[name](ac.currentTime + 0.01); ok = true; } catch (e) {} }
-      log.push({ name, played: ok }); if (log.length > 50) log.shift();
+      if (conf().se && unlocked && SE[name] && ensure()) { try { SE[name](ac.currentTime + 0.01, arg); ok = true; } catch (e) {} }
+      log.push(arg === undefined ? { name, played: ok } : { name, played: ok, arg }); if (log.length > 50) log.shift();
       return ok;
     }
     // ----- BGM：オルゴール風の8小節ループ（ハ長調・♩=92）-----
@@ -2788,7 +2882,7 @@
       }
     }
     function bgmOn() {
-      if (!conf().bgm || !unlocked || !ensure() || timer) return;
+      if (titleUp || !conf().bgm || !unlocked || !ensure() || timer) return;   // タイトル画面のあいだは鳴らさない（「タップではじめる」で鳴り始める）
       nextT = ac.currentTime + 0.1; step = 0;
       bgmBus.gain.cancelScheduledValues(ac.currentTime); bgmBus.gain.setValueAtTime(0.0001, ac.currentTime); bgmBus.gain.exponentialRampToValueAtTime(0.5, ac.currentTime + 1.5);
       schedule(); timer = setInterval(schedule, 150);
@@ -2814,13 +2908,15 @@
       const S = conf();
       $('bgmBtn').setAttribute('aria-pressed', String(S.bgm)); $('bgmBtn').title = 'BGM：' + (S.bgm ? 'オン（タップでオフ）' : 'オフ（タップでオン）');
       $('seBtn').setAttribute('aria-pressed', String(S.se)); $('seBtn').title = '効果音：' + (S.se ? 'オン（タップでオフ）' : 'オフ（タップでオン）');
+      $('tBgm').setAttribute('aria-pressed', String(S.bgm)); $('tBgm').title = $('bgmBtn').title; $('tSe').setAttribute('aria-pressed', String(S.se)); $('tSe').title = $('seBtn').title;
     }
     $('bgmBtn').onclick = () => set('bgm', !conf().bgm);
     $('seBtn').onclick = () => set('se', !conf().se);
+    $('tBgm').onclick = () => set('bgm', !conf().bgm); $('tSe').onclick = () => set('se', !conf().se);   // タイトル画面でも切り替えられる
     syncButtons();
-    return { play, set, syncButtons, info: () => ({ unlocked, ctx: ac ? ac.state : null, bgm: !!timer, settings: Object.assign({}, conf()), log: log.slice(), bpm: BPM, step: STEP, score: JSON.parse(JSON.stringify(SCORE)), bgmLog: bgmLog.slice() }) };
+    return { play, set, syncButtons, start: () => bgmOn(), info: () => ({ unlocked, ctx: ac ? ac.state : null, bgm: !!timer, settings: Object.assign({}, conf()), log: log.slice(), bpm: BPM, step: STEP, score: JSON.parse(JSON.stringify(SCORE)), bgmLog: bgmLog.slice() }) };
   })();
-  const sfx = name => SND.play(name);
+  const sfx = (name, arg) => SND.play(name, arg);
   // ---------- 出来事のログ（段階8a）：最新の1行を上の帯に流し、タップで直近30件 ----------
   // 記録：作物の完成・加工の完成・建設／進化の完成・納品できる注文が出た・町のレベルアップ。ログ自体はセーブしない。
   // 起動時：前回最後に開いていた時刻（state.seenAt）より後に終わっていた作物・加工・建設・進化を「留守中」としてまとめて出す
@@ -4179,7 +4275,7 @@
   {
     const s = SPR.tower, x = LAYOUT.tower.x - (s.width >> 1), y = LAYOUT.tower.y - s.height;
     statics.push({ y: LAYOUT.tower.y, shadow: [LAYOUT.tower.x + 3, LAYOUT.tower.y - 1, 19, 5],
-      draw: c => { c.drawImage(s, x, y); drawClockHands(c, x + TOWER.faceCx, y + TOWER.faceCy); } });
+      draw: c => { c.drawImage(s, x, y); drawTowerGears(c, x + TOWER.faceCx, y + TOWER.faceCy); drawClockHands(c, x + TOWER.faceCx, y + TOWER.faceCy); } });
   }
   // 注文掲示板
   const BOARD = (() => {
@@ -4252,9 +4348,46 @@
       if (e2 <= dx) { err += dx; y0 += sy; }
     }
   }
+  // 時短を使ったとき（段階9）：時計塔の歯車が回り、針が早回しで進む（長針は何周か、短針は1周して、いまの時刻にぴたりと戻る）。演出だけ
+  let towerSpin = null;
+  const spinLog = [];
+  function spinTower(ms, why) {
+    const dur = tutActive() ? 2.6 : 1.8, turns = Math.max(1, Math.min(4, Math.ceil(ms / 600000)));
+    towerSpin = { t0: performance.now() / 1000, ms, turns, dur };
+    const sc = $('skipClock'); if (sc) { sc.classList.remove('spin'); void sc.getBoundingClientRect(); sc.classList.add('spin'); }
+    spinLog.push({ ms, turns, dur, why: why || 'skip' }); if (spinLog.length > 30) spinLog.shift();
+    sfx('tick');
+  }
+  const spinP = () => { if (!towerSpin) return -1; const p = (performance.now() / 1000 - towerSpin.t0) / towerSpin.dur; if (p >= 1) { towerSpin = null; return -1; } return p; };
+  const spinEase = p => (p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
+  function drawTowerGears(c, cx, cy) {
+    const p = spinP(); if (p < 0) return;
+    const e = spinEase(p), a = Math.min(1, p * 6, (1 - p) * 5), rot = e * Math.PI * 2 * (towerSpin.turns + 1);
+    c.save(); c.globalAlpha = a * .5; c.globalCompositeOperation = 'lighter';
+    const g = c.createRadialGradient(cx, cy, 0, cx, cy, 14); g.addColorStop(0, 'rgba(255,236,150,.9)'); g.addColorStop(1, 'rgba(255,236,150,0)');
+    c.fillStyle = g; c.fillRect(cx - 14, cy - 14, 28, 28); c.restore();
+    const disc = (gx, gy, R, col) => { c.fillStyle = col; for (let dy = -R; dy <= R; dy++) { const w = Math.floor(Math.sqrt(R * R - dy * dy + R * .6)); c.fillRect(Math.round(gx) - w, Math.round(gy) + dy, w * 2 + 1, 1); } };
+    const gear = (gx, gy, R, n, r0) => {                // ドットの歯車：歯・縁・本体・3本の腕・軸
+      if (R < 2) return;
+      c.fillStyle = '#6a4216';
+      for (let k = 0; k < n; k++) { const an = r0 + k / n * Math.PI * 2; c.fillRect(Math.round(gx + Math.cos(an) * (R + 1)) - 1, Math.round(gy + Math.sin(an) * (R + 1)) - 1, 3, 3); }
+      for (let k = 0; k < n; k++) { const an = r0 + k / n * Math.PI * 2; c.fillStyle = '#f0c860'; c.fillRect(Math.round(gx + Math.cos(an) * (R + 1)) - 1, Math.round(gy + Math.sin(an) * (R + 1)) - 1, 2, 2); }
+      disc(gx, gy, R, '#6a4216'); disc(gx, gy, R - 1, '#e0aa40'); disc(gx, gy, Math.max(1, R - 3), '#c88a2a');
+      c.fillStyle = '#6a4216';
+      for (let k = 0; k < 3; k++) { const an = r0 * 1 + k * Math.PI * 2 / 3; pixLine(c, Math.round(gx), Math.round(gy), Math.round(gx + Math.cos(an) * (R - 1)), Math.round(gy + Math.sin(an) * (R - 1))); }
+      c.fillStyle = '#fff2c0'; c.fillRect(Math.round(gx), Math.round(gy), 1, 1);
+    };
+    const pop = Math.min(1, p * 5, (1 - p) * 4);         // 出てくる・しまわれる
+    c.globalAlpha = Math.min(1, a * 1.2);
+    gear(cx - 12, cy + 3, Math.round(6 * pop), 9, rot);  // 文字盤の左右に、大きな歯車と小さな歯車（かみ合って逆回り）
+    gear(cx + 11, cy - 3, Math.round(4 * pop), 7, -rot * 1.5 + .3);
+    gear(cx + 12, cy + 7, Math.round(3 * pop), 6, rot * 2);
+    for (let k = 0; k < 6; k++) { const an = rot * .4 + k * 1.05, rr = 13 + 4 * Math.sin(p * 9 + k); if (Math.sin(p * 24 + k * 2) > 0) { c.fillStyle = '#fff6c8'; const X = Math.round(cx + Math.cos(an) * rr), Y = Math.round(cy + Math.sin(an) * rr); c.fillRect(X - 1, Y, 3, 1); c.fillRect(X, Y - 1, 1, 3); } }
+    c.globalAlpha = 1;
+  }
   function drawClockHands(c, cx, cy) {
-    const d = new Date();
-    const m = d.getMinutes() + d.getSeconds() / 60, h = (d.getHours() % 12) + m / 60;
+    const d = new Date(), sp = spinP(), e = sp < 0 ? 0 : spinEase(sp);
+    const m = d.getMinutes() + d.getSeconds() / 60 + e * 60 * (towerSpin ? towerSpin.turns : 0), h = (d.getHours() % 12) + (d.getMinutes() + d.getSeconds() / 60) / 60 + e * 12;
     c.fillStyle = PAL.F;
     for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2; c.fillRect(cx + Math.round(5 * Math.sin(a)), cy - Math.round(5 * Math.cos(a)), 1, 1); }
     const end = (a, L) => [cx + Math.round(L * Math.sin(a)), cy - Math.round(L * Math.cos(a))];
@@ -4584,7 +4717,8 @@
   let bell = null;
   const FOLK_PATH = [[[-6, 150], [34, 140]], [[112, 96], [76, 112]], [[-6, 100], [22, 120]], [[116, 160], [70, 148]]];
   const bellPos = () => ({ x: LAYOUT.tower.x, y: LAYOUT.tower.y - SPR.tower.height + 4 });
-  function ringBell() { bell = { t0: performance.now() / 1000 }; sfx('bell'); }
+  let gather = null;                                     // 町の人が広場に集まる（鐘・町のレベルアップ・チュートリアル完了）。飾りの鐘がなくても集まる（段階9）
+  function ringBell() { bell = { t0: performance.now() / 1000 }; gather = { t0: bell.t0, why: 'bell' }; sfx('bell'); }
   function pushDecor(objs, ts, t) {
     for (const id of Object.keys(DECOR_SPOTS)) {
       const n = decorShown(id); if (!n || DECOR_FLAT[id]) continue;
@@ -4621,14 +4755,18 @@
           c.globalAlpha = 1 - ph; px(c, xx, yy, '#f0d45a', 2, 2); px(c, xx + 1, yy - 4, '#f0d45a', 1, 4); px(c, xx + 2, yy - 4, '#f0d45a', 1, 1); c.globalAlpha = 1;
         }
       } });
-      if (bell && el < 6) FOLK_PATH.forEach(([[sx, sy], [tx, ty]], k) => {   // 町の人が集まる（約6秒）。道の上だけを歩く（町の外から来る人は、最寄りの道のマスに現れる）
+      if (bell && el >= 6) bell = null;
+    }
+    const gel = gather ? ts - gather.t0 : 99;
+    {
+      if (gather && gel < 6) FOLK_PATH.forEach(([[sx, sy], [tx, ty]], k) => { const el = gel;   // 町の人が集まる（約6秒）。道の上だけを歩く（町の外から来る人は、最寄りの道のマスに現れる）
         const net = roadNet(builtLevel), poly = roadPolyline(net, [sx, sy], [tx, ty]);
         const u = Math.min(1, Math.max(0, (el - k * .25) / 2.2)), pos = polyAt(poly, u), x = Math.round(pos.x), y = Math.round(pos.y);
         walkLogPush('folk' + k, x, y, { u });
         const hop = u >= 1 ? Math.round(Math.abs(Math.sin(el * 6 + k)) * 2) : (Math.floor(el * 8) % 2), a = (el > 5 ? 6 - el : 1) * Math.min(1, Math.max(0, el - k * .25) / .3), sp = SPR['d_folk' + k];
         objs.push({ y, shadow: [x, y - 1, 3, 1], draw: c => { c.globalAlpha = a; c.drawImage(sp, x - 2, y - sp.height - hop); c.globalAlpha = 1; } });
       });
-      if (bell && el >= 6) bell = null;
+      if (gather && gel >= 6) gather = null;
     }
   }
   function drawFlatDecor(c, t) {                                     // 地面に描く飾り（石の小道）
@@ -4805,6 +4943,7 @@
       ctx.fillStyle = g; ctx.fillRect(s.x - rr * 2.2, s.y - rr * 2.2, rr * 4.4, rr * 4.4);
     }
     ctx.globalCompositeOperation = 'source-over';
+    drawFestFx(ctx, ts);                               // 節目の紙吹雪・花火（段階9）
     drawFacChips(t);
 
     watchEvents(t);                                    // 出来事のログ（お手伝いの自動受け取りより先に見る）
@@ -5268,8 +5407,9 @@
     const box = $('drillPanel').querySelector('.box'); box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
   }
   let hanaPath = null;
-  function fxHanamaru(label) {
-    if (!hanaPath) {                                       // うずまき（2周半）と、まわりの花びら（9枚）
+  function hanaGeom() { if (!hanaPath) fxHanaBuild(); return hanaPath; }
+  function fxHanaBuild() {
+    {                                       // うずまき（2周半）と、まわりの花びら（9枚）
       let sp = '', pe = '';
       for (let i = 0; i <= 150; i++) { const t = i / 150, a = -Math.PI / 2 + t * Math.PI * 5, r = 6 + t * 34; sp += (i ? 'L' : 'M') + (60 + Math.cos(a) * r).toFixed(1) + ' ' + (60 + Math.sin(a) * r * .92).toFixed(1); }
       for (let k = 0; k < 9; k++) {
@@ -5278,6 +5418,9 @@
       }
       hanaPath = { sp, pe };
     }
+  }
+  function fxHanamaru(label) {
+    hanaGeom();
     const d = document.createElement('div'); d.className = 'fxm fx-hana';
     d.innerHTML = '<svg viewBox="-12 -12 144 144" aria-hidden="true"><path style="--len:900" d="' + hanaPath.sp + '"/><path class="petal" style="--len:900" d="' + hanaPath.pe + '"/></svg><b>' + label + '</b>';
     document.body.appendChild(d); setTimeout(() => d.remove(), 1750);
@@ -5640,7 +5783,7 @@
     let moved = false;
     while (!T.done && tutDone(T)) {
       T.step += 1; moved = true;
-      if (T.step > TUT_STEPS) { T.done = true; T.step = TUT_STEPS + 1; toast('チュートリアル完了！ ここからは自由に町を育てよう（チュートリアルチケット 残り' + T.tickets + '枚）', 7000); break; }
+      if (T.step > TUT_STEPS) { T.done = true; T.step = TUT_STEPS + 1; tutFinished(T); break; }
       tutEnter(T);
     }
     if (moved) { save(); hudSig = ''; if (panelOpen('drillPanel') && !ds) renderDrillMenu(); }
@@ -6091,7 +6234,11 @@
         '<div class="sg"><i></i></div><small class="smax"></small></div>';
       const bx = document.createElement('div'); bx.className = 'sbtns';
       const mk = (label, fn) => { const b = document.createElement('button'); b.className = 'tool pix'; b.innerHTML = label + '<small></small>'; b.onclick = fn; bx.appendChild(b); return b; };
-      const done = (r, what) => { if (r) toast(tm.label + '：' + what); renderSkip(); };
+      const done = (r, what) => {
+        if (r) { toast(tm.label + '：' + what); spinTower(r.ms || 0, tm.id); }
+        renderSkip();
+        if (r && INTRO && tutActive() && state.tutorial.step === 3) setTimeout(() => { $('skipPanel').style.display = 'none'; }, 300);   // チュートリアルの時短：パネルを閉じて、時計塔の歯車と針が回るところを見せる
+      };
       skipRows[tm.id] = {
         row,
         b1: mk('−1分', () => { const r = applySkip(tm.id, 60000); done(r, r && ('−' + fmtTime(r.ms) + '（ストック ' + fmtStock(r.cost) + ' 消費）' + (r.done ? ' 完了！' : ''))); }),
@@ -6154,12 +6301,96 @@
     if (houses) parts.push('家が' + houses + '軒ふえました');
     return '町Lv' + lv + '！ ' + parts.join('／');
   }
-  onLevelUp = lv => {
+  // その町Lvで新しく解放されたもの（段階9：レベルアップのパネルの一覧。tests/e2e/stage9 が全レベル分をデータと照合する）
+  const LV_MAX = TOWN_LV_EXP.length;
+  function levelUnlocks(lv) {
+    const out = [], add = (kind, key, name, ic) => out.push({ kind, key, name, icon: ic || null });
+    CROP_KEYS.filter(k => CROPS[k].unlockLv === lv).forEach(k => add('作物', k, CROPS[k].name, CROPS[k].icon));
+    BUILDING_KEYS.filter(k => BUILDINGS[k].unlockLv === lv).forEach(k => add('施設', k, BUILDINGS[k].name));
+    Object.keys(RECIPES).filter(k => RECIPES[k].unlockLv === lv).forEach(k => add('レシピ', k, RECIPES[k].product.name, RECIPES[k].product.icon));
+    const plots = plotsForLevel(lv) - plotsForLevel(lv - 1);
+    if (plots) add('畑', 'plots', '+' + plots + '区画（全部で' + plotsForLevel(lv) + '区画）', 'ic_sprout');
+    Object.keys(SP_UNLOCK).filter(k => SP_UNLOCK[k] === lv).forEach(k => add('特殊ドリル', k, k === 'FXF' ? 'FACTOR×FACTOR' : 'テンパズル'));
+    if (TRADE_LV === lv) add('交換掲示板', 'trade', '町のコード・変種のギフトを交換できる');
+    if (REGION_TEXT[lv]) add('町', 'region', REGION_TEXT[lv] + 'が広がりました');
+    const houses = LAYOUT.houses.filter(h => h.lv === lv).length;
+    if (houses) add('町', 'houses', '家が' + houses + '軒ふえました');
+    return out;
+  }
+  // ---------- 節目の祝祭（段階9）：紙吹雪と花びら・町Lv8は花火も。演出だけ（セーブしない） ----------
+  let fest = null;
+  const FEST_COL = ['#ff5a7a', '#ffd23f', '#3eb6ff', '#6cd05a', '#ff8a3d', '#b57bff', '#ffffff'], PETAL_COL = ['#f8a0b8', '#ffc4d4'];
+  function startFestival(kind) {                       // kind：'level' | 'max'（町Lv8）| 'tut'（チュートリアル完了の小さな祝福）。画面の座標で描く（ズームに依らない大きさ）
+    const big = kind === 'max', n = big ? 180 : kind === 'tut' ? 45 : 90, conf = [], R = Math.random;
+    for (let k = 0; k < n; k++) conf.push({ x: R() * VW, y: -10 - R() * VH * .35, vx: (R() - .5) * 30, vy: VH * (.16 + R() * .14), sz: 6 + R() * 5,
+      ph: R() * 6.28, spin: 4 + R() * 6, col: k % 3 ? FEST_COL[k % 6] : PETAL_COL[k % 2], paper: k % 3 !== 0, delay: R() * (big ? 3 : 1.2) });
+    const fw = big ? [0, 1, 2, 3, 4, 5, 6, 7, 8].map(k => ({ at: .35 + k * .55, x: VW * (.18 + ((k * 37) % 64) / 100), y: VH * (.14 + ((k * 29) % 30) / 100), r: Math.min(VW, VH) * (.12 + (k % 3) * .03), col: FEST_COL[k % 6] })) : [];
+    fest = { t0: performance.now() / 1000, kind, conf, fw, dur: big ? 8 : kind === 'tut' ? 4 : 5 };
+  }
+  function drawFestFx(c, ts) {                         // 画面の座標（setTransform(DPR…) のあと）で描く
+    if (!fest) return;
+    const el = ts - fest.t0; if (el > fest.dur) { fest = null; return; }
+    const fade = Math.min(1, (fest.dur - el) / 1.2);
+    for (const f of fest.fw) {                         // 花火（町Lv8）：光の粒が丸く広がって、少し落ちながら消える
+      const u = el - f.at; if (u < -.5 || u > 1.6) continue;
+      if (u < 0) { const yy = f.y + (VH + 10 - f.y) * (-u / .5); c.globalAlpha = fade; c.fillStyle = '#fff6e0'; c.fillRect(f.x - 2, yy, 4, 12); continue; }   // 打ち上げ
+      const e = 1 - Math.pow(1 - Math.min(1, u / .7), 3), r = f.r * e, drop = u * u * 22, al = (u < 1 ? 1 : Math.max(0, 1 - (u - 1) / .6)) * fade;
+      c.save(); c.globalCompositeOperation = 'lighter';
+      for (let k = 0; k < 28; k++) { const an = k / 28 * Math.PI * 2, x = f.x + Math.cos(an) * r, y = f.y + Math.sin(an) * r + drop;
+        c.globalCompositeOperation = 'lighter'; c.globalAlpha = al * .3; c.fillStyle = f.col; c.beginPath(); c.arc(x, y, 8, 0, Math.PI * 2); c.fill();     // ふんわり光る
+        c.globalCompositeOperation = 'source-over'; c.globalAlpha = al; c.fillStyle = k % 3 ? f.col : '#fffbe8'; c.fillRect(x - 3, y - 3, 6, 6);
+        c.globalAlpha = al * .7; c.fillStyle = f.col; c.fillRect(f.x + Math.cos(an) * r * .74 - 1.5, f.y + Math.sin(an) * r * .74 + drop * .8 - 1.5, 3, 3);   // 尾
+      }
+      if (u < .25) { c.globalAlpha = (1 - u / .25) * fade; c.fillStyle = '#ffffff'; c.beginPath(); c.arc(f.x, f.y, 16, 0, Math.PI * 2); c.fill(); }
+      c.restore();
+    }
+    for (const p of fest.conf) {                       // 紙吹雪（四角）と花びら（丸）
+      const u = el - p.delay; if (u < 0) continue;
+      const x = p.x + p.vx * u + Math.sin(u * 2.5 + p.ph) * 14, y = p.y + p.vy * u; if (y > VH + 10) continue;
+      const w = Math.abs(Math.cos(u * p.spin + p.ph));
+      c.globalAlpha = fade; c.fillStyle = p.col;
+      if (p.paper) c.fillRect(x - p.sz / 2, y - p.sz * .3, Math.max(1, p.sz * w), p.sz * .6);
+      else { c.beginPath(); c.ellipse(x, y, p.sz * .55, Math.max(.8, p.sz * .35 * w), u * 2 + p.ph, 0, Math.PI * 2); c.fill(); }
+    }
+    c.globalAlpha = 1;
+  }
+  // ---------- 節目のパネル（段階9）：タップで閉じる ----------
+  let lvTimer = 0, lastLvPanel = null;
+  function showLvPanel(lv, from) {
+    const big = lv >= LV_MAX, rows = [];
+    for (let L = from + 1; L <= lv; L++) for (const u of levelUnlocks(L)) rows.push(Object.assign({ lv: L }, u));
+    $('lvTitle').textContent = '町がLv' + lv + 'になった！';
+    $('lvSub').textContent = big ? '町じゅうがお祭りに！ 祭り広場がひらきました' : rows.length ? '新しくできるようになったこと' : '町がにぎやかになりました';
+    $('lvList').classList.toggle('many', rows.length > 10);
+    $('lvList').innerHTML = rows.map((u, k) => '<li style="animation-delay:' + (.15 + Math.min(k, 10) * .08).toFixed(2) + 's"><span class="ck">' + (lv - from > 1 ? 'Lv' + u.lv + ' ' : '') + u.kind + '</span>' + (u.icon ? icon(u.icon) : '') + '<span>' + u.name + '</span></li>').join('');
+    $('lvPanel').classList.toggle('big', big);
+    $('lvPanel').style.display = 'flex';
+    lastLvPanel = { lv, from, big, rows: rows.map(u => ({ lv: u.lv, kind: u.kind, key: u.key, name: u.name })) };
+  }
+  function tutFinished(T) {                             // チュートリアル完了：鐘＋完了のパネル＋次の目標（1行）
+    const tk = T.tickets ? '（チュートリアルチケット 残り' + T.tickets + '枚）' : '';
+    if (!INTRO) { toast('チュートリアル完了！ ここからは自由に町を育てよう（チュートリアルチケット 残り' + T.tickets + '枚）', 7000); return; }
+    const lv = townLevel();
+    sfx('bell'); setTimeout(() => sfx('done'), 650);
+    gather = { t0: performance.now() / 1000, why: 'tut' }; if (decorShown('dc08')) bell = { t0: gather.t0 };
+    startFestival('tut');
+    $('tdSub').textContent = 'ここからは自由に町を育てよう' + tk;
+    $('tdGoal').textContent = lv < LV_MAX ? '次の目標：注文を納品して、町Lv' + (lv + 1) + 'を目指そう' : '次の目標：図鑑の50種をそろえよう';
+    $('tutDonePanel').style.display = 'flex';
+  }
+  for (const id of ['lvPanel', 'tutDonePanel']) $(id).addEventListener('click', () => { $(id).style.display = 'none'; });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === 'Enter') for (const id of ['lvPanel', 'tutDonePanel']) if (panelOpen(id)) $(id).style.display = 'none'; });
+  onLevelUp = (lv, from = lv - 1) => {
     hudSig = '';
     buildPalette(); buildPopupRow();
     rebuildWorld(); camTarget = framing();
-    sfx('levelup'); logEvent('町がLv' + lv + 'になった');
-    toast(levelUpText(lv), 7000);
+    const big = lv >= LV_MAX;
+    if (big) sfx('fest'); else { sfx('bell'); setTimeout(() => sfx('levelup'), 700); }   // 鐘の音 → いつものレベルアップの音
+    logEvent('町がLv' + lv + 'になった');
+    gather = { t0: performance.now() / 1000, why: 'level' }; if (decorShown('dc08')) bell = { t0: gather.t0 };   // 町の人が広場に集まる（金の鐘があれば揺れる）
+    startFestival(big ? 'max' : 'level');
+    if (INTRO) { clearTimeout(lvTimer); lvTimer = setTimeout(() => showLvPanel(lv, from), big ? 2600 : 1100); }   // Lv8 は花火を見せてから
+    else toast(levelUpText(lv), 7000);
   };
 
   // ---------- 操作：区画のなぞり／カメラ移動／ズーム ----------
@@ -6181,7 +6412,54 @@
       const okP = plant(i, selected, selectedV); if (okP) sfx('plant');
       if (okP && fromStock) { buildPalette(); if (!selectedV) mode = null; }   // ストックが尽きたら、このなぞりはそこで止める
     }
-    else if (mode === 'harvest' && p) { const r = harvest(i); if (r) sfx('harvest'); if (r && r.fx.length) toast(ITEMS[r.key].name + ' ×' + r.n + '（' + r.fx.join('・') + '）'); }
+    else if (mode === 'harvest' && p) {
+      const r = harvest(i);
+      if (r) { if (!stroke) stroke = { n: 0, items: 0, x: 0, y: 0 }; stroke.n++; stroke.items += r.n; sfx('harvest', stroke.n - 1); harvestFx(i, r, stroke); }   // 判定・量はそのまま。演出だけ（段階9）
+      if (r && r.fx.length) toast(ITEMS[r.key].name + ' ×' + r.n + '（' + r.fx.join('・') + '）');
+    }
+  }
+  // ---------- 収穫の演出（段階9）：作物が弾けて倉庫へ飛ぶ・「+3」・連続数・きらめき・たくさん取れたら花丸の輪 ----------
+  let stroke = null;                                       // 1回のなぞりで続けて収穫した数（区画の数 n・作物の数 items）
+  const HANA_RING_N = 5, hvLog = [];                       // 1回のなぞりで5区画以上とれたら、花丸の輪
+  const fxLayer = $('fxLayer'), comboTip = $('comboTip');
+  const anim = (el, kf, o) => { try { const a = el.animate(kf, o); a.onfinish = () => el.remove(); return a; } catch (e) { setTimeout(() => el.remove(), o.duration + (o.delay || 0)); return null; } };
+  function fxEl(cls, x, y) { const d = document.createElement('div'); d.className = cls; d.style.transform = 'translate(' + x + 'px,' + y + 'px)'; fxLayer.appendChild(d); return d; }
+  function harvestFx(i, r, S) {
+    const R = plotRect(i), w = toScreen(R.x + R.w / 2, R.y + R.h / 2 - 4), cr = canvas.getBoundingClientRect(), x = Math.round(cr.left + w.x), y = Math.round(cr.top + w.y);
+    const wb = $('warehouse').getBoundingClientRect(), tx = Math.round(wb.width ? wb.left + wb.width / 2 : innerWidth - 40), ty = Math.round(wb.height ? wb.top + wb.height / 2 : 20);
+    S.x = x; S.y = y;
+    for (let k = 0; k < 7; k++) {                          // 弾ける粒（きらめき）
+      const an = k / 7 * Math.PI * 2 + Math.random() * .5, d = 16 + Math.random() * 18, e = fxEl('spk', x, y);
+      anim(e, [{ transform: 'translate(' + x + 'px,' + y + 'px) rotate(45deg) scale(1)', opacity: 1 }, { transform: 'translate(' + Math.round(x + Math.cos(an) * d) + 'px,' + Math.round(y + Math.sin(an) * d) + 'px) rotate(45deg) scale(.3)', opacity: 0 }], { duration: 480, easing: 'ease-out' });
+    }
+    const src = iconURL(ITEMS[r.key].icon), nFly = Math.min(3, r.n);
+    for (let k = 0; k < nFly; k++) {                       // 作物が弾けて、倉庫の方へ飛んでいく
+      const im = document.createElement('img'); im.className = 'hv px'; im.src = src; im.alt = ''; im.style.transform = 'translate(' + x + 'px,' + y + 'px)'; fxLayer.appendChild(im);
+      const dx = (k - (nFly - 1) / 2) * 16 + (Math.random() - .5) * 6, mx = x + dx, my = y - 26 - Math.random() * 10;
+      const a = anim(im, [{ transform: 'translate(' + x + 'px,' + y + 'px) scale(.5)', opacity: 1 }, { transform: 'translate(' + Math.round(mx) + 'px,' + Math.round(my) + 'px) scale(1.35)', opacity: 1, offset: .28 },
+        { transform: 'translate(' + tx + 'px,' + ty + 'px) scale(.6)', opacity: .85 }], { duration: 720 + k * 90, easing: 'cubic-bezier(.45,0,.75,.5)' });
+      if (a && k === 0) a.addEventListener('finish', () => { const wh = $('warehouse'); wh.classList.remove('got'); void wh.offsetWidth; wh.classList.add('got'); });
+    }
+    const lb = fxEl('hvn', x, y); lb.textContent = '+' + r.n;   // 「+3」
+    anim(lb, [{ transform: 'translate(' + x + 'px,' + (y - 8) + 'px) translate(-50%,-50%) scale(.7)', opacity: 0 }, { transform: 'translate(' + x + 'px,' + (y - 22) + 'px) translate(-50%,-50%) scale(1.15)', opacity: 1, offset: .2 },
+      { transform: 'translate(' + x + 'px,' + (y - 44) + 'px) translate(-50%,-50%) scale(1)', opacity: 0 }], { duration: 950, easing: 'ease-out' });
+    if (S.n >= 2) {                                       // なぞっている最中：連続で取れた数
+      comboTip.textContent = S.items + '個！'; comboTip.style.left = x + 'px'; comboTip.style.top = (y - 24) + 'px'; comboTip.style.display = 'block';
+      comboTip.classList.remove('bump'); void comboTip.offsetWidth; comboTip.classList.add('bump');
+    }
+    hvLog.push({ plot: i, key: r.key, n: r.n, combo: S.n, items: S.items, from: { x, y }, to: { x: tx, y: ty }, fly: nFly, tip: S.n >= 2 ? comboTip.textContent : null }); if (hvLog.length > 60) hvLog.shift();
+  }
+  let comboHide = 0;
+  function endStroke() {
+    const S = stroke; stroke = null; if (!S) return;
+    clearTimeout(comboHide); comboHide = setTimeout(() => { comboTip.style.display = 'none'; }, 700);
+    if (S.n >= HANA_RING_N) {                              // 一度にたくさん取れたとき：小さな花丸の輪
+      const g = hanaGeom(), d = fxEl('hring', S.x, S.y - 10);
+      d.innerHTML = '<svg viewBox="-12 -12 144 144"><path style="--len:900" d="' + g.sp + '"/><path class="petal" style="--len:900" d="' + g.pe + '"/></svg>';
+      anim(d, [{ transform: 'translate(' + S.x + 'px,' + (S.y - 10) + 'px) scale(.6)', opacity: 0 }, { transform: 'translate(' + S.x + 'px,' + (S.y - 10) + 'px) scale(1)', opacity: 1, offset: .15 }, { opacity: 1, offset: .75 }, { transform: 'translate(' + S.x + 'px,' + (S.y - 10) + 'px) scale(1.05)', opacity: 0 }], { duration: 1500, easing: 'ease-out' });
+      sfx('hanamaru');
+      hvLog.push({ ring: true, combo: S.n, items: S.items });
+    }
   }
   const ptrs = new Map();
   let gesture = null;          // 'farm' | 'pan' | 'pinch'
@@ -6228,7 +6506,7 @@
     const i = plotAt(ex(e), ey(e));
     if (i < 0) { startPan(ex(e), ey(e), hitBoard(ex(e), ey(e)) ? 'board' : hitBell(ex(e), ey(e)) ? 'bell' : (hitFac(ex(e), ey(e)) ? 'fac:' + hitFac(ex(e), ey(e)) : hitTower(ex(e), ey(e)) ? 'tower' : false)); return; }   // 区画の外 → カメラ（掲示板の上のタップは注文パネル）
     gesture = 'farm';                                         // 区画の上 → なぞり優先（カメラは動かさない）
-    touched = new Set();
+    touched = new Set(); stroke = null;
     const p = state.plots[i];
     if (!p) {
       if (!selected) { openPopup(i); mode = null; return; }
@@ -6252,6 +6530,7 @@
   const up = e => {
     ptrs.delete(e.pointerId);
     if (ptrs.size === 0) {
+      if (gesture === 'farm') endStroke();
       const tapped = e.type === 'pointerup' && gesture === 'pan' && pan && pan.tap && pan.moved < 8 ? pan.tap : null;
       gesture = null; mode = null; touched = new Set(); canvas.classList.remove('grabbing');
       if (tapped === 'board') openOrders(); else if (tapped === 'bell') ringBell(); else if (tapped === 'tower') openDrill(); else if (tapped && tapped.startsWith('fac:')) openFac(tapped.slice(4));
@@ -6363,6 +6642,32 @@
   resize();
   initialCamera();
   save();
+  // ---------- タイトル画面（段階9）：後ろに町が見える。タップで始める（セーブがあれば続きから、なければチュートリアルから）。BGM はこのタップで鳴り始める ----------
+  const TS = $('titleScreen'), titleLog = [];
+  function closeTitle(how) {
+    if (!titleUp) return;
+    titleUp = false; TS.style.display = 'none';
+    SND.start();                                         // 「最初のタップで鳴る」：タップで音が使えるようになった直後に BGM を始める
+    titleLog.push({ how, at: Date.now(), hadSave: HAD_SAVE, tutorial: !state.tutorial.done });
+  }
+  if (INTRO) {
+    $('titleMode').textContent = HAD_SAVE ? (state.tutorial.done ? 'つづきから' : 'つづきから（チュートリアルの途中）') : 'はじめから（チュートリアル）';
+    TS.style.display = 'flex';
+  }
+  TS.addEventListener('click', e => { if (e.target.closest('.tsnd')) return; closeTitle('tap'); });
+  document.addEventListener('keydown', e => { if (titleUp && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); closeTitle('key'); } });
+  if (DEBUG) Object.assign(window.__clockseed, {
+    stage9: () => ({ intro: INTRO, titleUp, hadSave: HAD_SAVE, titleLog: titleLog.slice(), titleShown: TS.style.display !== 'none',
+      fest: fest && { kind: fest.kind, n: fest.conf.length, fw: fest.fw.length, dur: fest.dur, age: performance.now() / 1000 - fest.t0 },
+      gather: gather && { why: gather.why, age: performance.now() / 1000 - gather.t0 }, bell: !!bell,
+      spin: towerSpin && Object.assign({ p: spinP() }, towerSpin), spinLog: spinLog.slice(), lvPanel: lastLvPanel, lvOpen: panelOpen('lvPanel'), tutDoneOpen: panelOpen('tutDonePanel'),
+      tutDone: { sub: $('tdSub').textContent, goal: $('tdGoal').textContent }, hvLog: hvLog.slice(), stroke: stroke && Object.assign({}, stroke) }),
+    levelUnlocks: lv => levelUnlocks(lv),
+    unlockData: () => ({ crops: CROP_KEYS.map(k => [k, CROPS[k].name, CROPS[k].unlockLv]), buildings: BUILDING_KEYS.map(k => [k, BUILDINGS[k].name, BUILDINGS[k].unlockLv]),
+      recipes: Object.keys(RECIPES).map(k => [k, RECIPES[k].product.name, RECIPES[k].unlockLv || null]), plots: [1, 2, 3, 4, 5, 6, 7, 8].map(plotsForLevel), sp: Object.assign({}, SP_UNLOCK), trade: TRADE_LV,
+      region: Object.assign({}, REGION_TEXT), houses: LAYOUT.houses.map(h => h.lv), lvExp: TOWN_LV_EXP.slice() }),
+    gainExp: n => gainExp(n),
+  });
   requestAnimationFrame(frame);
 })();
 </script>

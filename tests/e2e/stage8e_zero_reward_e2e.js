@@ -9,7 +9,7 @@ const {chromium}=require('playwright');
 const fs=require('fs'),os=require('os'),path=require('path'),cp=require('child_process');
 (async()=>{
 const b=await chromium.launch();
-const url='file:///home/user/clockseed/index.html?debug=1';const O='/home/user/clockseed/screenshots/';
+const url='file:///home/user/clockseed/index.html?debug=1&intro=0';const O='/home/user/clockseed/screenshots/';
 const log=(...a)=>console.log(...a);let fail=0;const ok=(c,msg,...x)=>{log((c?'合格 ':'不合格 ')+msg,...x);if(!c)fail++;};
 const errs=[];
 async function boot(w,h,save,{mobile=w<700,dsf=1,u=url,clock=false}={}){
@@ -113,7 +113,7 @@ for(const [w,h,name,key] of [[390,844,'390×844','a'],[360,740,'360×740','b']])
 // タブレットは main と同じ
 {const mainFile=path.join(os.tmpdir(),'clockseed_main_8e_index.html');
  try{fs.writeFileSync(mainFile,cp.execSync('git show origin/main:index.html',{cwd:'/home/user/clockseed',maxBuffer:64e6}));}catch(e){log('main の index.html を用意できません',e.message);}
- const mainUrl='file://'+mainFile+'?debug=1';
+ const mainUrl='file://'+mainFile+'?debug=1&intro=0';
  for(const lv of [2,3,4]){for(const [w,h] of [[1180,820],[768,1024]]){
    const snapT=async u=>{const s=save();s.townExp=[0,30,120,300][lv-1];const pg=await boot(w,h,s,{mobile:false,u});await openMenu(pg);const png=await pg.locator('#specialBox').screenshot({animations:'disabled'});const txt=(await pg.locator('#specialBox').innerText()).replace(/\s+/g,' ');await pg.context().close();return {png,txt};};
    const a=await snapT(mainUrl),n=await snapT(url);

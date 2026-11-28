@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const b=await chromium.launch();
 const ctx=await b.newContext({viewport:{width:1180,height:820},deviceScaleFactor:2,hasTouch:true,isMobile:false});
 const pg=await ctx.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));pg.on('console',m=>{if(m.type()==='error')errs.push(m.text())});
-const url='file:///home/user/clockseed/index.html?debug=1';const O='/home/user/clockseed/screenshots/';
+const url='file:///home/user/clockseed/index.html?debug=1&intro=0';const O='/home/user/clockseed/screenshots/';
 const log=(...a)=>console.log(...a);
 const st=()=>pg.evaluate(()=>JSON.parse(localStorage.getItem('clockseed.save')));
 const tp=()=>pg.evaluate(()=>window.__clockseed.tp());

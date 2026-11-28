@@ -16,7 +16,7 @@ async function gfxSkip(){for(let k=0;k<30&&(await pg.evaluate(()=>window.__clock
 async function answer5(){for(let k=0;k<5;k++){const i=await pg.evaluate(()=>window.__clockseed.drillAnswerIndex());await pg.locator('.choice').nth(i).click();await pg.waitForTimeout(1000);await pg.waitForFunction(()=>document.querySelector('.dres')||document.querySelector('.choice:not([disabled])'),null,{timeout:10000});}}   // 段階7：つぎの問題が出るまで待つ（負荷で遅れても安定）
 const close=async id=>{if(await pg.isVisible('#'+id)){const c=await pg.$('#'+id+' .panelhd button, #'+id+' button[id$="Close"]');if(c)await c.click();else await pg.keyboard.press('Escape');await pg.waitForTimeout(150);}};
 // ===== 1. 新規セーブで通しで進める（?debug=1&fast=4：育成・建設・加工が4倍速） =====
-await fresh('?debug=1&fast=4');
+await fresh('?debug=1&fast=4&intro=0');
 let t=await tut();log('[start] tutorial',JSON.stringify({done:t.done,step:t.step,level:t.level,plots:t.plots,shards:t.shards,tickets:t.tickets}),'| orders',JSON.stringify((await st()).orders.slice(0,2)),'| bar',(await pg.locator('#tutBar').innerText()).replace(/\s+/g,' '));
 await pg.screenshot({path:O+'32_tutorial_guide.png'});
 log('[gacha before step5]',await pg.evaluate(()=>{window.__clockseed;return 1;}) && 'menu check below');
@@ -65,7 +65,7 @@ await close('facPanel');await pg.waitForTimeout(400);await pg.screenshot({path:O
 await pg.reload();await pg.waitForTimeout(400);log('[reload] tutorial done',(await tut()).done,'| bar',await pg.isVisible('#tutBar'));
 // ===== 2. スキップ：途中で終えても壊れず通常プレイへ =====
 for(const at of [1,4,6]){
-  await fresh('?debug=1&fast=4');
+  await fresh('?debug=1&fast=4&intro=0');
   if(at>=4){await pg.evaluate(at=>{const s=JSON.parse(localStorage.getItem('clockseed.save'));s.storage.wheat=3;s.tutorial.step=at;s.tutorial.sets=1;s.drill.shards=10;s.drill.stock=40;if(at===6){s.tutorial.tickets=2;s.tutorial.granted=true;s.tutorial.flags={d1:true,pull:true};s.gacha.items.sd01=1;s.gacha.dex.sd01=1;s.gacha.firstUsed=true;s.townExp=10;s.gold=39;s.storage.wheat=0;}localStorage.setItem('clockseed.save',JSON.stringify(s));},at);await pg.reload();await pg.waitForTimeout(400);}
   else {await follow();await follow();}
   const before=await st();await pg.locator('#tutSkip').click();await pg.waitForTimeout(150);await pg.locator('#skipYes').click();await pg.waitForTimeout(200);const after=await st();t=await tut();   // 段階7：確認の「スキップする」を押す
@@ -77,7 +77,7 @@ for(const at of [1,4,6]){
     '| gacha',gb,'| drill after skip +',s5.drill.stock-after.drill.stock,'s | planted carrot',(await st()).plots[5]&&(await st()).plots[5].crop);
 }
 // ===== 3. version 11 からの移行：チュートリアルは出ない =====
-await pg.goto(base+'?debug=1');
+await pg.goto(base+'?debug=1&intro=0');
 const v11={saveVersion:11,plots:[{crop:'wheat',plantedAt:Date.now()-1000,readyAt:Date.now()+119000}].concat(Array(23).fill(null)),storage:{wheat:4,carrot:2},gold:250,townExp:150,orders:[{crop:'carrot',qty:5},{crop:'wheat',qty:4},{crop:'potato',qty:3}],
   buildings:{mill:{startedAt:Date.now()-4e5,builtAt:Date.now()-2e5,job:null}},drill:{stock:300,shards:33,shardHalf:0,tickets:1,streak:2,stats:{A1:{ok:3,n:4}},day:'',dayCount:0,spDay:'',spCount:0},
   gacha:{pity:{r:4,sr:4,ur:4},total:4,firstUsed:true,items:{sd01:1,dc01:1},dex:{sd01:1,dc01:1}},trade:{uid:'ABC123',stock:{sd02:1},received:['AAAAAAAA']},decor:{treeAt:0}};

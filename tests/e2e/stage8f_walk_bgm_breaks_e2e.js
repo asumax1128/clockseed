@@ -7,7 +7,7 @@
 const {chromium}=require('playwright');
 (async()=>{
 const b=await chromium.launch();
-const url='file:///home/user/clockseed/index.html?debug=1';const O='/home/user/clockseed/screenshots/';
+const url='file:///home/user/clockseed/index.html?debug=1&intro=0';const O='/home/user/clockseed/screenshots/';
 const log=(...a)=>console.log(...a);let fail=0;const ok=(c,msg,...x)=>{log((c?'合格 ':'不合格 ')+msg,...x);if(!c)fail++;};
 const errs=[];
 async function boot(w,h,save,{clock=false,dsf=1}={}){

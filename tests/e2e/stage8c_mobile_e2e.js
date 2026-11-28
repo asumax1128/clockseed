@@ -213,7 +213,11 @@ for(const [w,h,name,key] of SIZES){
 // ===== 5. タブレットは変わらない：main と並べて描いて、上の帯・下の帯を1ピクセルも違わない／部品の位置も同じ =====
 {const mainFile='/tmp/claude-0/s7/main_index.html';
  try{if(!fs.existsSync(mainFile)){fs.mkdirSync(path.dirname(mainFile),{recursive:true});fs.writeFileSync(mainFile,cp.execSync('git show origin/main:index.html',{cwd:'/home/user/clockseed',maxBuffer:64e6}));}}catch(e){log('main の index.html を用意できません',e.message);}
- const mainUrl='file://'+mainFile+'?debug=1&intro=0';
+ // 段階9：上の帯のタイトル文字を『みんなのときまきタウン』に変えたので、main にも同じ改名だけを当てて比べる（それ以外の部品は1ピクセルも違わない）
+ const renamed='/tmp/clockseed_main_renamed_8c.html';
+ {const src=cp.execSync('git show origin/main:index.html',{cwd:'/home/user/clockseed',maxBuffer:64e6}).toString();
+  fs.writeFileSync(renamed,src.replace('alt="">ときの種<span id="fastBadge">','alt=""><span id="titleText">みんなのときまきタウン</span><span id="fastBadge">').replace('</style>\n</head>','  #title #titleText{font-size:18px;letter-spacing:.06em}\n</style>\n</head>'));}
+ const mainUrl='file://'+renamed+'?debug=1&intro=0';
  const sv=rich({townExp:1100});sv.tutorial={done:true,step:10,sets:0,mark:0,flags:{d1:true,pull:true},tickets:0,granted:true};
  for(const [w,h] of [[1180,820],[1024,768],[1366,1024],[768,1024]]){
    const snap=async u=>{const ctx=await b.newContext({viewport:{width:w,height:h},deviceScaleFactor:1});await ctx.addInitScript(s=>{if(!sessionStorage.getItem('__booted')){sessionStorage.setItem('__booted','1');localStorage.clear();localStorage.setItem('clockseed.save',s);}},JSON.stringify(Object.assign({},sv,{seenAt:Date.now()})));

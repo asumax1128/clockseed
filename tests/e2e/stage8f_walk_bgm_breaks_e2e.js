@@ -116,7 +116,9 @@ log('--- BGM（8小節ループ）---');
 {const cp=require('child_process'),fs=require('fs'),os=require('os'),path=require('path');
  const grab=src=>{const m=src.match(/const SE = \{([\s\S]*?)\n    \};/);return m?m[1]:null;};
  let mainSrc='';try{mainSrc=cp.execSync('git show origin/main:index.html',{cwd:'/home/user/clockseed',maxBuffer:64e6}).toString();}catch(e){}
- const a=grab(mainSrc),n=grab(fs.readFileSync('/home/user/clockseed/index.html','utf8'));
+ // 段階9で意図して変えた分（収穫の音程を上げる引数・町Lv8の鐘 fest・時短の歯車 tick の追加）は、元の形に戻してから比べる（それ以外は1文字も変わらない）
+ const s9=x=>x&&x.replace(/harvest: \(t, k = 0\) => arp\(\[84, 88, 91, 96\]\.map\(m => m \+ Math\.min\(12, k\)\), t, \.055, \.22, \.26\),[^\n]*/,'harvest: t => arp([84, 88, 91, 96], t, .055, .22, .26),').replace(/\n      (fest|tick): [^\n]*/g,'');
+ const a=grab(mainSrc),n=s9(grab(fs.readFileSync('/home/user/clockseed/index.html','utf8')));
  ok(!!a&&a===n,'[効果音] 効果音の定義（SE：正解・不正解・植える・収穫・納品・コイン・建設完了・レベルアップ・ガチャ・鐘 ほか）は main と1文字も変わらない（'+(a?a.length:0)+'文字）');}
 
 // ===== ③ 問題文の改行：句読点（、。）の直後だけ・行が長くなるときだけ =====

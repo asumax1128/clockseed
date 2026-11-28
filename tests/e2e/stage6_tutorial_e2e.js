@@ -88,7 +88,8 @@ log('[migrate v11] version',s.saveVersion,'| tutorial',JSON.stringify({done:s.tu
 {const c=await pg.evaluate(()=>window.__clockseed.towerCenter());await pg.mouse.click(c.x,c.y);await pg.waitForTimeout(200);log('[migrated] gacha box',(await pg.locator('.gbox').innerText()).replace(/\s+/g,' ').slice(0,40));}
 // ===== 4. ?debug=1 なしでは デバッグAPI と ?fast が効かない =====
 for(const q of ['','?fast=10','?debug=0&fast=10','?debug=1&fast=10']){
-  await fresh(q);const api=await pg.evaluate(()=>typeof window.__clockseed);
+  await fresh(q);if(await pg.isVisible('#titleScreen')){await pg.locator('#titleScreen').click({position:{x:30,y:200}});await pg.waitForTimeout(150);}   // 段階9：デバッグなしではタイトル画面が出る → タップで始める
+  const api=await pg.evaluate(()=>typeof window.__clockseed);
   await pg.locator('#palette [data-crop="wheat"]').click();
   const box=await pg.evaluate(()=>{const c=document.getElementById('world').getBoundingClientRect();return {w:c.width,h:c.height};});
   // 区画の場所は API なしでも分かるように、画面中央付近を探す（最初の区画）

@@ -6391,7 +6391,7 @@
     buildPalette(); buildPopupRow();
     rebuildWorld(); camTarget = framing();
     const big = lv >= LV_MAX;
-    if (big) sfx('fest'); else { sfx('bell'); setTimeout(() => sfx('levelup'), 700); }   // 鐘の音 → いつものレベルアップの音
+    if (big) sfx('fest'); else { sfx('levelup'); setTimeout(() => sfx('bell'), 650); }   // いつものレベルアップの音 → 鐘の音
     logEvent('町がLv' + lv + 'になった');
     gather = { t0: performance.now() / 1000, why: 'level' }; if (decorShown('dc08')) bell = { t0: gather.t0 };   // 町の人が広場に集まる（金の鐘があれば揺れる）
     startFestival(big ? 'max' : 'level');

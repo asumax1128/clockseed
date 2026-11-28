@@ -83,9 +83,10 @@ for(const [w,h,name,dsf,touch] of [[1180,820,'tablet',1,false],[390,844,'phone',
   await pg.context().close();
 }
 { // 画像が読み込めないとき：文字のロゴ（代替テキストも『みんなのときまきタウン』）
-  const pg=await boot(1180,820,null);
+  const pg=await boot(1180,820,null);const e0=errs.length;
   const r=await pg.evaluate(()=>new Promise(res=>{const im=document.getElementById('titleLogoImg');im.addEventListener('error',()=>setTimeout(()=>res({img:document.getElementById('titleLogo').classList.contains('img'),
     tl2:getComputedStyle(document.querySelector('#titleLogo .tl2')).display,text:document.getElementById('titleLogo').innerText.replace(/\s+/g,''),alt:im.alt}),50),{once:true});im.src='title-logo-missing.webp';}));
+  const ex=errs.splice(e0);ok(ex.every(x=>/ERR_FILE_NOT_FOUND/.test(x)),'[画像なし] 出たエラーは、わざと読み込めなくした画像の分だけ（'+ex.length+'件）',ex);
   ok(!r.img&&r.tl2!=='none'&&r.text==='みんなのときまきタウン'&&r.alt==='みんなのときまきタウン','[画像なし] 読み込めないときは文字のロゴ「'+r.text+'」に戻る（代替テキスト『'+r.alt+'』）');
   await pg.context().close();
 }

@@ -80,6 +80,7 @@ node tests/e2e/stage8a_facilities_e2e.js # 移行 v13→v14・施設の進化・
 node tests/e2e/stage8b_mathml_e2e.js     # ドリルの数式表示：全40種をタブレット横・スマホ縦で描いて、分数・根号・矢印・定積分・対数の位置とはみ出しを測る
 node tests/e2e/stage8c_mobile_e2e.js     # スマホ（390×844・360×740・844×390）：指で主要な操作を全部行い、部品の位置とはみ出しを測る＋タブレットが main と1ピクセルも違わない
 node tests/e2e/stage8d_portrait_e2e.js   # スマホ横の案内（操作できない・縦に戻すと消える・タブレットは出ない）／スマホ縦の最小ドリルメニュー／タブレットのドリルメニューが main と同じ
+node tests/e2e/stage8e_zero_reward_e2e.js # 不正解だけを続けると増分ちょうど0（A〜E 全ティア・条件違い・FACTOR×FACTOR のミス/時間切れ/体力切れ・テンパズルのギブアップ）／スマホ縦の特殊ドリルボタンの2行表示
 node tests/e2e/stage8f_walk_bgm_breaks_e2e.js # 歩くキャラは道の上だけ・BGM（8小節ループの音の並びを照合）・問題文の句読点での改行
 ```
 

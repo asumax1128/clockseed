@@ -482,7 +482,10 @@
     .dmenu .lvbtn b{font-size:46px}
     .dmenu .lvbtn.sel{background:inherit;transform:none}
     .dmenu .spbox{margin:8px 0;padding:6px 8px}.dmenu .sphead{margin-bottom:4px;font-size:13px}
-    .dmenu .spbtns .tool{min-height:44px;flex-direction:row;gap:6px;padding:4px 8px}.dmenu .spbtns b{font-size:13px;line-height:1.2}
+    /* 特殊ドリルのボタン：1行目にゲーム名（1行に収める）、未解放のときだけ2行目に「町Lv○で解放」。文字は1字ずつ縦に割れない */
+    .dmenu .spbtns .tool{min-height:52px;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 6px;text-align:center}
+    .dmenu .spbtns b{font-size:13px;line-height:1.25;white-space:nowrap;letter-spacing:0}
+    .dmenu .spbtns .tool.locked small{display:block;font-size:11px;line-height:1.25;white-space:nowrap;text-align:center}
     .dmenu .dacts{gap:8px;margin-top:2px}.dmenu .dacts .tool{min-height:44px;font-size:15px;padding:6px 14px}
     .dmenu .gbox{margin:8px 0 4px;padding:8px}
   }

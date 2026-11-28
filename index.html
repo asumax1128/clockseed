@@ -11,7 +11,7 @@
     --sel:#ffe3a0;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-  html,body{margin:0;height:100%;overflow:hidden;background:#2f4a2c;color:var(--ink);
+  html,body{margin:0;height:100%;overflow:hidden;max-width:100%;overscroll-behavior:none;background:#2f4a2c;color:var(--ink);
     font-family:"DotGothic16","Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif;touch-action:none}
   #world{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}   /* 上下の帯のあいだ（top・height は resize() で設定） */
   .band{position:fixed;left:0;right:0;z-index:3;background:#3e2a1a;box-shadow:inset 0 -3px 0 #2a1a0e,inset 0 3px 0 #5a3e26;padding:2px 8px}
@@ -32,10 +32,6 @@
   .logrow{display:flex;gap:8px;align-items:baseline;padding:5px 4px;border-bottom:1px dashed #d8c39a;font-size:14px}
   .logrow .lt{font-size:12px;color:var(--ink-soft);flex-shrink:0;font-variant-numeric:tabular-nums}
   .logrow .lw{font-size:11px;background:#e8a040;color:#fff;border-radius:3px;padding:0 5px;flex-shrink:0}
-  @media (max-width:600px){#title{display:none}#tradeHud{font-size:11px;padding:4px 8px}}
-  @media (max-height:520px){#title{display:none}#topBand .pix{margin:3px}#town,#gold,#warehouse{font-size:14px;padding:2px 8px}#gold img,.stock img{width:20px;height:20px}
-    #drillHud,#dexHud{font-size:13px;padding:1px 8px}#palette .tool{font-size:13px;padding:2px 8px 2px 4px}#palette .tool img{width:22px;height:22px}#palette .tool small{display:none}
-    #tutBar{font-size:13px;padding:3px 6px 3px 10px}}
   #world.grabbing{cursor:grabbing}
   img.px{image-rendering:pixelated;image-rendering:crisp-edges}
 
@@ -381,6 +377,87 @@
   .rrbtn{padding:3px 8px;font-size:12px;min-width:0}
   #toast{position:fixed;top:86px;left:50%;transform:translateX(-50%);z-index:12;display:none;padding:8px 18px;
     font-weight:bold;letter-spacing:.06em;pointer-events:none}
+
+  /* ===== 段階8c：狭い画面（スマホ）。タブレット（幅601px以上かつ高さ521px以上）では何も変わらない ===== */
+  #topBrk,.sshort{display:none}
+  @media (max-width:600px),(max-height:520px){
+    .band{overflow:hidden;padding:2px 6px}
+    #topBand{padding-top:3px;padding-bottom:2px;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;align-content:flex-start}
+    #topbar,#subHud{display:contents}                 /* 中の部品を、上の帯の1本の折り返し行に並べ直す */
+    #title{display:none}
+    #topBand .pix{margin:3px 4px}
+    #town{order:1;flex:1 1 auto;min-width:0;font-size:14px;padding:2px 8px;gap:6px;margin-right:4px}
+    #town #expBar{width:52px;height:10px;padding:1px}#expText{display:none}
+    #gold{order:2;font-size:17px;padding:2px 10px;gap:4px;min-height:34px}#gold img{width:22px;height:22px}
+    #sndBtns{order:3;margin-left:0;gap:0}
+    .sndbtn{min-width:44px;min-height:40px;padding:2px 8px;font-size:12px}
+    #warehouse{order:4;flex:1 1 100%;min-width:0;min-height:40px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;justify-content:flex-start;gap:8px;font-size:15px;padding:2px 10px}
+    #warehouse::-webkit-scrollbar,#palette::-webkit-scrollbar,#variantBar::-webkit-scrollbar{display:none}
+    #warehouse>*{flex-shrink:0}#warehouse .ttl{font-size:12px}#warehouse .stock img,.stock img{width:20px;height:20px}
+    #drillHud{order:5;flex:1 0 auto;min-height:40px;gap:6px;padding:2px 8px;font-size:12px;justify-content:center}
+    #dexHud{order:6;flex:0 0 auto;min-height:40px;padding:2px 8px;font-size:13px}
+    #tradeHud{order:7;flex:0 1 auto;min-width:0;min-height:40px;padding:2px 8px;font-size:12px;white-space:normal;line-height:1.15;text-align:center}#tradeHud.locked{font-size:10px}
+    #tradeHud .tlk{display:block;font-size:9px;opacity:.85}
+    #drillHud img,#dexHud img{width:16px;height:16px}#drillHud span,#dexHud span{gap:2px}
+    #logLine{order:8;flex:1 1 100%;max-width:none;min-width:0;min-height:40px;font-size:13px;padding:2px 10px}
+    #visitBar{order:0;flex:1 1 100%;align-self:auto;flex-wrap:wrap;gap:6px 10px;padding:6px 10px;font-size:14px}#visitBar .tool{min-height:40px}
+    body.visiting #topbar{display:contents}
+    /* 下の帯：作物ボタンは横スクロール、案内文は折り返して全文 */
+    #botBand{align-items:stretch;gap:2px;padding:2px 4px 4px}
+    #palette,#variantBar{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;touch-action:pan-x;padding:6px 6px 8px;gap:6px}
+    #variantBar{display:none}#variantBar[style*="flex"]{display:flex!important}
+    #palette>*,#variantBar>*{flex-shrink:0}
+    #palette>:first-child,#variantBar>:first-child{margin-left:auto}#palette>:last-child,#variantBar>:last-child{margin-right:auto}
+    #palette .tool{min-height:48px;padding:4px 12px 4px 8px;font-size:15px;margin:2px 0}
+    #palette .tool img{width:28px;height:28px}
+    #tutBar{align-self:stretch;max-width:none;margin:3px 4px;padding:6px 8px 6px 10px;font-size:14px;line-height:1.35;gap:8px}
+    #tutText{white-space:normal;overflow:visible;text-overflow:clip;flex:1 1 auto}
+    #tutSkip{min-height:40px;min-width:64px;padding:2px 10px;font-size:13px}
+    /* 町の右下の拡大・縮小：44px の四角を2つ */
+    #zoomBtns{right:8px;gap:4px}
+    #zoomBtns button{width:44px;height:44px;font-size:24px}
+    /* パネル：画面に収め、入りきらなければパネルの中だけスクロール */
+    .overlay{padding:6px}
+    .overlay .box{max-width:calc(100vw - 12px);max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px);padding:10px 12px;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+    .dbox,.sbox,.dexbox,.tradebox,.logbox{width:100%}
+    .panelhd{gap:8px}.panelhd b{font-size:17px;letter-spacing:.08em}
+    .panelhd button,.fxf-x{min-width:44px;min-height:44px;font-size:24px}
+    .tool{min-height:44px}.tool.small{min-height:40px}
+    .overlay .cancel{min-height:44px;min-width:88px;padding:8px 16px}
+    .orow,.wrow,.srow{flex-wrap:wrap;gap:8px 10px}
+    .ocrop{min-width:0;flex:1 1 150px;font-size:17px}.orew{min-width:0;flex:1 1 90px}
+    .wrow .nm{min-width:0;flex:1 1 140px;font-size:17px}.wrow .cnt{min-width:44px;font-size:18px}
+    .pgauge{min-width:0}.mrow .recipe{min-width:0;flex:1 1 100%}
+    .sinfo{min-width:0;flex:1 1 150px}.sbtns{max-width:none;justify-content:flex-start}
+    .trow input{min-width:0;flex:1 1 100%;min-height:44px}
+    .lvgrid{gap:6px;margin:6px 0 10px}.lvbtn{padding:6px 2px}.lvbtn span{font-size:10px;line-height:1.2}
+    .choices{gap:8px;margin:8px 0 0}.choice{min-height:56px}
+    .dq-prompt{font-size:22px;margin:10px 2px 6px}.dq-head{font-size:13px}
+    .ggrid{grid-template-columns:repeat(3,1fr)}.ggrid .gname{font-size:11px}
+    .dexgrid{grid-template-columns:1fr;max-height:48vh}.dexgrid{max-height:calc(100dvh - 190px)}
+    .gbtns .tool{padding:6px 14px}
+    .tstats{margin:4px 0 10px;gap:2px 10px}.spbox{margin:8px 0 4px}.gbox{margin:8px 0 4px}
+    #toast{top:calc(var(--topH,86px) + 6px);max-width:calc(100vw - 16px);font-size:13px;padding:6px 12px;text-align:center;letter-spacing:.02em}
+    #gachaHint{font-size:13px}#gachaAll{min-height:44px}
+    .fxf-top{padding:6px 10px}.fxf-body{padding:8px 10px 10px}
+    #skipConfirm .box{width:100%;max-width:340px}
+  }
+  /* スマホ横（高さが低い）：上の帯は2行、下の帯は案内文と作物ボタンを1行ずつ。作物ボタンは1行の名前だけ */
+  @media (max-height:520px) and (min-width:601px){
+    #topBrk{display:block;order:5;flex:1 1 100%;height:0}
+    #town{order:1}#gold{order:2}#warehouse{order:3;flex:1 1 0}#sndBtns{order:4}
+    #drillHud{order:6;flex:0 0 auto}#dexHud{order:7}#tradeHud{order:8}#logLine{order:9;flex:1 1 0}
+    #palette .tool small{display:none}#palette .tool{min-height:42px;padding:2px 10px 2px 6px}
+    #tutBar{padding:3px 8px 3px 10px;font-size:13px}
+    #zoomBtns{flex-direction:row}
+    .sfull{display:inline}
+  }
+  @media (max-width:600px){
+    #dexHud .dxl{display:none}
+    .sfull{display:none}.sshort{display:inline}
+    #zoomBtns{flex-direction:column}
+  }
+  @media (max-width:600px) and (max-height:520px){#topBrk{display:none}}
 </style>
 </head>
 <body>
@@ -401,12 +478,13 @@
       <span><img class="px" data-icon="ic_ticket" alt="チケット"><span id="dhTickets">0</span></span>
     </button>
     <button id="dexHud" class="pix" title="図鑑（変種の種・町の飾り・お手伝い・消耗品）">
-      <span><img class="px" data-icon="ic_book" alt="図鑑">図鑑 <span id="dexHudNum">0/50</span></span>
+      <span><img class="px" data-icon="ic_book" alt="図鑑"><span class="dxl">図鑑</span> <span id="dexHudNum">0/50</span></span>
     </button>
     <button id="tradeHud" class="pix" title="交換掲示板（町のコード・変種のギフト）"><span id="tradeHudText">交換掲示板</span></button>
     <button id="logLine" class="pix" title="最近の出来事（タップで履歴）"><span class="lgi">▸</span><span id="logText">出来事がここに流れます</span></button>
-    <span id="sndBtns"><button id="bgmBtn" class="pix sndbtn" aria-pressed="true" title="BGM（音楽）のオン・オフ">♪ BGM</button><button id="seBtn" class="pix sndbtn" aria-pressed="true" title="効果音のオン・オフ">♬ 効果音</button></span>
+    <span id="sndBtns"><button id="bgmBtn" class="pix sndbtn" aria-pressed="true" title="BGM（音楽）のオン・オフ">♪ BGM</button><button id="seBtn" class="pix sndbtn" aria-pressed="true" title="効果音のオン・オフ">♬ <span class="sfull">効果音</span><span class="sshort">SE</span></button></span>
   </div>
+<span id="topBrk" aria-hidden="true"></span>
 <div id="visitBar" class="pix" style="display:none"><span id="visitText"></span><button class="tool pix act" id="visitEnd">見学を終わる</button></div>
 </div>
 <canvas id="world" aria-label="ときの種の町（畑と時計塔）"></canvas>
@@ -4096,7 +4174,9 @@
   // 下限倍率：マップが画面の幅・高さをちょうど覆う倍率（左右・上下に余白を出さない）
   const curBounds = () => { const b = BOUNDS(townLevel()); return { x0: b.x0 * T, y0: b.y0 * T, x1: b.x1 * T, y1: b.y1 * T }; };
   // 下限倍率（段階8a）：町全体（いまの町Lvの範囲）が中央の帯にちょうど収まる倍率。それより引くと、町の外は地面の色で埋まる
-  const frameMin = () => { const b = curBounds(); return Math.min(ZOOM_MAX, Math.max(0.7, VW / ((b.x1 - b.x0) * BASE), VH / ((b.y1 - b.y0) * BASE))); };   // 段階7までの下限（町が帯を埋める倍率）
+  // 幅600px以下（スマホ縦）では、はじめの構図の下限を「町全体が帯に収まる倍率」まで下げ、町が画面の幅に収まる倍率から始める（段階8c）。スマホ横・タブレットは従来どおり
+  const isCompact = () => innerWidth <= 600 || innerHeight <= 520;
+  const frameMin = () => innerWidth <= 600 ? zoomMin() : (() => { const b = curBounds(); return Math.min(ZOOM_MAX, Math.max(0.7, VW / ((b.x1 - b.x0) * BASE), VH / ((b.y1 - b.y0) * BASE))); })();   // 段階7までの下限（町が帯を埋める倍率）
   const zoomMin = () => { const b = curBounds(); return Math.min(ZOOM_MAX, Math.min(VW / ((b.x1 - b.x0) * BASE), VH / ((b.y1 - b.y0) * BASE))); };
   const toWorld = (sx, sy) => ({ x: (sx - VW / 2) / scale() + cam.x, y: (sy - VH / 2) / scale() + cam.y });
   const toScreen = (wx, wy) => ({ x: (wx - cam.x) * scale() + VW / 2, y: (wy - cam.y) * scale() + VH / 2 });
@@ -4106,16 +4186,20 @@
     cam.x = hw * 2 >= b.x1 - b.x0 ? (b.x0 + b.x1) / 2 : Math.min(b.x1 - hw, Math.max(b.x0 + hw, cam.x));
     cam.y = hh * 2 >= b.y1 - b.y0 ? (b.y0 + b.y1) / 2 : Math.min(b.y1 - hh, Math.max(b.y0 + hh, cam.y));
   }
+  let camUser = false, prevVW = 0;                         // camUser：自分でカメラを動かした（向きが変わっても構図を直さない）
   function resize() {
     DPR = Math.min(window.devicePixelRatio || 1, 2);
     const tH = Math.ceil($('topBand').getBoundingClientRect().height), bH = Math.ceil($('botBand').getBoundingClientRect().height);
     CY0 = tH; VW = innerWidth; VH = Math.max(120, innerHeight - tH - bH);   // 町は上下の帯のあいだだけに描く
     canvas.style.top = CY0 + 'px'; canvas.style.height = VH + 'px';
-    $('zoomBtns').style.top = (CY0 + VH - 2 * 38 - 6 - 12) + 'px';   // 町の帯の右下
+    $('zoomBtns').style.bottom = (innerHeight - CY0 - VH + 12) + 'px';   // 町の帯の右下（ボタンの大きさに依らない）
+    document.documentElement.style.setProperty('--topH', CY0 + 'px');
     canvas.width = Math.round(VW * DPR); canvas.height = Math.round(VH * DPR);
     BASE = Math.max(2, Math.min(VW / (18 * T), VH / (12 * T)));
     buildLightCache();
     clampCam();
+    if (prevVW && Math.abs(VW - prevVW) >= 100 && !camUser && typeof initialCamera === 'function') initialCamera();   // 向きが変わったら、はじめの構図に直す（カメラを動かすまで）
+    prevVW = VW;
   }
   function framing() {            // 時計塔と畑の両方が入るカメラ（現在のカメラは変えずに目標値だけ返す）
     const keep = { x: cam.x, y: cam.y, zoom: cam.zoom };
@@ -4659,7 +4743,7 @@
     $('warehouse').classList.toggle('compact', compact);
     $('dexHudNum').textContent = GA.dexCount(state.gacha) + '/' + GA.ITEMS.length;
     const tOpen = townLevel() >= TRADE_LV; $('tradeHud').disabled = !tOpen; $('tradeHud').classList.toggle('locked', !tOpen);
-    $('tradeHudText').textContent = tOpen ? '交換掲示板' : '交換掲示板（町Lv' + TRADE_LV + 'で解放）';
+    $('tradeHudText').innerHTML = tOpen ? '交換掲示板' : '交換掲示板<span class="tlk">（町Lv' + TRADE_LV + 'で解放）</span>';
     $('dhStock').textContent = fmtStock(D.stock); $('dhShards').textContent = D.shards; $('dhTickets').textContent = D.tickets;
   }
   let helperTickAt = 0;
@@ -5434,7 +5518,12 @@
     const el = sel ? document.querySelector(sel) : null;
     if (el === tutHl) return;
     if (tutHl) tutHl.classList.remove('tut-hl');
-    tutHl = el; if (el) el.classList.add('tut-hl');
+    tutHl = el; if (el) { el.classList.add('tut-hl'); revealInScroller(el); }
+  }
+  function revealInScroller(el) {                        // 横にスクロールする帯（作物ボタン）の中の目印は、見える位置までスクロール
+    const sc = el.closest('#palette,#variantBar'); if (!sc || sc.scrollWidth <= sc.clientWidth) return;
+    const a = el.getBoundingClientRect(), b = sc.getBoundingClientRect();
+    if (a.left < b.left + 8) sc.scrollLeft -= b.left + 8 - a.left; else if (a.right > b.right - 8) sc.scrollLeft += a.right - b.right + 8;
   }
   function drawTutArrow(c, ts) {                          // 町の中の目印（下向きの矢印）
     const g = tutActive() && state.tutorial._g; if (!g || !g.world) return;
@@ -5987,6 +6076,7 @@
     const m = mid(); pinch = { d0: Math.max(10, m.d), z0: cam.zoom, w: toWorld(m.x, m.y) };
   }
   function zoomAround(sx, sy, w, z) {
+    camUser = true;
     cam.zoom = Math.min(ZOOM_MAX, Math.max(zoomMin(), z));
     cam.x = w.x - (sx - VW / 2) / scale(); cam.y = w.y - (sy - VH / 2) / scale();
     clampCam();
@@ -6017,7 +6107,7 @@
     if (gesture === 'pinch' && ptrs.size >= 2) {
       const m = mid(); zoomAround(m.x, m.y, pinch.w, pinch.z0 * m.d / pinch.d0);
     } else if (gesture === 'pan') {
-      pan.moved = Math.max(pan.moved, Math.hypot(ex(e) - pan.sx, ey(e) - pan.sy));
+      pan.moved = Math.max(pan.moved, Math.hypot(ex(e) - pan.sx, ey(e) - pan.sy)); if (pan.moved > 8) camUser = true;
       cam.x = pan.cx - (ex(e) - pan.sx) / scale(); cam.y = pan.cy - (ey(e) - pan.sy) / scale(); clampCam();
     } else if (gesture === 'farm' && mode) {
       apply(plotAt(ex(e), ey(e)));
@@ -6039,6 +6129,17 @@
     zoomAround(ex(e), ey(e), toWorld(ex(e), ey(e)), cam.zoom * Math.exp(-e.deltaY * .0015));
   }, { passive: false });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
+  // 指でタップしたとき、押した瞬間に画面が変わる（パネルが開く・演出が閉じる）と、ブラウザが後から出す「合成クリック」が、
+  // 指の下に新しく現れたボタンに飛んで、勝手に押されてしまう（例：時計塔をタップ→ドリルの「時短を使う」が押される、
+  // ガチャの演出を閉じるタップ→「もう10連」が押されてカケラを使う）。押し始めた部品と関係のない部品へのクリックは捨てる（段階8c）
+  let touchDown = null;
+  document.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') touchDown = { t: e.target, x: e.clientX, y: e.clientY, at: performance.now() }; }, true);
+  document.addEventListener('click', e => {
+    const d = touchDown; if (!d || !e.isTrusted || performance.now() - d.at > 800 || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 40) return;
+    const a = d.t, b = e.target;
+    if (a === b || (a.contains && a.contains(b)) || (b.contains && b.contains(a))) return;          // ふつうのタップ（同じ部品の中）
+    e.stopPropagation(); e.preventDefault();
+  }, true);
   // 拡大・縮小ボタン（段階8a）：1回で1.25倍ずつ。町の帯の中央を中心に。端まで来たらボタンを無効に
   const ZOOM_STEP = 1.25;
   function zoomStep(dir) {
@@ -6076,6 +6177,9 @@
     chips: () => chipInfo.map(c => Object.assign({}, c, { y: c.y + CY0 })),
     jobMs: (k, rk) => jobMs(k, rk),
     zoomInfo: () => ({ zoom: cam.zoom, min: zoomMin(), max: ZOOM_MAX }),
+    boardPos: () => ({ x: BOARD.cx, y: BOARD.top + 10 }),
+    towerPos: () => ({ x: LAYOUT.tower.x, y: LAYOUT.tower.y - 30 }),
+    contentScreen: () => { const c = contentBox(), a = scr(c.x0, c.y0), b = scr(c.x1, c.y1); return { x0: a.x, y0: a.y, x1: b.x, y1: b.y }; },
     sound: () => SND.info(),
     towerCenter: () => scr(LAYOUT.tower.x, LAYOUT.tower.y - 30),
     overview: () => { const b = curBounds(), padT = 8, padB = 8; camTarget = null; cam.zoom = Math.min(VW / (b.x1 - b.x0), (VH - padT - padB) / (b.y1 - b.y0)) / BASE; cam.x = (b.x0 + b.x1) / 2; cam.y = (b.y0 + b.y1) / 2 - (padT - padB) / 2 / scale(); },   // 検品用：表示範囲全体を映す（見た目だけ）
